@@ -404,7 +404,7 @@ class _MapArea extends StatelessWidget {
                           point:     seg.midpoint,
                           width:     76,
                           height:    24,
-                          alignment: Alignment.center,
+                          alignment: Alignment.bottomCenter,
                           child: _DistanceLabel(distanceKm: seg.distanceKm),
                         ))
                     .toList(),
