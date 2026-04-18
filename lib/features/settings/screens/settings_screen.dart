@@ -10,6 +10,8 @@ import '../../../data/models/user_model.dart';
 import '../../../features/ai_suggestions/services/ai_config.dart';
 import '../../../features/ai_suggestions/services/ai_key_store.dart';
 import '../../../features/templates/screens/template_manager_screen.dart';
+import '../../../data/models/effective_permission.dart';
+import '../../../data/models/team_member_permission.dart';
 import '../../../shared/widgets/role_badge.dart';
 import '../../../shared/widgets/user_avatar.dart';
 
@@ -55,6 +57,12 @@ class SettingsScreen extends StatelessWidget {
                 _SectionCard(
                   title: 'PERMISSIONS OVERVIEW',
                   children: const [_PermissionsTable()],
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                _SectionCard(
+                  title: 'DOSSIER ACCESS',
+                  subtitle: 'Override per-user dossier permissions. Overrides take precedence over role defaults.',
+                  children: const [_DossierAccessSection()],
                 ),
                 const SizedBox(height: AppSpacing.lg),
                 _SectionCard(
@@ -1234,6 +1242,242 @@ class _InfoRow extends StatelessWidget {
                   style: AppTextStyles.labelMedium
                       .copyWith(color: AppColors.textSecondary))),
           Expanded(child: Text(value, style: AppTextStyles.bodySmall)),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Dossier Access section ────────────────────────────────────────────────────
+
+class _DossierAccessSection extends StatefulWidget {
+  const _DossierAccessSection();
+
+  @override
+  State<_DossierAccessSection> createState() => _DossierAccessSectionState();
+}
+
+class _DossierAccessSectionState extends State<_DossierAccessSection> {
+  List<TeamMember> _members = [];
+  Map<String, TeamMemberPermission> _overrides = {};
+  List<RolePermissionDefault> _defaults = [];
+  bool _loading = true;
+
+  static const _keys = [
+    DossierPermissionKey.viewDossier,
+    DossierPermissionKey.editDossier,
+    DossierPermissionKey.viewSensitiveNotes,
+  ];
+
+  static const _labels = {
+    DossierPermissionKey.viewDossier:        'View',
+    DossierPermissionKey.editDossier:        'Edit',
+    DossierPermissionKey.viewSensitiveNotes: 'Sensitive',
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final repos  = AppRepositories.instance;
+    final teamId = repos?.currentTeamId;
+    if (repos == null || teamId == null) {
+      if (mounted) setState(() => _loading = false);
+      return;
+    }
+    try {
+      final members  = await repos.teams.fetchMembers(teamId);
+      final overList = await repos.permissions.fetchOverridesForTeam(teamId);
+      final defaults = await repos.permissions.fetchRoleDefaults();
+
+      final overMap = <String, TeamMemberPermission>{};
+      for (final o in overList) {
+        overMap['${o.userId}:${o.permissionKey}'] = o;
+      }
+
+      if (mounted) {
+        setState(() {
+          _members   = members;
+          _overrides = overMap;
+          _defaults  = defaults;
+          _loading   = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  bool _effectiveValue(TeamMember member, String key) {
+    final override = _overrides['${member.userId}:$key'];
+    if (override != null) return override.permissionValue;
+    final def = _defaults.where(
+      (d) => d.role == member.role.label && d.permissionKey == key,
+    ).firstOrNull;
+    return def?.permissionValue ?? false;
+  }
+
+  bool _isOverridden(TeamMember member, String key) =>
+      _overrides.containsKey('${member.userId}:$key');
+
+  Future<void> _toggle(TeamMember member, String key, bool current) async {
+    final repos  = AppRepositories.instance;
+    final teamId = repos?.currentTeamId;
+    if (repos == null || teamId == null) return;
+
+    final now = DateTime.now();
+    final override = TeamMemberPermission(
+      id:              '',
+      userId:          member.userId,
+      teamId:          teamId,
+      permissionKey:   key,
+      permissionValue: !current,
+      createdAt:       now,
+      updatedAt:       now,
+    );
+    final ok = await repos.permissions.upsertOverride(override);
+    if (ok) setState(() => _overrides['${member.userId}:$key'] = override);
+  }
+
+  Future<void> _reset(TeamMember member, String key) async {
+    final repos  = AppRepositories.instance;
+    final teamId = repos?.currentTeamId;
+    if (repos == null || teamId == null) return;
+
+    final ok = await repos.permissions.deleteOverride(member.userId, teamId, key);
+    if (ok) setState(() => _overrides.remove('${member.userId}:$key'));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) {
+      return const Padding(
+        padding: EdgeInsets.all(AppSpacing.base),
+        child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+      );
+    }
+    if (_members.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.all(AppSpacing.base),
+        child: Text('No team members found.', style: AppTextStyles.bodySmall),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.all(AppSpacing.base),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Expanded(child: SizedBox()),
+              ..._keys.map((k) => SizedBox(
+                width: 80,
+                child: Center(child: Text(_labels[k]!, style: AppTextStyles.overline)),
+              )),
+              const SizedBox(width: 36),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          const Divider(height: 1, color: AppColors.border),
+          ..._members.map((m) => _MemberPermissionRow(
+            member:     m,
+            keys:       _keys,
+            labels:     _labels,
+            effective:  (k) => _effectiveValue(m, k),
+            overridden: (k) => _isOverridden(m, k),
+            onToggle:   (k, v) => _toggle(m, k, v),
+            onReset:    (k) => _reset(m, k),
+          )),
+        ],
+      ),
+    );
+  }
+}
+
+class _MemberPermissionRow extends StatelessWidget {
+  final TeamMember member;
+  final List<String> keys;
+  final Map<String, String> labels;
+  final bool Function(String) effective;
+  final bool Function(String) overridden;
+  final void Function(String, bool) onToggle;
+  final void Function(String) onReset;
+
+  const _MemberPermissionRow({
+    required this.member,
+    required this.keys,
+    required this.labels,
+    required this.effective,
+    required this.overridden,
+    required this.onToggle,
+    required this.onReset,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: AppColors.border)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(member.profile?.name ?? member.userId,
+                    style: AppTextStyles.bodyMedium),
+                Text(member.role.label,
+                    style: AppTextStyles.labelSmall
+                        .copyWith(color: AppColors.textSecondary)),
+              ],
+            ),
+          ),
+          ...keys.map((k) {
+            final val  = effective(k);
+            final isOv = overridden(k);
+            return SizedBox(
+              width: 80,
+              child: Center(
+                child: Tooltip(
+                  message: isOv
+                      ? 'Override active — long-press to reset to role default'
+                      : 'Role default — tap to override',
+                  child: GestureDetector(
+                    onLongPress: isOv ? () => onReset(k) : null,
+                    child: Switch(
+                      value:              val,
+                      onChanged:          (_) => onToggle(k, val),
+                      activeThumbColor:   isOv ? AppColors.accent : AppColors.statusDoneText,
+                      inactiveThumbColor: isOv ? AppColors.statusBlockedText : null,
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }),
+          SizedBox(
+            width: 36,
+            child: keys.any(overridden)
+                ? Tooltip(
+                    message: 'Reset all overrides for this member',
+                    child: IconButton(
+                      icon:      const Icon(Icons.refresh_rounded, size: 16),
+                      color:     AppColors.textMuted,
+                      onPressed: () {
+                        for (final k in keys) {
+                          if (overridden(k)) onReset(k);
+                        }
+                      },
+                    ),
+                  )
+                : const SizedBox.shrink(),
+          ),
         ],
       ),
     );
