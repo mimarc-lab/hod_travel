@@ -45,7 +45,7 @@ class _TripMapScreenState extends State<TripMapScreen>
   // ── Filter state ───────────────────────────────────────────────────────────
   String?   _selectedDayId;
   ItemType? _selectedType;
-  bool      _showRoute = false;
+  bool      _showRoute = true; // Route on by default
 
   // ── Selection state ────────────────────────────────────────────────────────
   String? _focusedMarkerId; // item.id of the tapped pin
@@ -395,6 +395,21 @@ class _MapArea extends StatelessWidget {
                 ],
               ),
 
+            // Distance labels — one chip per route segment, placed at midpoint.
+            // Transport items are excluded; only location-to-location distances.
+            if (showRoute && routeMarkers.length > 1)
+              MarkerLayer(
+                markers: MapViewMapperService.routeSegments(routeMarkers)
+                    .map((seg) => Marker(
+                          point:     seg.midpoint,
+                          width:     76,
+                          height:    24,
+                          alignment: Alignment.center,
+                          child: _DistanceLabel(distanceKm: seg.distanceKm),
+                        ))
+                    .toList(),
+              ),
+
             // Markers — all type-filtered pins are shown; pins from inactive
             // days fade to 22 % opacity so the full journey is always visible
             // for geographic context while the active day stays prominent.
@@ -724,6 +739,51 @@ class _LoadingState extends StatelessWidget {
       child: CircularProgressIndicator(
         strokeWidth: 2,
         color: AppColors.accent,
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// _DistanceLabel — small chip shown at the midpoint of each route segment
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _DistanceLabel extends StatelessWidget {
+  final double distanceKm;
+  const _DistanceLabel({required this.distanceKm});
+
+  String get _text {
+    if (distanceKm < 1) return '${(distanceKm * 1000).round()} m';
+    return '${distanceKm.toStringAsFixed(1)} km';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: Colors.white.withAlpha(235),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: AppColors.accent.withAlpha(100),
+          width: 0.75,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color:      Colors.black.withAlpha(14),
+            blurRadius: 4,
+            offset:     const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Text(
+        _text,
+        style: AppTextStyles.labelSmall.copyWith(
+          fontSize:   10,
+          color:      AppColors.accent,
+          fontWeight: FontWeight.w600,
+        ),
+        textAlign: TextAlign.center,
       ),
     );
   }

@@ -78,10 +78,10 @@ abstract class MapViewMapperService {
 
     for (final day in days) {
       final ref = TripDayRef(
-        id:     day.id,
+        id: day.id,
         number: day.dayNumber,
-        city:   day.city,
-        date:   day.date,
+        city: day.city,
+        date: day.date,
       );
       for (final item in itemsByDayId[day.id] ?? const <ItineraryItem>[]) {
         allItems.add((item: item, day: ref));
@@ -107,7 +107,7 @@ abstract class MapViewMapperService {
     // locationMarkers (no visible pin).  They exist only so Pass 2 can still
     // compute correct transport-badge midpoints when the hotel is the
     // prev / next stop.
-    final markerById   = <String, TripMapMarker>{};
+    final markerById = <String, TripMapMarker>{};
     final overlapCount = <String, int>{};
 
     // Tracks base-coordinate keys of hotels that already have a visible pin.
@@ -116,7 +116,7 @@ abstract class MapViewMapperService {
     final pinnedHotelKeys = <String>{};
 
     for (final e in allItems) {
-      if (e.item.type == ItemType.note)      continue;
+      if (e.item.type == ItemType.note) continue;
       if (e.item.type == ItemType.transport) continue; // handled in Pass 2
 
       final base = TripLocationService.resolve(e.item.location, e.day.city);
@@ -131,8 +131,8 @@ abstract class MapViewMapperService {
       if (e.item.type == ItemType.hotel) {
         if (pinnedHotelKeys.contains(baseKey)) {
           markerById[e.item.id] = TripMapMarker(
-            item:     e.item,
-            day:      e.day,
+            item: e.item,
+            day: e.day,
             position: base, // raw coord — no spiral, no visible pin
           );
           continue; // do not render another hotel pin
@@ -145,8 +145,8 @@ abstract class MapViewMapperService {
       overlapCount[baseKey] = count + 1;
 
       final marker = TripMapMarker(
-        item:     e.item,
-        day:      e.day,
+        item: e.item,
+        day: e.day,
         position: count == 0 ? base : _spiral(base, count),
       );
       locationMarkers.add(marker);
@@ -193,27 +193,32 @@ abstract class MapViewMapperService {
 
       // Resolve from / to positions
       LatLng? from = prevMarker?.position;
-      LatLng? to   = nextMarker?.position;
+      LatLng? to = nextMarker?.position;
 
       // If one or both sides are missing, try title-parsed geographic route
       if (from == null || to == null) {
         final route = TripLocationService.parseTransportRoute(
-            e.item.title, e.day.city);
+          e.item.title,
+          e.day.city,
+        );
         from ??= route?.from;
-        to   ??= route?.to;
+        to ??= route?.to;
       }
 
       if (from == null || to == null) continue;
-      if (from.latitude  == to.latitude &&
-          from.longitude == to.longitude) continue; // same point — skip
+      if (from.latitude == to.latitude && from.longitude == to.longitude) {
+        continue; // same point — skip
+      }
 
-      transportMarkers.add(TripMapMarker(
-        item:      e.item,
-        day:       e.day,
-        position:  _midpoint(from, to),
-        routeFrom: from,
-        routeTo:   to,
-      ));
+      transportMarkers.add(
+        TripMapMarker(
+          item: e.item,
+          day: e.day,
+          position: _midpoint(from, to),
+          routeFrom: from,
+          routeTo: to,
+        ),
+      );
     }
 
     return [...locationMarkers, ...transportMarkers];
@@ -249,10 +254,9 @@ abstract class MapViewMapperService {
   ///
   /// Primary sort: day number.  Secondary: start time (untimed items last).
   static List<LatLng> routePoints(List<TripMapMarker> markers) {
-    final sorted = markers
-        .where((m) => m.item.type != ItemType.transport)
-        .toList()
-      ..sort(_markerOrder);
+    final sorted =
+        markers.where((m) => m.item.type != ItemType.transport).toList()
+          ..sort(_markerOrder);
     return sorted.map((m) => m.position).toList();
   }
 
@@ -282,25 +286,67 @@ abstract class MapViewMapperService {
 
     // Ensure minimum bounding box so single-point trips zoom to street level
     const minDelta = 0.08;
-    final latDelta  = math.max(maxLat - minLat, minDelta);
-    final lngDelta  = math.max(maxLng - minLng, minDelta);
+    final latDelta = math.max(maxLat - minLat, minDelta);
+    final lngDelta = math.max(maxLng - minLng, minDelta);
     final latCentre = (minLat + maxLat) / 2;
     final lngCentre = (minLng + maxLng) / 2;
 
     return (
-      sw: LatLng(latCentre - latDelta / 2 - padDeg,
-                 lngCentre - lngDelta / 2 - padDeg),
-      ne: LatLng(latCentre + latDelta / 2 + padDeg,
-                 lngCentre + lngDelta / 2 + padDeg),
+      sw: LatLng(
+        latCentre - latDelta / 2 - padDeg,
+        lngCentre - lngDelta / 2 - padDeg,
+      ),
+      ne: LatLng(
+        latCentre + latDelta / 2 + padDeg,
+        lngCentre + lngDelta / 2 + padDeg,
+      ),
     );
   }
 
+  // ── Distance segments ──────────────────────────────────────────────────────
+
+  /// Returns one entry per consecutive pair of non-transport location markers,
+  /// each with the segment midpoint and straight-line Haversine distance (km).
+  /// Used to render distance labels along the route polyline.
+  static List<({LatLng midpoint, double distanceKm})> routeSegments(
+      List<TripMapMarker> markers) {
+    final sorted =
+        markers.where((m) => m.item.type != ItemType.transport).toList()
+          ..sort(_markerOrder);
+
+    if (sorted.length < 2) return const [];
+
+    final segments = <({LatLng midpoint, double distanceKm})>[];
+    for (int i = 0; i < sorted.length - 1; i++) {
+      final a = sorted[i].position;
+      final b = sorted[i + 1].position;
+      segments.add((
+        midpoint:   _midpoint(a, b),
+        distanceKm: _haversineKm(a, b),
+      ));
+    }
+    return segments;
+  }
+
+  static double _haversineKm(LatLng a, LatLng b) {
+    const r = 6371.0;
+    final dLat = _deg2rad(b.latitude - a.latitude);
+    final dLng = _deg2rad(b.longitude - a.longitude);
+    final sinLat = math.sin(dLat / 2);
+    final sinLng = math.sin(dLng / 2);
+    final x = sinLat * sinLat +
+        math.cos(_deg2rad(a.latitude)) *
+            math.cos(_deg2rad(b.latitude)) *
+            sinLng * sinLng;
+    return r * 2 * math.atan2(math.sqrt(x), math.sqrt(1 - x));
+  }
+
+  static double _deg2rad(double deg) => deg * math.pi / 180;
+
   // ── Private helpers ────────────────────────────────────────────────────────
 
-  static LatLng _midpoint(LatLng a, LatLng b) => LatLng(
-        (a.latitude  + b.latitude)  / 2,
-        (a.longitude + b.longitude) / 2,
-      );
+  static LatLng _midpoint(LatLng a, LatLng b) =>
+      LatLng((a.latitude + b.latitude) / 2, (a.longitude + b.longitude) / 2);
 
   static String _coordKey(LatLng ll) =>
       '${ll.latitude.toStringAsFixed(4)},${ll.longitude.toStringAsFixed(4)}';
@@ -308,11 +354,11 @@ abstract class MapViewMapperService {
   /// Offset [base] outward in a golden-ratio spiral.
   /// Step ~30 m keeps same-building pins visually grouped.
   static LatLng _spiral(LatLng base, int n) {
-    const step   = 0.00027; // ~30 m per unit
-    final angle  = n * math.pi * 0.6180339887; // golden ratio
+    const step = 0.00027; // ~30 m per unit
+    final angle = n * math.pi * 0.6180339887; // golden ratio
     final radius = step * math.sqrt(n.toDouble());
     return LatLng(
-      base.latitude  + radius * math.cos(angle),
+      base.latitude + radius * math.cos(angle),
       base.longitude + radius * math.sin(angle),
     );
   }
