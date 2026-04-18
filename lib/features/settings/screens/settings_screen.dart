@@ -1315,7 +1315,7 @@ class _DossierAccessSectionState extends State<_DossierAccessSection> {
     final override = _overrides['${member.userId}:$key'];
     if (override != null) return override.permissionValue;
     final def = _defaults.where(
-      (d) => d.role == member.role.label && d.permissionKey == key,
+      (d) => d.role == member.role.dbValue && d.permissionKey == key,
     ).firstOrNull;
     return def?.permissionValue ?? false;
   }
