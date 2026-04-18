@@ -10,7 +10,9 @@ import '../widgets/dossier_section_card.dart';
 import '../widgets/traveler_profile_card.dart';
 import '../questionnaire/questionnaire_history_list.dart';
 import '../../ai_memory/widgets/inferred_preferences_panel.dart';
+import '../../security/dossier_access_guard.dart';
 import '../../../core/supabase/app_db.dart';
+import '../../../data/models/effective_permission.dart';
 import 'client_dossier_form_screen.dart';
 import 'client_questionnaire_screen.dart';
 
@@ -36,11 +38,25 @@ class ClientDossierDetailScreen extends StatefulWidget {
 class _ClientDossierDetailScreenState extends State<ClientDossierDetailScreen> {
   List<ClientQuestionnaireResponse> _responses = [];
   bool _loadingResponses = false;
+  EffectivePermission _perm = EffectivePermission.denied;
 
   @override
   void initState() {
     super.initState();
     _loadResponses();
+    _resolvePermissions();
+  }
+
+  Future<void> _resolvePermissions() async {
+    final repos  = AppRepositories.instance;
+    final teamId = repos?.currentTeamId ?? '';
+    if (repos == null || teamId.isEmpty) return;
+
+    final perm = await repos.permissions.resolve(teamId);
+    if (mounted) setState(() => _perm = perm);
+
+    // Log the view event (SELECT not captured by DB trigger)
+    repos.auditLogs.logDossierView(widget.dossier.id);
   }
 
   Future<void> _loadResponses() async {
@@ -61,8 +77,9 @@ class _ClientDossierDetailScreenState extends State<ClientDossierDetailScreen> {
           body: Column(
             children: [
               _DetailHeader(
-                dossier:  dossier,
-                provider: widget.provider,
+                dossier:   dossier,
+                provider:  widget.provider,
+                canEdit:   _perm.canEditDossier,
                 onEditTap: () async {
                   await Navigator.of(context).push(MaterialPageRoute(
                     builder: (_) => ClientDossierFormScreen(
@@ -136,8 +153,12 @@ class _ClientDossierDetailScreenState extends State<ClientDossierDetailScreen> {
                         _BehavioralSection(dossier: dossier),
                         const SizedBox(height: AppSpacing.xl),
 
-                        _InternalSection(dossier: dossier),
-                        const SizedBox(height: AppSpacing.xl),
+                        PermissionGate(
+                          allowed: _perm.canViewSensitiveNotes,
+                          child: _InternalSection(dossier: dossier),
+                        ),
+                        if (_perm.canViewSensitiveNotes)
+                          const SizedBox(height: AppSpacing.xl),
 
                         if (AppRepositories.instance?.aiMemory != null)
                           DossierSectionCard(
@@ -246,6 +267,7 @@ class _ClientDossierDetailScreenState extends State<ClientDossierDetailScreen> {
 class _DetailHeader extends StatelessWidget {
   final ClientDossier dossier;
   final ClientDossierProvider provider;
+  final bool canEdit;
   final VoidCallback onEditTap;
   final VoidCallback onQuestionnaireTap;
   final VoidCallback onDeleteTap;
@@ -253,6 +275,7 @@ class _DetailHeader extends StatelessWidget {
   const _DetailHeader({
     required this.dossier,
     required this.provider,
+    required this.canEdit,
     required this.onEditTap,
     required this.onQuestionnaireTap,
     required this.onDeleteTap,
@@ -348,28 +371,30 @@ class _DetailHeader extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: AppSpacing.sm),
-              // Edit button
-              GestureDetector(
-                onTap: onEditTap,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceAlt,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: AppColors.border),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.edit_outlined,
-                          size: 13, color: AppColors.textSecondary),
-                      const SizedBox(width: 5),
-                      Text('Edit', style: AppTextStyles.labelMedium),
-                    ],
+              if (canEdit) ...[
+                const SizedBox(width: AppSpacing.sm),
+                // Edit button
+                GestureDetector(
+                  onTap: onEditTap,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceAlt,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.edit_outlined,
+                            size: 13, color: AppColors.textSecondary),
+                        const SizedBox(width: 5),
+                        Text('Edit', style: AppTextStyles.labelMedium),
+                      ],
+                    ),
                   ),
                 ),
-              ),
+              ],
               const SizedBox(width: AppSpacing.sm),
               // Delete
               GestureDetector(

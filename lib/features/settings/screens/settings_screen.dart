@@ -7,7 +7,6 @@ import '../../../core/supabase/app_db.dart';
 import '../../../core/utils/responsive.dart';
 import '../../../data/models/team_model.dart';
 import '../../../data/models/user_model.dart';
-import '../../../data/services/seed_service.dart';
 import '../../../features/ai_suggestions/services/ai_config.dart';
 import '../../../features/ai_suggestions/services/ai_key_store.dart';
 import '../../../features/templates/screens/template_manager_screen.dart';
@@ -62,12 +61,6 @@ class SettingsScreen extends StatelessWidget {
                   title: 'TRIP TEMPLATES',
                   subtitle: 'Create and manage reusable task templates for new trips.',
                   children: [_TemplatesSection()],
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                _SectionCard(
-                  title: 'DEMO DATA',
-                  subtitle: 'Populate your workspace with sample trips, tasks, suppliers, budget items, and itinerary for testing.',
-                  children: const [_SeedSection()],
                 ),
                 const SizedBox(height: AppSpacing.lg),
                 _SectionCard(
@@ -901,8 +894,6 @@ class _AddMemberSectionState extends State<_AddMemberSection> {
   }
 }
 
-// ── Seed section ─────────────────────────────────────────────────────────────
-
 // ── Templates section ─────────────────────────────────────────────────────────
 
 class _TemplatesSection extends StatelessWidget {
@@ -935,124 +926,6 @@ class _TemplatesSection extends StatelessWidget {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-// ── Seed section ──────────────────────────────────────────────────────────────
-
-class _SeedSection extends StatefulWidget {
-  const _SeedSection();
-
-  @override
-  State<_SeedSection> createState() => _SeedSectionState();
-}
-
-class _SeedSectionState extends State<_SeedSection> {
-  bool   _busy     = false;
-  String _status   = '';
-  bool   _isError  = false;
-  bool   _done     = false;
-
-  Future<void> _clearAndSeed() async {
-    setState(() { _busy = true; _status = 'Clearing existing data…'; _isError = false; _done = false; });
-
-    bool cleared = true;
-    await SeedService.clearAll(
-      onProgress: (msg) { if (mounted) setState(() => _status = msg); },
-      onError: (err) {
-        cleared = false;
-        if (mounted) setState(() { _status = err; _isError = true; _busy = false; });
-      },
-    );
-    if (!cleared || !mounted) return;
-
-    setState(() => _status = 'Starting seed…');
-    await SeedService.seed(
-      onProgress: (msg) { if (mounted) setState(() => _status = msg); },
-      onError: (err) {
-        if (mounted) setState(() { _status = err; _isError = true; _busy = false; });
-      },
-    );
-
-    if (mounted && !_isError) setState(() { _busy = false; _done = true; });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(AppSpacing.base),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Loads 5 trips, 16 tasks, 18 suppliers, 20 cost items, and a full '
-            'itinerary for the Amalfi & Sicily trip. Clears any existing team data first.',
-            style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
-          ),
-          const SizedBox(height: AppSpacing.base),
-          if (_status.isNotEmpty)
-            Container(
-              margin: const EdgeInsets.only(bottom: AppSpacing.base),
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.md, vertical: AppSpacing.sm),
-              decoration: BoxDecoration(
-                color: _isError
-                    ? AppColors.statusBlockedText.withAlpha(20)
-                    : _done
-                        ? AppColors.statusDone
-                        : AppColors.surfaceAlt,
-                border: Border.all(
-                  color: _isError
-                      ? AppColors.statusBlockedText
-                      : _done
-                          ? AppColors.statusDoneText
-                          : AppColors.border,
-                ),
-                borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
-              ),
-              child: Row(
-                children: [
-                  if (_busy)
-                    const SizedBox(
-                      width: 14, height: 14,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2, color: AppColors.accent),
-                    ),
-                  if (_busy) const SizedBox(width: AppSpacing.sm),
-                  if (_done)
-                    const Icon(Icons.check_circle_outline_rounded,
-                        size: 16, color: AppColors.statusDoneText),
-                  if (_done) const SizedBox(width: AppSpacing.sm),
-                  Expanded(
-                    child: Text(
-                      _status,
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: _isError
-                            ? AppColors.statusBlockedText
-                            : _done
-                                ? AppColors.statusDoneText
-                                : AppColors.textPrimary,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          FilledButton.icon(
-            onPressed: _busy ? null : _clearAndSeed,
-            icon: const Icon(Icons.upload_rounded, size: 16),
-            label: Text(_busy ? 'Working…' : 'Load Demo Data'),
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.accent,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }

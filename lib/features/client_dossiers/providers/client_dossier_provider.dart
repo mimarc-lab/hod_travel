@@ -107,13 +107,20 @@ class ClientDossierProvider extends ChangeNotifier {
   // ── CRUD — Dossiers ────────────────────────────────────────────────────────
 
   Future<ClientDossier?> addDossier(ClientDossier dossier) async {
-    if (_repo == null || _teamId.isEmpty) return null;
+    if (_repo == null) return null;
+    if (_teamId.isEmpty) {
+      _error = 'No team found for your account. Please sign out and sign back in.';
+      notifyListeners();
+      return null;
+    }
     try {
       final created = await _repo.create(dossier, _teamId);
-      // Realtime will refresh the list; return created for navigation
+      // Optimistic insert — don't rely on realtime firing
+      _dossiers = [created, ..._dossiers];
+      notifyListeners();
       return created;
-    } catch (_) {
-      _error = 'Could not save client dossier.';
+    } catch (e) {
+      _error = 'Could not save client dossier: $e';
       notifyListeners();
       return null;
     }

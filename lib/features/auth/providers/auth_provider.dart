@@ -144,6 +144,7 @@ class AuthProvider extends ChangeNotifier {
     if (repos == null) return;
     repos.currentTeamId  = null;
     repos.currentAppUser = null;
+    repos.permissions.invalidate();
   }
 
   // ── Sign in ────────────────────────────────────────────────────────────────

@@ -20,6 +20,8 @@ import '../../data/repositories/trip_template_repository.dart';
 import '../../data/repositories/client_dossier_repository.dart';
 import '../../data/repositories/ai_memory_repository.dart';
 import '../../features/auth/auth_repository.dart';
+import '../../features/security/permission_service.dart';
+import '../../services/audit_log_service.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // db — convenience shortcut for the Supabase client
@@ -84,6 +86,10 @@ class AppRepositories {
   // ── AI Memory ─────────────────────────────────────────────────────────────
   final AiMemoryRepository aiMemory;
 
+  // ── Security / permissions ────────────────────────────────────────────────
+  final PermissionService permissions;
+  final AuditLogService    auditLogs;
+
   // ── Cross-cutting ─────────────────────────────────────────────────────────
   final NotificationRepository notifications;
   final ApprovalRepository approvals;
@@ -107,6 +113,8 @@ class AppRepositories {
     required this.runSheetShares,
     required this.clientDossiers,
     required this.aiMemory,
+    required this.permissions,
+    required this.auditLogs,
     required this.notifications,
     required this.approvals,
     required this.attachments,
@@ -139,6 +147,8 @@ class AppRepositories {
       runSheetShares:       SupabaseRunSheetShareRepository(client),
       clientDossiers:       SupabaseClientDossierRepository(client),
       aiMemory:             SupabaseAiMemoryRepository(client),
+      permissions:          PermissionService(client),
+      auditLogs:            AuditLogService(client),
       notifications:        SupabaseNotificationRepository(client),
       approvals:    SupabaseApprovalRepository(client),
       attachments:  SupabaseAttachmentRepository(client),
