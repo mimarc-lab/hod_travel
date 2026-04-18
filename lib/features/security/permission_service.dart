@@ -38,7 +38,7 @@ class PermissionService {
       final map = <String, bool>{};
       for (final row in rows) {
         final r = row as Map<String, dynamic>;
-        map[r['permission_key'] as String] = r['permission_value'] as bool;
+        map[r['permission_key'] as String] = r['allowed'] as bool;
       }
 
       final perm = EffectivePermission(
