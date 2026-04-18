@@ -24,6 +24,8 @@ class SettingsScreen extends StatelessWidget {
         ? AppSpacing.pagePaddingHMobile
         : AppSpacing.pagePaddingH;
 
+    final isAdmin = AppRepositories.instance?.currentAppUser?.appRole == AppRole.admin;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: CustomScrollView(
@@ -40,42 +42,44 @@ class SettingsScreen extends StatelessWidget {
                   title: 'TEAM',
                   children: [_TeamSection()],
                 ),
-                const SizedBox(height: AppSpacing.lg),
-                _SectionCard(
-                  title: 'ADD TEAM MEMBER',
-                  subtitle: 'Add a Supabase user to your team by their email address. They must have signed in at least once first.',
-                  children: const [_AddMemberSection()],
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                _SectionCard(
-                  title: 'DEMO — ROLE SWITCHER',
-                  subtitle:
-                      'Switch your active role to preview permission-based UI changes across the app.',
-                  children: [_RoleSwitcher()],
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                _SectionCard(
-                  title: 'PERMISSIONS OVERVIEW',
-                  children: const [_PermissionsTable()],
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                _SectionCard(
-                  title: 'DOSSIER ACCESS',
-                  subtitle: 'Override per-user dossier permissions. Overrides take precedence over role defaults.',
-                  children: const [_DossierAccessSection()],
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                _SectionCard(
-                  title: 'TRIP TEMPLATES',
-                  subtitle: 'Create and manage reusable task templates for new trips.',
-                  children: [_TemplatesSection()],
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                _SectionCard(
-                  title: 'AI ASSISTANT',
-                  subtitle: 'Connect an Anthropic API key to enable AI-powered suggestions, itinerary drafting, and trip analysis.',
-                  children: const [_AiSection()],
-                ),
+                if (isAdmin) ...[
+                  const SizedBox(height: AppSpacing.lg),
+                  _SectionCard(
+                    title: 'ADD TEAM MEMBER',
+                    subtitle: 'Add a Supabase user to your team by their email address. They must have signed in at least once first.',
+                    children: const [_AddMemberSection()],
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  _SectionCard(
+                    title: 'DEMO — ROLE SWITCHER',
+                    subtitle:
+                        'Switch your active role to preview permission-based UI changes across the app.',
+                    children: [_RoleSwitcher()],
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  _SectionCard(
+                    title: 'PERMISSIONS OVERVIEW',
+                    children: const [_PermissionsTable()],
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  _SectionCard(
+                    title: 'DOSSIER ACCESS',
+                    subtitle: 'Override per-user dossier permissions. Overrides take precedence over role defaults.',
+                    children: const [_DossierAccessSection()],
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  _SectionCard(
+                    title: 'TRIP TEMPLATES',
+                    subtitle: 'Create and manage reusable task templates for new trips.',
+                    children: [_TemplatesSection()],
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  _SectionCard(
+                    title: 'AI ASSISTANT',
+                    subtitle: 'Connect an Anthropic API key to enable AI-powered suggestions, itinerary drafting, and trip analysis.',
+                    children: const [_AiSection()],
+                  ),
+                ],
                 const SizedBox(height: AppSpacing.lg),
                 _SectionCard(
                   title: 'APP',
