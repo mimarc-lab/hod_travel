@@ -1,8 +1,8 @@
 // Permission keys — match DB values exactly
 abstract class DossierPermissionKey {
-  static const viewDossier         = 'can_view_dossier';
-  static const editDossier         = 'can_edit_dossier';
-  static const viewSensitiveNotes  = 'can_view_sensitive_notes';
+  static const viewDossier         = 'view_dossier';
+  static const editDossier         = 'edit_dossier';
+  static const viewSensitiveNotes  = 'view_sensitive_notes';
 
   static const all = [viewDossier, editDossier, viewSensitiveNotes];
 }
