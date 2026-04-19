@@ -330,9 +330,15 @@ class _TemplateEditorScreenState extends State<TemplateEditorScreen> {
   }
 
   Future<void> _loadMembers() async {
+    final repos  = AppRepositories.instance;
+    final teamId = repos?.currentTeamId;
+    if (repos == null || teamId == null) return;
     try {
-      final profiles = await AppRepositories.instance?.profiles.fetchAllProfiles() ?? [];
-      final users = profiles.map((p) => p.toAppUser()).toList();
+      final teamMembers = await repos.teams.fetchMembers(teamId);
+      final users = teamMembers
+          .where((m) => m.profile != null)
+          .map((m) => m.profile!)
+          .toList();
       if (mounted) setState(() => _members = users);
     } catch (e) {
       debugPrint('_loadMembers error: $e');
