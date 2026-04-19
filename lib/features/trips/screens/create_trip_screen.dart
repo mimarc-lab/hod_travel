@@ -8,6 +8,7 @@ import '../../../data/models/team_model.dart';
 import '../../../data/models/trip_model.dart';
 import '../../../data/models/trip_template_model.dart';
 import '../../../data/models/user_model.dart';
+import '../../../data/models/scheduled_task_result.dart';
 import '../../../data/services/trip_templates.dart';
 import '../../../features/workflow_scheduling/backward_planning_service.dart';
 import '../../../features/workflow_scheduling/planning_deadline_helper.dart';
@@ -279,22 +280,30 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
       groupIdByName[row['name'] as String] = row['id'] as String;
     }
 
-    // Run backward planning if trip has a start date
-    final analysis = startDate != null
-        ? BackwardPlanningService.scheduleFromTemplateMaps(
-            templateTasks:      tasks,
-            tripStartDate:      startDate,
-            planningBufferDays: PlanningDeadlineHelper.defaultBufferDays,
-          )
-        : null;
+    // Run backward planning when a start date is available.
+    // Build a Map keyed by the original template index (sortOrder) so
+    // each task can be looked up in O(1) without fragile .where() chains.
+    Map<int, ScheduledTaskResult> scheduleByIndex = {};
+    ScheduleAnalysis? analysis;
 
-    // Show schedule warning after navigation if compressed
+    if (startDate != null) {
+      analysis = BackwardPlanningService.scheduleFromTemplateMaps(
+        templateTasks:      tasks,
+        tripStartDate:      startDate,
+        planningBufferDays: PlanningDeadlineHelper.defaultBufferDays,
+      );
+      scheduleByIndex = {
+        for (final r in analysis.tasks) r.sortOrder: r,
+      };
+    }
+
+    // Show schedule warning after navigation if compressed / tight
     if (analysis != null && analysis.hasWarnings && mounted) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(analysis.warnings.first),
+              content: Text(analysis!.warnings.first),
               backgroundColor: analysis.isCompressed
                   ? Colors.orange.shade700
                   : Colors.blue.shade700,
@@ -314,10 +323,7 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
       final groupId = groupIdByName[t['group'] as String? ?? ''];
       if (groupId == null) continue;
 
-      // Find matching scheduled result by index (same sort order)
-      final scheduled = analysis?.tasks
-          .where((r) => r.sortOrder == i)
-          .firstOrNull;
+      final scheduled = scheduleByIndex[i];
 
       rows.add({
         'trip_id':           tripId,
@@ -332,9 +338,9 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
         'is_client_visible': false,
         'sort_order':        i,
         if (scheduled != null) ...{
-          'travel_date': scheduled.scheduledStartDate
+          'travel_date':             scheduled.scheduledStartDate
               .toIso8601String().substring(0, 10),
-          'due_date': scheduled.dueDate
+          'due_date':                scheduled.dueDate
               .toIso8601String().substring(0, 10),
           'estimated_duration_days': scheduled.estimatedDurationDays,
         },

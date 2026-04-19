@@ -395,8 +395,33 @@ class _MapArea extends StatelessWidget {
                 ],
               ),
 
-            // Distance labels — one chip per route segment, placed at midpoint.
-            // Transport items are excluded; only location-to-location distances.
+            // Markers — only pins for the active day are shown.
+            // When no day is selected all pins are visible.
+            MarkerLayer(
+              markers: displayMarkers
+                  .where((m) => activeDayId == null || m.day.id == activeDayId)
+                  .map((m) {
+                final focused     = focusedMarker?.id == m.id;
+                final isTransport = m.isTransportIcon;
+                final sz = isTransport
+                    ? (focused ? 32.0 : 26.0)
+                    : (focused ? 44.0 : 36.0);
+                return Marker(
+                  point:     m.position,
+                  width:     sz,
+                  height:    isTransport ? sz : (focused ? 52.0 : 43.0),
+                  alignment: Alignment.center,
+                  child: _MapPin(
+                    marker:  m,
+                    focused: focused,
+                    onTap:   () => onPinTap(m),
+                  ),
+                );
+              }).toList(),
+            ),
+
+            // Distance labels rendered ABOVE pins so transport badges
+            // cannot obscure them.
             if (showRoute && routeMarkers.length > 1)
               MarkerLayer(
                 markers: MapViewMapperService.routeSegments(routeMarkers)
@@ -409,36 +434,6 @@ class _MapArea extends StatelessWidget {
                         ))
                     .toList(),
               ),
-
-            // Markers — all type-filtered pins are shown; pins from inactive
-            // days fade to 22 % opacity so the full journey is always visible
-            // for geographic context while the active day stays prominent.
-            MarkerLayer(
-              markers: displayMarkers.map((m) {
-                final focused     = focusedMarker?.id == m.id;
-                final isActive    = activeDayId == null || m.day.id == activeDayId;
-                final isTransport = m.isTransportIcon;
-                final sz = isTransport
-                    ? (focused ? 32.0 : 26.0)
-                    : (focused ? 44.0 : 36.0);
-                return Marker(
-                  point:     m.position,
-                  width:     sz,
-                  height:    isTransport ? sz : (focused ? 52.0 : 43.0),
-                  alignment: Alignment.center,
-                  child: AnimatedOpacity(
-                    // Inactive-day pins fade smoothly when a day is selected.
-                    duration: const Duration(milliseconds: 350),
-                    opacity:  isActive ? 1.0 : 0.22,
-                    child: _MapPin(
-                      marker:  m,
-                      focused: focused,
-                      onTap:   () => onPinTap(m),
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
           ],
         ),
 
