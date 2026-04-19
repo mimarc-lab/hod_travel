@@ -334,7 +334,9 @@ class _TemplateEditorScreenState extends State<TemplateEditorScreen> {
       final profiles = await AppRepositories.instance?.profiles.fetchAllProfiles() ?? [];
       final users = profiles.map((p) => p.toAppUser()).toList();
       if (mounted) setState(() => _members = users);
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('_loadMembers error: $e');
+    }
   }
 
   Future<void> _reload() async {
@@ -676,9 +678,8 @@ Future<_TaskDialogResult?> _showTaskDialog(
                   .toList(),
               onChanged: (v) { if (v != null) setDlgState(() => priority = v); },
             ),
-            if (members.isNotEmpty) ...[
-              const SizedBox(height: AppSpacing.base),
-              DropdownButtonFormField<String?>(
+            const SizedBox(height: AppSpacing.base),
+            DropdownButtonFormField<String?>(
                 key: ValueKey(assigneeId),
                 initialValue: assigneeId,
                 decoration: const InputDecoration(
@@ -694,7 +695,6 @@ Future<_TaskDialogResult?> _showTaskDialog(
                 ],
                 onChanged: (v) => setDlgState(() => assigneeId = v),
               ),
-            ],
           ],
         ),
         actions: [
