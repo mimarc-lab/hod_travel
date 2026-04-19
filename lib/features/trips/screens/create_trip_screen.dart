@@ -331,6 +331,7 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
         'approval_status':   'draft',
         'is_client_visible': false,
         'sort_order':        i,
+        if (t['assignee_id'] != null) 'assigned_to': t['assignee_id'],
         if (scheduled != null) ...{
           'travel_date':             scheduled.scheduledStartDate
               .toIso8601String().substring(0, 10),
