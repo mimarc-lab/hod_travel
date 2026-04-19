@@ -49,6 +49,7 @@ class _TripMapScreenState extends State<TripMapScreen>
 
   // ── Selection state ────────────────────────────────────────────────────────
   String? _focusedMarkerId; // item.id of the tapped pin
+  bool    _relocating = false; // true while waiting for the user to tap a new location
 
   // ── Computed markers (rebuilt on provider update + filter change) ──────────
   List<TripMapMarker> _allMarkers = const [];
@@ -189,7 +190,23 @@ class _TripMapScreenState extends State<TripMapScreen>
     _flyTo(marker.position);
   }
 
-  void _dismissCard() => setState(() => _focusedMarkerId = null);
+  void _dismissCard() => setState(() {
+    _focusedMarkerId = null;
+    _relocating      = false;
+  });
+
+  void _onMovePinRequested() => setState(() => _relocating = true);
+
+  Future<void> _onMapTap(LatLng position) async {
+    if (!_relocating || _focusedMarkerId == null) return;
+    final marker = _focusedMarker;
+    if (marker == null) return;
+    setState(() => _relocating = false);
+    await _itinerary.updateItem(marker.item.copyWith(
+      latitude:  position.latitude,
+      longitude: position.longitude,
+    ));
+  }
 
   // ── Build ──────────────────────────────────────────────────────────────────
 
@@ -236,17 +253,19 @@ class _TripMapScreenState extends State<TripMapScreen>
         ),
         // Map
         Expanded(child: _MapArea(
-          displayMarkers: _displayMarkers,
-          routeMarkers:   _focusMarkers,
-
-          focusedMarker:  _focusedMarker,
-          showRoute:      _showRoute,
-          selectedType:   _selectedType,
-          mapController:  _mapController,
-          onPinTap:       _onPinTap,
-          onDismissCard:  _dismissCard,
-          onFitAll:       _fitVisible,
-          onTypeChanged:  (t) => setState(() {
+          displayMarkers:      _displayMarkers,
+          routeMarkers:        _focusMarkers,
+          focusedMarker:       _focusedMarker,
+          showRoute:           _showRoute,
+          selectedType:        _selectedType,
+          mapController:       _mapController,
+          relocating:          _relocating,
+          onPinTap:            _onPinTap,
+          onDismissCard:       _dismissCard,
+          onMovePinRequested:  _onMovePinRequested,
+          onMapTap:            _onMapTap,
+          onFitAll:            _fitVisible,
+          onTypeChanged:       (t) => setState(() {
             _selectedType    = t;
             _focusedMarkerId = null;
           }),
@@ -280,7 +299,10 @@ class _TripMapScreenState extends State<TripMapScreen>
               _selectedType    = t;
               _focusedMarkerId = null;
             }),
-            onRouteToggled: (v) => setState(() => _showRoute = v),
+            onRouteToggled:      (v) => setState(() => _showRoute = v),
+            relocating:          _relocating,
+            onMovePinRequested:  _onMovePinRequested,
+            onMapTap:            _onMapTap,
           ),
         ),
         // Bottom day panel
@@ -316,8 +338,11 @@ class _MapArea extends StatefulWidget {
   final bool                 showRoute;
   final ItemType?            selectedType;
   final MapController        mapController;
+  final bool                 relocating;
   final ValueChanged<TripMapMarker> onPinTap;
   final VoidCallback         onDismissCard;
+  final VoidCallback         onMovePinRequested;
+  final ValueChanged<LatLng> onMapTap;
   final VoidCallback         onFitAll;
   final ValueChanged<ItemType?> onTypeChanged;
   final ValueChanged<bool>   onRouteToggled;
@@ -329,8 +354,11 @@ class _MapArea extends StatefulWidget {
     required this.showRoute,
     required this.selectedType,
     required this.mapController,
+    required this.relocating,
     required this.onPinTap,
     required this.onDismissCard,
+    required this.onMovePinRequested,
+    required this.onMapTap,
     required this.onFitAll,
     required this.onTypeChanged,
     required this.onRouteToggled,
@@ -371,6 +399,9 @@ class _MapAreaState extends State<_MapArea> {
             interactionOptions: const InteractionOptions(
               flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
             ),
+            onTap: widget.relocating
+                ? (_, latLng) => widget.onMapTap(latLng)
+                : null,
           ),
           children: [
             // Layer 1 — CartoDB Positron (no labels): preserves the original
@@ -495,8 +526,9 @@ class _MapAreaState extends State<_MapArea> {
               duration: const Duration(milliseconds: 200),
               offset:   const Offset(0, 0),
               child:    MapPinDetailCard(
-                marker:  focusedMarker,
-                onClose: widget.onDismissCard,
+                marker:    focusedMarker,
+                onClose:   widget.onDismissCard,
+                onMovePin: widget.relocating ? null : widget.onMovePinRequested,
               ),
             ),
           ),
@@ -504,6 +536,35 @@ class _MapAreaState extends State<_MapArea> {
         // ── Empty-day overlay ───────────────────────────────────────────────
         if (routeMarkers.isEmpty && displayMarkers.isEmpty)
           Center(child: _NoLocationsHint()),
+
+        // ── Relocation mode overlay ─────────────────────────────────────────
+        if (widget.relocating) ...[
+          // Crosshair at centre
+          const Center(
+            child: Icon(Icons.add, size: 36, color: Colors.black54),
+          ),
+          // Instruction banner
+          Positioned(
+            top:   12,
+            left:  12,
+            right: 12,
+            child: IgnorePointer(
+              child: Center(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(
+                    color:        Colors.black.withAlpha(170),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text(
+                    'Tap the map to place the pin',
+                    style: TextStyle(color: Colors.white, fontSize: 13),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }

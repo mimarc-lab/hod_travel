@@ -17,12 +17,14 @@ import '../services/map_view_mapper_service.dart';
 /// Does NOT expose internal notes, task links, or approval status.
 class MapPinDetailCard extends StatelessWidget {
   final TripMapMarker marker;
-  final VoidCallback onClose;
+  final VoidCallback  onClose;
+  final VoidCallback? onMovePin;
 
   const MapPinDetailCard({
     super.key,
     required this.marker,
     required this.onClose,
+    this.onMovePin,
   });
 
   @override
@@ -160,6 +162,31 @@ class MapPinDetailCard extends StatelessWidget {
                     ),
                     maxLines: 4,
                     overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+
+                // Move Pin button (location pins only, not transport)
+                if (onMovePin != null && !marker.isTransportIcon) ...[
+                  const SizedBox(height: 12),
+                  Divider(height: 1, thickness: 1, color: AppColors.divider),
+                  const SizedBox(height: 10),
+                  GestureDetector(
+                    onTap: onMovePin,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.my_location_rounded,
+                            size: 13, color: AppColors.accent),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Move pin to exact location',
+                          style: AppTextStyles.labelSmall.copyWith(
+                            color: AppColors.accent,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ],
