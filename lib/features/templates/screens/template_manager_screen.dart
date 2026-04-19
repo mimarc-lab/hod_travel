@@ -331,8 +331,8 @@ class _TemplateEditorScreenState extends State<TemplateEditorScreen> {
 
   Future<void> _loadMembers() async {
     final repos  = AppRepositories.instance;
-    final teamId = repos?.currentTeamId;
-    if (repos == null || teamId == null) return;
+    if (repos == null) return;
+    final teamId = _template.teamId;
     try {
       final teamMembers = await repos.teams.fetchMembers(teamId);
       final users = teamMembers
@@ -396,12 +396,21 @@ class _TemplateEditorScreenState extends State<TemplateEditorScreen> {
       members:            _members,
     );
     if (result == null) return;
-    await _repo!.updateTask(task.copyWith(
-      title:             result.title,
-      priority:          result.priority,
-      defaultAssigneeId: result.assigneeId,
-      clearAssignee:     result.assigneeId == null,
-    ));
+    try {
+      await _repo!.updateTask(task.copyWith(
+        title:             result.title,
+        priority:          result.priority,
+        defaultAssigneeId: result.assigneeId,
+        clearAssignee:     result.assigneeId == null,
+      ));
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Save failed: $e'), backgroundColor: Colors.red),
+        );
+      }
+      return;
+    }
     await _reload();
     widget.onSaved();
   }
