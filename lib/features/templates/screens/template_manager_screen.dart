@@ -374,12 +374,13 @@ class _TemplateEditorScreenState extends State<TemplateEditorScreen> {
     setState(() => _saving = true);
     final groupTasks = _template.tasksForGroup(groupName);
     await _repo!.addTask(
-      templateId:        _template.id,
-      groupName:         groupName,
-      title:             result.title,
-      priority:          result.priority,
-      sortOrder:         groupTasks.length,
-      defaultAssigneeId: result.assigneeId,
+      templateId:           _template.id,
+      groupName:            groupName,
+      title:                result.title,
+      priority:             result.priority,
+      sortOrder:            groupTasks.length,
+      estimatedDurationDays: result.duration,
+      defaultAssigneeId:    result.assigneeId,
     );
     await _reload();
     if (mounted) setState(() => _saving = false);
@@ -392,16 +393,18 @@ class _TemplateEditorScreenState extends State<TemplateEditorScreen> {
       groupName:          task.groupName,
       existingTitle:      task.title,
       existingPriority:   task.priority,
+      existingDuration:   task.estimatedDurationDays,
       existingAssigneeId: task.defaultAssigneeId,
       members:            _members,
     );
     if (result == null) return;
     try {
       await _repo!.updateTask(task.copyWith(
-        title:             result.title,
-        priority:          result.priority,
-        defaultAssigneeId: result.assigneeId,
-        clearAssignee:     result.assigneeId == null,
+        title:                result.title,
+        priority:             result.priority,
+        estimatedDurationDays: result.duration,
+        defaultAssigneeId:    result.assigneeId,
+        clearAssignee:        result.assigneeId == null,
       ));
     } catch (e) {
       if (mounted) {
@@ -621,6 +624,14 @@ class _TaskRow extends StatelessWidget {
                 ),
                 const SizedBox(width: AppSpacing.xs),
               ],
+              Text(
+                task.estimatedDurationDays == 1
+                    ? '1d'
+                    : '${task.estimatedDurationDays}d',
+                style: AppTextStyles.labelSmall
+                    .copyWith(color: AppColors.textMuted),
+              ),
+              const SizedBox(width: AppSpacing.xs),
               Text(task.priority,
                   style: AppTextStyles.labelSmall.copyWith(
                       color: _priorityColors[task.priority] ??
@@ -641,7 +652,7 @@ class _TaskRow extends StatelessWidget {
 
 // ── Task result record ────────────────────────────────────────────────────────
 
-typedef _TaskDialogResult = ({String title, String priority, String? assigneeId});
+typedef _TaskDialogResult = ({String title, String priority, int duration, String? assigneeId});
 
 // ── Task dialog ───────────────────────────────────────────────────────────────
 
@@ -651,11 +662,13 @@ Future<_TaskDialogResult?> _showTaskDialog(
   required List<AppUser> members,
   String? existingTitle,
   String? existingPriority,
+  int existingDuration = 1,
   String? existingAssigneeId,
 }) {
   final titleCtrl = TextEditingController(text: existingTitle ?? '');
-  String priority      = existingPriority ?? 'medium';
-  String? assigneeId   = existingAssigneeId;
+  String priority    = existingPriority ?? 'medium';
+  int    duration    = existingDuration;
+  String? assigneeId = existingAssigneeId;
 
   return showDialog<_TaskDialogResult>(
     context: context,
@@ -694,6 +707,22 @@ Future<_TaskDialogResult?> _showTaskDialog(
               onChanged: (v) { if (v != null) setDlgState(() => priority = v); },
             ),
             const SizedBox(height: AppSpacing.base),
+            DropdownButtonFormField<int>(
+              key: ValueKey(duration),
+              initialValue: duration,
+              decoration: const InputDecoration(
+                labelText: 'Duration (days)',
+                border: OutlineInputBorder(),
+              ),
+              items: [1, 2, 3, 4, 5, 7, 10, 14]
+                  .map((d) => DropdownMenuItem(
+                        value: d,
+                        child: Text(d == 1 ? '1 day' : '$d days'),
+                      ))
+                  .toList(),
+              onChanged: (v) { if (v != null) setDlgState(() => duration = v); },
+            ),
+            const SizedBox(height: AppSpacing.base),
             DropdownButtonFormField<String?>(
                 key: ValueKey(assigneeId),
                 initialValue: assigneeId,
@@ -723,7 +752,7 @@ Future<_TaskDialogResult?> _showTaskDialog(
               final title = titleCtrl.text.trim();
               if (title.isEmpty) return;
               Navigator.of(ctx).pop(
-                (title: title, priority: priority, assigneeId: assigneeId),
+                (title: title, priority: priority, duration: duration, assigneeId: assigneeId),
               );
             },
             child: Text(existingTitle == null ? 'Add' : 'Save'),

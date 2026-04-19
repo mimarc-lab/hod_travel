@@ -24,6 +24,7 @@ abstract class TripTemplateRepository {
     required String title,
     required String priority,
     required int sortOrder,
+    int estimatedDurationDays = 1,
     String? defaultAssigneeId,
   });
   Future<void> updateTask(TripTemplateTask task);
@@ -162,15 +163,17 @@ class SupabaseTripTemplateRepository implements TripTemplateRepository {
     required String title,
     required String priority,
     required int sortOrder,
+    int estimatedDurationDays = 1,
     String? defaultAssigneeId,
   }) async {
     final row = await _client.from('trip_template_tasks').insert({
-      'template_id':        templateId,
-      'group_name':         groupName,
-      'title':              title,
-      'priority':           priority,
-      'sort_order':         sortOrder,
-      'default_assignee_id': defaultAssigneeId,
+      'template_id':           templateId,
+      'group_name':            groupName,
+      'title':                 title,
+      'priority':              priority,
+      'sort_order':            sortOrder,
+      'estimated_duration_days': estimatedDurationDays,
+      'default_assignee_id':   defaultAssigneeId,
     }).select().single();
     return _taskFromRow(row);
   }
