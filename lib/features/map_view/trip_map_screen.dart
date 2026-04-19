@@ -341,7 +341,15 @@ class _MapArea extends StatefulWidget {
 }
 
 class _MapAreaState extends State<_MapArea> {
-  String? _hoveredLocationMarkerId;
+  // ValueNotifier instead of setState: changing this does NOT rebuild _MapAreaState
+  // or FlutterMap, so it can't destroy MouseRegion widgets or interrupt animations.
+  final ValueNotifier<bool> _pinHovered = ValueNotifier(false);
+
+  @override
+  void dispose() {
+    _pinHovered.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -413,8 +421,8 @@ class _MapAreaState extends State<_MapArea> {
                   height:    isTransport ? sz : (focused ? 52.0 : 43.0),
                   alignment: Alignment.center,
                   child: MouseRegion(
-                    onEnter: isTransport ? null : (_) => setState(() => _hoveredLocationMarkerId = m.id),
-                    onExit:  isTransport ? null : (_) => setState(() => _hoveredLocationMarkerId = null),
+                    onEnter: isTransport ? null : (_) { _pinHovered.value = true; },
+                    onExit:  isTransport ? null : (_) { _pinHovered.value = false; },
                     child: _MapPin(
                       marker:  m,
                       focused: focused,
@@ -425,19 +433,25 @@ class _MapAreaState extends State<_MapArea> {
               }).toList(),
             ),
 
-            // Distance labels — shown only when a location pin is hovered.
-            // Alignment.center places the chip centred at the route midpoint.
-            if (showRoute && routeMarkers.length > 1 && _hoveredLocationMarkerId != null)
-              MarkerLayer(
-                markers: MapViewMapperService.routeSegments(routeMarkers)
-                    .map((seg) => Marker(
-                          point:     seg.midpoint,
-                          width:     76,
-                          height:    24,
-                          alignment: Alignment.center,
-                          child: _DistanceLabel(distanceKm: seg.distanceKm),
-                        ))
-                    .toList(),
+            // Distance labels — only visible while a location pin is hovered.
+            // ValueListenableBuilder means hover changes rebuild ONLY this layer,
+            // never the pins layer or the FlutterMap itself — no animation interruption.
+            if (showRoute && routeMarkers.length > 1)
+              ValueListenableBuilder<bool>(
+                valueListenable: _pinHovered,
+                builder: (_, hovered, __) => hovered
+                    ? MarkerLayer(
+                        markers: MapViewMapperService.routeSegments(routeMarkers)
+                            .map((seg) => Marker(
+                                  point:     seg.midpoint,
+                                  width:     76,
+                                  height:    24,
+                                  alignment: Alignment.center,
+                                  child: _DistanceLabel(distanceKm: seg.distanceKm),
+                                ))
+                            .toList(),
+                      )
+                    : const SizedBox.shrink(),
               ),
           ],
         ),
