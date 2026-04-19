@@ -305,7 +305,7 @@ class _TripMapScreenState extends State<TripMapScreen>
 // _MapArea — the flutter_map widget + overlays
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _MapArea extends StatelessWidget {
+class _MapArea extends StatefulWidget {
   /// Day+type filtered markers — already scoped to the selected day at source.
   final List<TripMapMarker>  displayMarkers;
 
@@ -337,12 +337,23 @@ class _MapArea extends StatelessWidget {
   });
 
   @override
+  State<_MapArea> createState() => _MapAreaState();
+}
+
+class _MapAreaState extends State<_MapArea> {
+  String? _hoveredLocationMarkerId;
+
+  @override
   Widget build(BuildContext context) {
+    final displayMarkers = widget.displayMarkers;
+    final routeMarkers   = widget.routeMarkers;
+    final focusedMarker  = widget.focusedMarker;
+    final showRoute      = widget.showRoute;
     return Stack(
       children: [
         // ── Map ────────────────────────────────────────────────────────────
         FlutterMap(
-          mapController: mapController,
+          mapController: widget.mapController,
           options: MapOptions(
             initialCenter: const LatLng(35.6762, 139.6503), // Tokyo fallback
             initialZoom:   5,
@@ -401,18 +412,22 @@ class _MapArea extends StatelessWidget {
                   width:     sz,
                   height:    isTransport ? sz : (focused ? 52.0 : 43.0),
                   alignment: Alignment.center,
-                  child: _MapPin(
-                    marker:  m,
-                    focused: focused,
-                    onTap:   () => onPinTap(m),
+                  child: MouseRegion(
+                    onEnter: isTransport ? null : (_) => setState(() => _hoveredLocationMarkerId = m.id),
+                    onExit:  isTransport ? null : (_) => setState(() => _hoveredLocationMarkerId = null),
+                    child: _MapPin(
+                      marker:  m,
+                      focused: focused,
+                      onTap:   () => widget.onPinTap(m),
+                    ),
                   ),
                 );
               }).toList(),
             ),
 
-            // Distance labels — rendered after pins so they are never obscured.
+            // Distance labels — shown only when a location pin is hovered.
             // Alignment.center places the chip centred at the route midpoint.
-            if (showRoute && routeMarkers.length > 1)
+            if (showRoute && routeMarkers.length > 1 && _hoveredLocationMarkerId != null)
               MarkerLayer(
                 markers: MapViewMapperService.routeSegments(routeMarkers)
                     .map((seg) => Marker(
@@ -442,14 +457,14 @@ class _MapArea extends StatelessWidget {
           child: Row(
             children: [
               MapFiltersBar(
-                selectedType:   selectedType,
+                selectedType:   widget.selectedType,
                 showRoute:      showRoute,
-                onTypeChanged:  onTypeChanged,
-                onRouteToggled: onRouteToggled,
+                onTypeChanged:  widget.onTypeChanged,
+                onRouteToggled: widget.onRouteToggled,
               ),
               const Spacer(),
               // Fit-all button
-              _FitAllButton(onTap: onFitAll),
+              _FitAllButton(onTap: widget.onFitAll),
             ],
           ),
         ),
@@ -463,8 +478,8 @@ class _MapArea extends StatelessWidget {
               duration: const Duration(milliseconds: 200),
               offset:   const Offset(0, 0),
               child:    MapPinDetailCard(
-                marker:  focusedMarker!,
-                onClose: onDismissCard,
+                marker:  focusedMarker,
+                onClose: widget.onDismissCard,
               ),
             ),
           ),

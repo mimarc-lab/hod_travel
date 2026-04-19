@@ -102,6 +102,8 @@ class _ItemEditorFormState extends State<_ItemEditorForm> {
   late final TextEditingController _titleCtrl;
   late final TextEditingController _descriptionCtrl;
   late final TextEditingController _locationCtrl;
+  late final TextEditingController _latCtrl;
+  late final TextEditingController _lngCtrl;
   late final TextEditingController _supplierCtrl;
   late final TextEditingController _notesCtrl;
 
@@ -138,6 +140,8 @@ class _ItemEditorFormState extends State<_ItemEditorForm> {
     _titleCtrl       = TextEditingController(text: e?.title        ?? p?.title        ?? '');
     _descriptionCtrl = TextEditingController(text: e?.description  ?? p?.description  ?? '');
     _locationCtrl    = TextEditingController(text: e?.location     ?? p?.location     ?? '');
+    _latCtrl         = TextEditingController(text: e?.latitude  != null ? e!.latitude!.toString()  : '');
+    _lngCtrl         = TextEditingController(text: e?.longitude != null ? e!.longitude!.toString() : '');
     _supplierCtrl    = TextEditingController(text: e?.supplierName ?? '');
     _notesCtrl       = TextEditingController(text: e?.notes        ?? '');
   }
@@ -151,9 +155,16 @@ class _ItemEditorFormState extends State<_ItemEditorForm> {
     _titleCtrl.dispose();
     _descriptionCtrl.dispose();
     _locationCtrl.dispose();
+    _latCtrl.dispose();
+    _lngCtrl.dispose();
     _supplierCtrl.dispose();
     _notesCtrl.dispose();
     super.dispose();
+  }
+
+  double? _parseCoord(String raw) {
+    final v = double.tryParse(raw.trim());
+    return (v == null || v == 0) ? null : v;
   }
 
   Future<void> _save() async {
@@ -168,6 +179,9 @@ class _ItemEditorFormState extends State<_ItemEditorForm> {
     debugPrint('[ItemEditor._save] calling provider, title=$title');
 
     try {
+      final lat = _parseCoord(_latCtrl.text);
+      final lng = _parseCoord(_lngCtrl.text);
+
       if (_isEditing) {
         final updated = widget.existing!.copyWith(
           type: _type,
@@ -186,6 +200,10 @@ class _ItemEditorFormState extends State<_ItemEditorForm> {
           status: _status,
           notes: _notesCtrl.text.trim(),
           clearNotes: _notesCtrl.text.trim().isEmpty,
+          latitude:     lat,
+          clearLatitude: lat == null,
+          longitude:    lng,
+          clearLongitude: lng == null,
         );
         await widget.provider.updateItem(updated);
       } else {
@@ -207,6 +225,8 @@ class _ItemEditorFormState extends State<_ItemEditorForm> {
           supplierName: supplier.isEmpty ? null : supplier,
           status: _status,
           notes: notes.isEmpty ? null : notes,
+          latitude:  lat,
+          longitude: lng,
         );
         await widget.provider.addItem(item);
       }
@@ -356,6 +376,29 @@ class _ItemEditorFormState extends State<_ItemEditorForm> {
                   label: 'LOCATION',
                   child: _textField(_locationCtrl, 'Address or venue name'),
                 ),
+                const SizedBox(height: AppSpacing.sm),
+
+                Row(
+                  children: [
+                    Expanded(
+                      child: _EditorField(
+                        label: 'LATITUDE',
+                        child: _textField(_latCtrl, 'e.g. 35.6762',
+                            keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true, signed: true)),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.base),
+                    Expanded(
+                      child: _EditorField(
+                        label: 'LONGITUDE',
+                        child: _textField(_lngCtrl, 'e.g. 139.6503',
+                            keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true, signed: true)),
+                      ),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: AppSpacing.base),
 
                 _EditorField(
@@ -392,6 +435,7 @@ class _ItemEditorFormState extends State<_ItemEditorForm> {
     String hint, {
     int maxLines = 1,
     bool hasError = false,
+    TextInputType? keyboardType,
   }) {
     final errorColor = Colors.red.shade400;
     return TextField(
@@ -399,6 +443,7 @@ class _ItemEditorFormState extends State<_ItemEditorForm> {
       style: AppTextStyles.bodySmall.copyWith(color: AppColors.textPrimary),
       maxLines: maxLines,
       minLines: 1,
+      keyboardType: keyboardType,
       onChanged: hasError ? (_) => setState(() => _titleError = false) : null,
       decoration: InputDecoration(
         hintText: hint,

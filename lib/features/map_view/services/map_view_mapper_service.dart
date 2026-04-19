@@ -119,7 +119,9 @@ abstract class MapViewMapperService {
       if (e.item.type == ItemType.note) continue;
       if (e.item.type == ItemType.transport) continue; // handled in Pass 2
 
-      final base = TripLocationService.resolve(e.item.location, e.day.city);
+      final base = (e.item.latitude != null && e.item.longitude != null)
+          ? LatLng(e.item.latitude!, e.item.longitude!)
+          : TripLocationService.resolve(e.item.location, e.day.city);
       if (base == null) continue;
 
       final baseKey = _coordKey(base);

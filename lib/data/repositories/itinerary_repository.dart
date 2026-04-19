@@ -89,6 +89,8 @@ ItineraryItem _itemFromRow(Map<String, dynamic> r) {
     approvalStatus: approvalStatusFromDb(r['approval_status'] as String? ?? 'draft'),
     linkedTaskId: r['linked_task_id'] as String?,
     notes: r['notes'] as String?,
+    latitude:  (r['latitude']  as num?)?.toDouble(),
+    longitude: (r['longitude'] as num?)?.toDouble(),
   );
 }
 
@@ -112,6 +114,8 @@ Map<String, dynamic> _itemToRow(ItineraryItem i, {String? teamId}) {
     'approval_status': i.approvalStatus.dbValue,
     'linked_task_id': i.linkedTaskId,
     'notes': i.notes,
+    'latitude':  i.latitude,
+    'longitude': i.longitude,
     // Use epoch-seconds so each insert gets a unique sort_order even if the
     // column has a UNIQUE constraint on (trip_day_id, sort_order).
     'sort_order': DateTime.now().millisecondsSinceEpoch ~/ 1000,

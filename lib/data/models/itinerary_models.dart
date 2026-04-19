@@ -79,6 +79,8 @@ class ItineraryItem {
   final ApprovalStatus approvalStatus;
   final String? linkedTaskId;
   final String? notes;
+  final double? latitude;
+  final double? longitude;
 
   const ItineraryItem({
     required this.id,
@@ -97,6 +99,8 @@ class ItineraryItem {
     this.approvalStatus = ApprovalStatus.draft,
     this.linkedTaskId,
     this.notes,
+    this.latitude,
+    this.longitude,
   });
 
   ItineraryItem copyWith({
@@ -119,6 +123,10 @@ class ItineraryItem {
     ApprovalStatus? approvalStatus,
     String? notes,
     bool clearNotes = false,
+    double? latitude,
+    bool clearLatitude = false,
+    double? longitude,
+    bool clearLongitude = false,
   }) {
     return ItineraryItem(
       id:           id,
@@ -137,6 +145,8 @@ class ItineraryItem {
       approvalStatus: approvalStatus ?? this.approvalStatus,
       linkedTaskId: linkedTaskId,
       notes:        clearNotes        ? null : (notes        ?? this.notes),
+      latitude:     clearLatitude     ? null : (latitude     ?? this.latitude),
+      longitude:    clearLongitude    ? null : (longitude    ?? this.longitude),
     );
   }
 }
