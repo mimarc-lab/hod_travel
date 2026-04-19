@@ -341,13 +341,14 @@ class _MapArea extends StatefulWidget {
 }
 
 class _MapAreaState extends State<_MapArea> {
-  // ValueNotifier instead of setState: changing this does NOT rebuild _MapAreaState
-  // or FlutterMap, so it can't destroy MouseRegion widgets or interrupt animations.
-  final ValueNotifier<bool> _pinHovered = ValueNotifier(false);
+  // Tracks the hovered marker id. Null = no hover.
+  // ValueNotifier instead of setState so hover changes never rebuild FlutterMap
+  // or destroy MouseRegion widgets, avoiding the enter/exit loop.
+  final ValueNotifier<String?> _hoveredMarkerId = ValueNotifier(null);
 
   @override
   void dispose() {
-    _pinHovered.dispose();
+    _hoveredMarkerId.dispose();
     super.dispose();
   }
 
@@ -421,8 +422,8 @@ class _MapAreaState extends State<_MapArea> {
                   height:    isTransport ? sz : (focused ? 52.0 : 43.0),
                   alignment: Alignment.center,
                   child: MouseRegion(
-                    onEnter: isTransport ? null : (_) { _pinHovered.value = true; },
-                    onExit:  isTransport ? null : (_) { _pinHovered.value = false; },
+                    onEnter: isTransport ? null : (_) { _hoveredMarkerId.value = m.id; },
+                    onExit:  isTransport ? null : (_) { _hoveredMarkerId.value = null; },
                     child: _MapPin(
                       marker:  m,
                       focused: focused,
@@ -433,25 +434,27 @@ class _MapAreaState extends State<_MapArea> {
               }).toList(),
             ),
 
-            // Distance labels — only visible while a location pin is hovered.
-            // ValueListenableBuilder means hover changes rebuild ONLY this layer,
-            // never the pins layer or the FlutterMap itself — no animation interruption.
+            // Distance labels — only shows segments touching the hovered pin.
+            // ValueListenableBuilder rebuilds ONLY this layer on hover changes.
             if (showRoute && routeMarkers.length > 1)
-              ValueListenableBuilder<bool>(
-                valueListenable: _pinHovered,
-                builder: (_, hovered, __) => hovered
-                    ? MarkerLayer(
-                        markers: MapViewMapperService.routeSegments(routeMarkers)
-                            .map((seg) => Marker(
-                                  point:     seg.midpoint,
-                                  width:     76,
-                                  height:    24,
-                                  alignment: Alignment.center,
-                                  child: _DistanceLabel(distanceKm: seg.distanceKm),
-                                ))
-                            .toList(),
-                      )
-                    : const SizedBox.shrink(),
+              ValueListenableBuilder<String?>(
+                valueListenable: _hoveredMarkerId,
+                builder: (_, hoveredId, _) {
+                  if (hoveredId == null) return const SizedBox.shrink();
+                  final segments = MapViewMapperService.routeSegments(routeMarkers)
+                      .where((seg) => seg.fromId == hoveredId || seg.toId == hoveredId)
+                      .toList();
+                  if (segments.isEmpty) return const SizedBox.shrink();
+                  return MarkerLayer(
+                    markers: segments.map((seg) => Marker(
+                          point:     seg.midpoint,
+                          width:     76,
+                          height:    24,
+                          alignment: Alignment.center,
+                          child: _DistanceLabel(distanceKm: seg.distanceKm),
+                        )).toList(),
+                  );
+                },
               ),
           ],
         ),

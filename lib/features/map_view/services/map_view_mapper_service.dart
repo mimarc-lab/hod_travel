@@ -310,7 +310,7 @@ abstract class MapViewMapperService {
   /// Returns one entry per consecutive pair of non-transport location markers,
   /// each with the segment midpoint and straight-line Haversine distance (km).
   /// Used to render distance labels along the route polyline.
-  static List<({LatLng midpoint, double distanceKm})> routeSegments(
+  static List<({LatLng midpoint, double distanceKm, String fromId, String toId})> routeSegments(
       List<TripMapMarker> markers) {
     final sorted =
         markers.where((m) => m.item.type != ItemType.transport).toList()
@@ -318,13 +318,15 @@ abstract class MapViewMapperService {
 
     if (sorted.length < 2) return const [];
 
-    final segments = <({LatLng midpoint, double distanceKm})>[];
+    final segments = <({LatLng midpoint, double distanceKm, String fromId, String toId})>[];
     for (int i = 0; i < sorted.length - 1; i++) {
       final a = sorted[i].position;
       final b = sorted[i + 1].position;
       segments.add((
         midpoint:   _midpoint(a, b),
         distanceKm: _haversineKm(a, b),
+        fromId:     sorted[i].id,
+        toId:       sorted[i + 1].id,
       ));
     }
     return segments;
