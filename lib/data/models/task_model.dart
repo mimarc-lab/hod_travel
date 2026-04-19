@@ -122,11 +122,12 @@ class Task {
   final TaskCostStatus costStatus;
   final AppUser? assignedTo;
   final String? destination;   // maps to DB column: destination_city
-  final DateTime? travelDate;
+  final DateTime? travelDate;  // also used as scheduled_start_date by backward planner
   final DateTime? dueDate;
   final String? supplierId;    // FK → suppliers.id
   final bool clientVisible;
   final ApprovalStatus approvalStatus;
+  final int? estimatedDurationDays; // set by backward planning engine
 
   const Task({
     required this.id,
@@ -146,6 +147,7 @@ class Task {
     this.supplierId,
     this.clientVisible = false,
     this.approvalStatus = ApprovalStatus.draft,
+    this.estimatedDurationDays,
   });
 
   Task copyWith({
@@ -169,6 +171,8 @@ class Task {
     bool clearSupplierId = false,
     bool? clientVisible,
     ApprovalStatus? approvalStatus,
+    int? estimatedDurationDays,
+    bool clearEstimatedDuration = false,
   }) {
     return Task(
       id:             id,
@@ -188,6 +192,9 @@ class Task {
       supplierId:     clearSupplierId    ? null : (supplierId    ?? this.supplierId),
       clientVisible:  clientVisible  ?? this.clientVisible,
       approvalStatus: approvalStatus ?? this.approvalStatus,
+      estimatedDurationDays: clearEstimatedDuration
+          ? null
+          : (estimatedDurationDays ?? this.estimatedDurationDays),
     );
   }
 }

@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/trip_template_model.dart';
+import '../models/workflow_task_schedule_rule.dart';
 
 // =============================================================================
 // TripTemplateRepository
@@ -47,7 +48,24 @@ class SupabaseTripTemplateRepository implements TripTemplateRepository {
         title:      r['title']      as String,
         priority:   r['priority']   as String? ?? 'medium',
         sortOrder:  (r['sort_order'] as num?)?.toInt() ?? 0,
+        estimatedDurationDays: (r['estimated_duration_days'] as num?)?.toInt() ?? 1,
+        schedulingMode: SchedulingMode.values.firstWhere(
+          (m) => m.name == _toCamel(r['scheduling_mode'] as String? ?? ''),
+          orElse: () => SchedulingMode.backwardFromDeadline,
+        ),
+        dependencyTaskIds: (r['dependency_task_ids'] as List?)
+            ?.map((e) => e as String).toList() ?? const [],
+        bufferDays: (r['buffer_days'] as num?)?.toInt() ?? 0,
+        latestFinishOffsetDays:  (r['latest_finish_offset_days']  as num?)?.toInt(),
+        earliestStartOffsetDays: (r['earliest_start_offset_days'] as num?)?.toInt(),
       );
+
+  // DB stores snake_case scheduling_mode values; convert to camelCase for enum lookup
+  static String _toCamel(String snake) {
+    if (snake.isEmpty) return snake;
+    final parts = snake.split('_');
+    return parts.first + parts.skip(1).map((p) => p[0].toUpperCase() + p.substring(1)).join();
+  }
 
   static TripTemplate _templateFromRow(
       Map<String, dynamic> r, List<TripTemplateTask> tasks) =>
@@ -156,12 +174,21 @@ class SupabaseTripTemplateRepository implements TripTemplateRepository {
   @override
   Future<void> updateTask(TripTemplateTask task) async {
     await _client.from('trip_template_tasks').update({
-      'group_name': task.groupName,
-      'title':      task.title,
-      'priority':   task.priority,
-      'sort_order': task.sortOrder,
+      'group_name':               task.groupName,
+      'title':                    task.title,
+      'priority':                 task.priority,
+      'sort_order':               task.sortOrder,
+      'estimated_duration_days':  task.estimatedDurationDays,
+      'scheduling_mode':          _toSnake(task.schedulingMode.name),
+      'dependency_task_ids':      task.dependencyTaskIds,
+      'buffer_days':              task.bufferDays,
+      'latest_finish_offset_days':  task.latestFinishOffsetDays,
+      'earliest_start_offset_days': task.earliestStartOffsetDays,
     }).eq('id', task.id);
   }
+
+  static String _toSnake(String camel) => camel.replaceAllMapped(
+        RegExp(r'[A-Z]'), (m) => '_${m.group(0)!.toLowerCase()}');
 
   @override
   Future<void> deleteTask(String taskId) async {

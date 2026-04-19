@@ -57,6 +57,10 @@ Trip tripFromRow(
     tripLead: lead,
     status: TripStatusLabel.fromDb(row['status'] as String? ?? 'planning'),
     notes: row['notes'] as String?,
+    planningBufferDays: row['planning_buffer_days'] as int? ?? 7,
+    planningCompleteBy: row['planning_complete_by'] != null
+        ? DateTime.parse(row['planning_complete_by'] as String)
+        : null,
   );
 }
 
@@ -70,6 +74,9 @@ Map<String, dynamic> _tripToRow(Trip t, String? teamId) => {
   'trip_lead_id': t.tripLead.id == 'unknown' ? null : t.tripLead.id,
   'status': t.status.dbValue,
   'notes': t.notes,
+  'planning_buffer_days': t.planningBufferDays,
+  if (t.planningCompleteBy != null)
+    'planning_complete_by': t.planningCompleteBy!.toIso8601String().substring(0, 10),
 };
 
 // ─────────────────────────────────────────────────────────────────────────────

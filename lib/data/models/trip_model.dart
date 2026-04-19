@@ -46,6 +46,8 @@ class Trip {
   final TripStatus status;
   final String? notes;
   final String? dossierId;
+  final int     planningBufferDays; // days before trip start that planning must complete
+  final DateTime? planningCompleteBy; // computed: startDate - planningBufferDays
 
   const Trip({
     required this.id,
@@ -60,6 +62,8 @@ class Trip {
     required this.status,
     this.notes,
     this.dossierId,
+    this.planningBufferDays = 7,
+    this.planningCompleteBy,
   });
 
   String get destinationSummary => destinations.join(' · ');

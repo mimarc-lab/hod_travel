@@ -9,6 +9,8 @@ import '../../../data/models/trip_model.dart';
 import '../../../data/models/trip_template_model.dart';
 import '../../../data/models/user_model.dart';
 import '../../../data/services/trip_templates.dart';
+import '../../../features/workflow_scheduling/backward_planning_service.dart';
+import '../../../features/workflow_scheduling/planning_deadline_helper.dart';
 import '../providers/trip_provider.dart';
 import '../widgets/trip_form_fields.dart';
 
@@ -177,13 +179,13 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
             .where((t) => t.id == _templateId)
             .firstOrNull;
 
-        final List<Map<String, String>> tasks;
+        final List<Map<String, dynamic>> tasks;
         if (saved != null) {
-          // Convert saved template tasks to the same format
-          tasks = saved.tasks.map((t) => {
-            'group': t.groupName,
-            'title': t.title,
+          tasks = saved.tasks.map((t) => <String, dynamic>{
+            'group':    t.groupName,
+            'title':    t.title,
             'priority': t.priority,
+            'duration': t.estimatedDurationDays,
           }).toList();
         } else {
           tasks = templateTasks(_templateId);
@@ -191,9 +193,10 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
 
         if (tasks.isNotEmpty) {
           seededTaskCount = await _insertTemplateTasks(
-            tripId: created.id,
-            teamId: teamId,
-            tasks:  tasks,
+            tripId:    created.id,
+            teamId:    teamId,
+            tasks:     tasks,
+            startDate: created.startDate,
           );
         }
       } catch (e) {
@@ -232,14 +235,14 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
     }
   }
 
-  /// Fetches the board groups created by the DB trigger and inserts
-  /// template tasks into the correct groups. Retries twice if groups
-  /// aren't ready yet (trigger may still be running).
+  /// Fetches board groups, runs backward planning if startDate is set,
+  /// and inserts tasks with calculated dates. Retries twice for the DB trigger.
   /// Returns the number of tasks inserted.
   Future<int> _insertTemplateTasks({
     required String tripId,
     required String teamId,
-    required List<Map<String, String>> tasks,
+    required List<Map<String, dynamic>> tasks,
+    DateTime? startDate,
   }) async {
     final client = db;
     final userId = client.auth.currentUser?.id ?? '';
@@ -276,11 +279,46 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
       groupIdByName[row['name'] as String] = row['id'] as String;
     }
 
+    // Run backward planning if trip has a start date
+    final analysis = startDate != null
+        ? BackwardPlanningService.scheduleFromTemplateMaps(
+            templateTasks:      tasks,
+            tripStartDate:      startDate,
+            planningBufferDays: PlanningDeadlineHelper.defaultBufferDays,
+          )
+        : null;
+
+    // Show schedule warning after navigation if compressed
+    if (analysis != null && analysis.hasWarnings && mounted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(analysis.warnings.first),
+              backgroundColor: analysis.isCompressed
+                  ? Colors.orange.shade700
+                  : Colors.blue.shade700,
+              behavior:  SnackBarBehavior.floating,
+              duration:  const Duration(seconds: 6),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
+            ),
+          );
+        }
+      });
+    }
+
     final rows = <Map<String, dynamic>>[];
     for (var i = 0; i < tasks.length; i++) {
       final t       = tasks[i];
-      final groupId = groupIdByName[t['group']];
+      final groupId = groupIdByName[t['group'] as String? ?? ''];
       if (groupId == null) continue;
+
+      // Find matching scheduled result by index (same sort order)
+      final scheduled = analysis?.tasks
+          .where((r) => r.sortOrder == i)
+          .firstOrNull;
+
       rows.add({
         'trip_id':           tripId,
         'team_id':           teamId,
@@ -293,6 +331,13 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
         'approval_status':   'draft',
         'is_client_visible': false,
         'sort_order':        i,
+        if (scheduled != null) ...{
+          'travel_date': scheduled.scheduledStartDate
+              .toIso8601String().substring(0, 10),
+          'due_date': scheduled.dueDate
+              .toIso8601String().substring(0, 10),
+          'estimated_duration_days': scheduled.estimatedDurationDays,
+        },
       });
     }
 

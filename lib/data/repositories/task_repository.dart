@@ -90,6 +90,7 @@ Task _taskFromRow(Map<String, dynamic> row, Map<String, AppUser> profiles) {
     supplierId: row['supplier_id'] as String?,
     clientVisible: row['is_client_visible'] as bool? ?? false,
     approvalStatus: approvalStatusFromDb(row['approval_status'] as String? ?? 'draft'),
+    estimatedDurationDays: row['estimated_duration_days'] as int?,
   );
 }
 
@@ -110,6 +111,8 @@ Map<String, dynamic> _taskToRow(Task t, {String? tripId, String? teamId}) => {
   'cost_status': t.costStatus.dbValue,
   'is_client_visible': t.clientVisible,
   'approval_status': t.approvalStatus.dbValue,
+  if (t.estimatedDurationDays != null)
+    'estimated_duration_days': t.estimatedDurationDays,
 };
 
 // Default group names/colors live in board_group_model.dart

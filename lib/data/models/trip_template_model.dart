@@ -1,3 +1,5 @@
+import 'workflow_task_schedule_rule.dart';
+
 // =============================================================================
 // TripTemplate + TripTemplateTask
 // =============================================================================
@@ -5,10 +7,18 @@
 class TripTemplateTask {
   final String id;
   final String templateId;
-  final String groupName; // must match one of defaultBoardGroupNames
+  final String groupName;
   final String title;
-  final String priority;  // 'low' | 'medium' | 'high'
-  final int sortOrder;
+  final String priority;
+  final int    sortOrder;
+
+  // ── Scheduling metadata ───────────────────────────────────────────────────
+  final int            estimatedDurationDays;
+  final SchedulingMode schedulingMode;
+  final List<String>   dependencyTaskIds;
+  final int            bufferDays;
+  final int?           latestFinishOffsetDays;
+  final int?           earliestStartOffsetDays;
 
   const TripTemplateTask({
     required this.id,
@@ -17,21 +27,37 @@ class TripTemplateTask {
     required this.title,
     required this.priority,
     required this.sortOrder,
+    this.estimatedDurationDays  = 2,
+    this.schedulingMode         = SchedulingMode.backwardFromDeadline,
+    this.dependencyTaskIds      = const [],
+    this.bufferDays             = 0,
+    this.latestFinishOffsetDays,
+    this.earliestStartOffsetDays,
   });
 
   TripTemplateTask copyWith({
-    String? groupName,
-    String? title,
-    String? priority,
-    int? sortOrder,
+    String?        groupName,
+    String?        title,
+    String?        priority,
+    int?           sortOrder,
+    int?           estimatedDurationDays,
+    SchedulingMode? schedulingMode,
+    List<String>?  dependencyTaskIds,
+    int?           bufferDays,
   }) =>
       TripTemplateTask(
-        id:         id,
-        templateId: templateId,
-        groupName:  groupName  ?? this.groupName,
-        title:      title      ?? this.title,
-        priority:   priority   ?? this.priority,
-        sortOrder:  sortOrder  ?? this.sortOrder,
+        id:                    id,
+        templateId:            templateId,
+        groupName:             groupName             ?? this.groupName,
+        title:                 title                 ?? this.title,
+        priority:              priority              ?? this.priority,
+        sortOrder:             sortOrder             ?? this.sortOrder,
+        estimatedDurationDays: estimatedDurationDays ?? this.estimatedDurationDays,
+        schedulingMode:        schedulingMode        ?? this.schedulingMode,
+        dependencyTaskIds:     dependencyTaskIds     ?? this.dependencyTaskIds,
+        bufferDays:            bufferDays            ?? this.bufferDays,
+        latestFinishOffsetDays:  latestFinishOffsetDays,
+        earliestStartOffsetDays: earliestStartOffsetDays,
       );
 }
 
@@ -52,10 +78,8 @@ class TripTemplate {
     required this.createdAt,
   });
 
-  /// Total task count
   int get taskCount => tasks.length;
 
-  /// Returns tasks for a specific group, sorted by sortOrder
   List<TripTemplateTask> tasksForGroup(String groupName) =>
       tasks.where((t) => t.groupName == groupName).toList()
         ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
