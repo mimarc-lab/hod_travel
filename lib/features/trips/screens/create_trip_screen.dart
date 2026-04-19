@@ -183,10 +183,11 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
         final List<Map<String, dynamic>> tasks;
         if (saved != null) {
           tasks = saved.tasks.map((t) => <String, dynamic>{
-            'group':    t.groupName,
-            'title':    t.title,
-            'priority': t.priority,
-            'duration': t.estimatedDurationDays,
+            'group':       t.groupName,
+            'title':       t.title,
+            'priority':    t.priority,
+            'duration':    t.estimatedDurationDays,
+            'assignee_id': t.defaultAssigneeId,
           }).toList();
         } else {
           tasks = templateTasks(_templateId);

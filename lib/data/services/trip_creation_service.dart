@@ -119,6 +119,7 @@ class TripCreationService {
         'travel_date':             _dateStr(t.scheduledStartDate),
         'due_date':                _dateStr(t.dueDate),
         'estimated_duration_days': t.estimatedDurationDays,
+        if (t.defaultAssigneeId != null) 'assigned_to': t.defaultAssigneeId,
       });
     }
 
@@ -161,6 +162,7 @@ class TripCreationService {
         'approval_status':'draft',
         'is_client_visible': false,
         'sort_order':     i,
+        if (t['assignee_id'] != null) 'assigned_to': t['assignee_id'],
       });
     }
 

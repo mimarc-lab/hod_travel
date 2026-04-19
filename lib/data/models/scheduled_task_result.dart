@@ -11,6 +11,7 @@ class ScheduledTaskResult {
   final int      estimatedDurationDays;
   final bool     isCompressed;
   final String?  scheduleNote;
+  final String?  defaultAssigneeId;
 
   const ScheduledTaskResult({
     required this.templateTaskId,
@@ -23,6 +24,7 @@ class ScheduledTaskResult {
     required this.estimatedDurationDays,
     this.isCompressed = false,
     this.scheduleNote,
+    this.defaultAssigneeId,
   });
 }
 

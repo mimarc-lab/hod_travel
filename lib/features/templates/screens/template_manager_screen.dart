@@ -5,6 +5,7 @@ import '../../../core/constants/app_text_styles.dart';
 import '../../../core/supabase/app_db.dart';
 import '../../../data/models/board_group_model.dart';
 import '../../../data/models/trip_template_model.dart';
+import '../../../data/models/user_model.dart';
 import '../../../data/repositories/trip_template_repository.dart';
 
 // =============================================================================
@@ -317,6 +318,7 @@ class TemplateEditorScreen extends StatefulWidget {
 class _TemplateEditorScreenState extends State<TemplateEditorScreen> {
   late TripTemplate _template;
   bool _saving = false;
+  List<AppUser> _members = [];
 
   TripTemplateRepository? get _repo => AppRepositories.instance?.templates;
 
@@ -324,6 +326,15 @@ class _TemplateEditorScreenState extends State<TemplateEditorScreen> {
   void initState() {
     super.initState();
     _template = widget.template;
+    _loadMembers();
+  }
+
+  Future<void> _loadMembers() async {
+    try {
+      final profiles = await AppRepositories.instance?.profiles.fetchAllProfiles() ?? [];
+      final users = profiles.map((p) => p.toAppUser()).toList();
+      if (mounted) setState(() => _members = users);
+    } catch (_) {}
   }
 
   Future<void> _reload() async {
@@ -346,16 +357,21 @@ class _TemplateEditorScreenState extends State<TemplateEditorScreen> {
   }
 
   Future<void> _addTask(String groupName) async {
-    final result = await _showTaskDialog(context, groupName: groupName);
+    final result = await _showTaskDialog(
+      context,
+      groupName: groupName,
+      members:   _members,
+    );
     if (result == null) return;
     setState(() => _saving = true);
     final groupTasks = _template.tasksForGroup(groupName);
     await _repo!.addTask(
-      templateId: _template.id,
-      groupName:  groupName,
-      title:      result['title']!,
-      priority:   result['priority']!,
-      sortOrder:  groupTasks.length,
+      templateId:        _template.id,
+      groupName:         groupName,
+      title:             result.title,
+      priority:          result.priority,
+      sortOrder:         groupTasks.length,
+      defaultAssigneeId: result.assigneeId,
     );
     await _reload();
     if (mounted) setState(() => _saving = false);
@@ -363,14 +379,20 @@ class _TemplateEditorScreenState extends State<TemplateEditorScreen> {
   }
 
   Future<void> _editTask(TripTemplateTask task) async {
-    final result = await _showTaskDialog(context,
-        groupName: task.groupName,
-        existingTitle: task.title,
-        existingPriority: task.priority);
+    final result = await _showTaskDialog(
+      context,
+      groupName:          task.groupName,
+      existingTitle:      task.title,
+      existingPriority:   task.priority,
+      existingAssigneeId: task.defaultAssigneeId,
+      members:            _members,
+    );
     if (result == null) return;
     await _repo!.updateTask(task.copyWith(
-      title:    result['title'],
-      priority: result['priority'],
+      title:             result.title,
+      priority:          result.priority,
+      defaultAssigneeId: result.assigneeId,
+      clearAssignee:     result.assigneeId == null,
     ));
     await _reload();
     widget.onSaved();
@@ -424,6 +446,7 @@ class _TemplateEditorScreenState extends State<TemplateEditorScreen> {
                 ...defaultBoardGroupNames.map((group) => _GroupSection(
                       groupName: group,
                       tasks:     _template.tasksForGroup(group),
+                      members:   _members,
                       onAdd:     () => _addTask(group),
                       onEdit:    _editTask,
                       onDelete:  _deleteTask,
@@ -439,6 +462,7 @@ class _TemplateEditorScreenState extends State<TemplateEditorScreen> {
 class _GroupSection extends StatelessWidget {
   final String groupName;
   final List<TripTemplateTask> tasks;
+  final List<AppUser> members;
   final VoidCallback onAdd;
   final Future<void> Function(TripTemplateTask) onEdit;
   final Future<void> Function(TripTemplateTask) onDelete;
@@ -446,6 +470,7 @@ class _GroupSection extends StatelessWidget {
   const _GroupSection({
     required this.groupName,
     required this.tasks,
+    required this.members,
     required this.onAdd,
     required this.onEdit,
     required this.onDelete,
@@ -506,6 +531,7 @@ class _GroupSection extends StatelessWidget {
           // Task rows
           ...tasks.map((t) => _TaskRow(
                 task:     t,
+                members:  members,
                 onEdit:   () => onEdit(t),
                 onDelete: () => onDelete(t),
               )),
@@ -519,9 +545,15 @@ class _GroupSection extends StatelessWidget {
 
 class _TaskRow extends StatelessWidget {
   final TripTemplateTask task;
+  final List<AppUser> members;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
-  const _TaskRow({required this.task, required this.onEdit, required this.onDelete});
+  const _TaskRow({
+    required this.task,
+    required this.members,
+    required this.onEdit,
+    required this.onDelete,
+  });
 
   static const _priorityColors = {
     'high':   Color(0xFFD4845A),
@@ -531,6 +563,10 @@ class _TaskRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final assignee = task.defaultAssigneeId == null
+        ? null
+        : members.where((m) => m.id == task.defaultAssigneeId).firstOrNull;
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -554,6 +590,20 @@ class _TaskRow extends StatelessWidget {
                     overflow: TextOverflow.ellipsis),
               ),
               const SizedBox(width: AppSpacing.sm),
+              if (assignee != null) ...[
+                Container(
+                  width: 20, height: 20,
+                  decoration: BoxDecoration(
+                    color: assignee.avatarColor,
+                    shape: BoxShape.circle,
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(assignee.initials,
+                      style: AppTextStyles.labelSmall.copyWith(
+                          color: Colors.white, fontSize: 9)),
+                ),
+                const SizedBox(width: AppSpacing.xs),
+              ],
               Text(task.priority,
                   style: AppTextStyles.labelSmall.copyWith(
                       color: _priorityColors[task.priority] ??
@@ -572,18 +622,25 @@ class _TaskRow extends StatelessWidget {
   }
 }
 
+// ── Task result record ────────────────────────────────────────────────────────
+
+typedef _TaskDialogResult = ({String title, String priority, String? assigneeId});
+
 // ── Task dialog ───────────────────────────────────────────────────────────────
 
-Future<Map<String, String>?> _showTaskDialog(
+Future<_TaskDialogResult?> _showTaskDialog(
   BuildContext context, {
   required String groupName,
+  required List<AppUser> members,
   String? existingTitle,
   String? existingPriority,
+  String? existingAssigneeId,
 }) {
   final titleCtrl = TextEditingController(text: existingTitle ?? '');
-  String priority = existingPriority ?? 'medium';
+  String priority      = existingPriority ?? 'medium';
+  String? assigneeId   = existingAssigneeId;
 
-  return showDialog<Map<String, String>>(
+  return showDialog<_TaskDialogResult>(
     context: context,
     builder: (ctx) => StatefulBuilder(
       builder: (ctx, setDlgState) => AlertDialog(
@@ -605,6 +662,7 @@ Future<Map<String, String>?> _showTaskDialog(
             ),
             const SizedBox(height: AppSpacing.base),
             DropdownButtonFormField<String>(
+              key: ValueKey(priority),
               initialValue: priority,
               decoration: const InputDecoration(
                 labelText: 'Priority',
@@ -618,6 +676,25 @@ Future<Map<String, String>?> _showTaskDialog(
                   .toList(),
               onChanged: (v) { if (v != null) setDlgState(() => priority = v); },
             ),
+            if (members.isNotEmpty) ...[
+              const SizedBox(height: AppSpacing.base),
+              DropdownButtonFormField<String?>(
+                key: ValueKey(assigneeId),
+                initialValue: assigneeId,
+                decoration: const InputDecoration(
+                  labelText: 'Default assignee',
+                  border: OutlineInputBorder(),
+                ),
+                items: [
+                  const DropdownMenuItem(value: null, child: Text('None')),
+                  ...members.map((m) => DropdownMenuItem(
+                        value: m.id,
+                        child: Text(m.name),
+                      )),
+                ],
+                onChanged: (v) => setDlgState(() => assigneeId = v),
+              ),
+            ],
           ],
         ),
         actions: [
@@ -630,7 +707,9 @@ Future<Map<String, String>?> _showTaskDialog(
             onPressed: () {
               final title = titleCtrl.text.trim();
               if (title.isEmpty) return;
-              Navigator.of(ctx).pop({'title': title, 'priority': priority});
+              Navigator.of(ctx).pop(
+                (title: title, priority: priority, assigneeId: assigneeId),
+              );
             },
             child: Text(existingTitle == null ? 'Add' : 'Save'),
           ),

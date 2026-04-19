@@ -34,6 +34,7 @@ class WorkflowTaskScheduleRule {
   final int            bufferDays;
   final int?           latestFinishOffsetDays;
   final int?           earliestStartOffsetDays;
+  final String?        defaultAssigneeId;
 
   const WorkflowTaskScheduleRule({
     required this.id,
@@ -47,5 +48,6 @@ class WorkflowTaskScheduleRule {
     this.bufferDays             = 0,
     this.latestFinishOffsetDays,
     this.earliestStartOffsetDays,
+    this.defaultAssigneeId,
   });
 }

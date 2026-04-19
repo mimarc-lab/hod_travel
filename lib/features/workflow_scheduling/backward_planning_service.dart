@@ -35,6 +35,7 @@ class BackwardPlanningService {
         bufferDays:             t['buffer_days']               as int? ?? 0,
         latestFinishOffsetDays: t['latest_finish_offset_days'] as int?,
         dependencyTaskIds:      const [],
+        defaultAssigneeId:      t['assignee_id']               as String?,
       );
     }).toList();
 

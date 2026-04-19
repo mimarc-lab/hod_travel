@@ -84,6 +84,7 @@ class WorkflowScheduleEngine {
           scheduleNote:          compressed
               ? 'Timeline compressed — start adjusted to today.'
               : null,
+          defaultAssigneeId:     task.defaultAssigneeId,
         ));
       }
 
