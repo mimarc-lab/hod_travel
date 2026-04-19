@@ -281,8 +281,6 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
     }
 
     // Run backward planning when a start date is available.
-    // Build a Map keyed by the original template index (sortOrder) so
-    // each task can be looked up in O(1) without fragile .where() chains.
     Map<int, ScheduledTaskResult> scheduleByIndex = {};
     ScheduleAnalysis? analysis;
 
@@ -295,35 +293,30 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
       scheduleByIndex = {
         for (final r in analysis.tasks) r.sortOrder: r,
       };
-    }
-
-    // Show schedule warning after navigation if compressed / tight
-    if (analysis != null && analysis.hasWarnings && mounted) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(analysis!.warnings.first),
-              backgroundColor: analysis.isCompressed
-                  ? Colors.orange.shade700
-                  : Colors.blue.shade700,
-              behavior:  SnackBarBehavior.floating,
-              duration:  const Duration(seconds: 6),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8)),
-            ),
-          );
-        }
-      });
+      debugPrint(
+        '[Scheduling] startDate=$startDate  '
+        'deadline=${analysis.planningDeadline}  '
+        'results=${analysis.tasks.length}  '
+        'possible=${analysis.isPossible}  '
+        'compressed=${analysis.isCompressed}',
+      );
+    } else {
+      debugPrint('[Scheduling] startDate is null — skipping engine');
     }
 
     final rows = <Map<String, dynamic>>[];
+    int scheduledCount = 0;
+
     for (var i = 0; i < tasks.length; i++) {
       final t       = tasks[i];
       final groupId = groupIdByName[t['group'] as String? ?? ''];
-      if (groupId == null) continue;
+      if (groupId == null) {
+        debugPrint('[Scheduling] task[$i] "${t['title']}" — group "${t['group']}" not found in board groups');
+        continue;
+      }
 
       final scheduled = scheduleByIndex[i];
+      if (scheduled != null) scheduledCount++;
 
       rows.add({
         'trip_id':           tripId,
@@ -347,10 +340,42 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
       });
     }
 
+    debugPrint('[Scheduling] inserting ${rows.length} tasks, $scheduledCount with scheduled dates');
+
     if (rows.isNotEmpty) {
       await client.from('tasks').insert(rows);
     }
+
+    // Show post-navigation snackbar with schedule result
+    if (analysis != null && mounted) {
+      final msg = analysis.hasWarnings
+          ? analysis.warnings.first
+          : '$scheduledCount/${rows.length} tasks scheduled '
+            '(${_fmtDate(analysis.planningDeadline)} deadline)';
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(msg),
+              backgroundColor: analysis!.isCompressed
+                  ? Colors.orange.shade700
+                  : Colors.blue.shade700,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 6),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
+            ),
+          );
+        }
+      });
+    }
+
     return rows.length;
+  }
+
+  static String _fmtDate(DateTime d) {
+    const m = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return '${m[d.month]} ${d.day}';
   }
 
   @override

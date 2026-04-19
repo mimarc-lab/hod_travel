@@ -115,11 +115,11 @@ class _TripMapScreenState extends State<TripMapScreen>
     return m;
   }
 
-  /// Type filtered only (no day filter) — all pins rendered on the map.
-  /// Day filtering is expressed visually via per-pin opacity, keeping all
-  /// locations visible for geographic context while emphasising the active day.
-  List<TripMapMarker> get _displayMarkers =>
-      MapViewMapperService.filterByType(_allMarkers, _selectedType);
+  /// Pins to render: day-filtered when a day is selected, all days otherwise.
+  List<TripMapMarker> get _displayMarkers {
+    final byDay = MapViewMapperService.filterByDay(_allMarkers, _selectedDayId);
+    return MapViewMapperService.filterByType(byDay, _selectedType);
+  }
 
   TripMapMarker? get _focusedMarker =>
       _focusedMarkerId == null
@@ -238,7 +238,7 @@ class _TripMapScreenState extends State<TripMapScreen>
         Expanded(child: _MapArea(
           displayMarkers: _displayMarkers,
           routeMarkers:   _focusMarkers,
-          activeDayId:    _selectedDayId,
+
           focusedMarker:  _focusedMarker,
           showRoute:      _showRoute,
           selectedType:   _selectedType,
@@ -268,7 +268,7 @@ class _TripMapScreenState extends State<TripMapScreen>
           child: _MapArea(
             displayMarkers: _displayMarkers,
             routeMarkers:   _focusMarkers,
-            activeDayId:    _selectedDayId,
+  
             focusedMarker:  _focusedMarker,
             showRoute:      _showRoute,
             selectedType:   _selectedType,
@@ -306,17 +306,11 @@ class _TripMapScreenState extends State<TripMapScreen>
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _MapArea extends StatelessWidget {
-  /// All type-filtered markers — rendered on the map, with inactive-day ones
-  /// faded to give geographic context without visual clutter.
+  /// Day+type filtered markers — already scoped to the selected day at source.
   final List<TripMapMarker>  displayMarkers;
 
-  /// Day + type filtered markers — used for the route polyline and the
-  /// "no locations" empty-state check.
+  /// Day+type filtered markers — used for the route polyline and empty-state.
   final List<TripMapMarker>  routeMarkers;
-
-  /// The currently selected day ID.  Pins from other days are rendered at
-  /// reduced opacity.  Null = all days active (no dimming).
-  final String?              activeDayId;
 
   final TripMapMarker?       focusedMarker;
   final bool                 showRoute;
@@ -331,7 +325,6 @@ class _MapArea extends StatelessWidget {
   const _MapArea({
     required this.displayMarkers,
     required this.routeMarkers,
-    required this.activeDayId,
     required this.focusedMarker,
     required this.showRoute,
     required this.selectedType,
@@ -395,12 +388,9 @@ class _MapArea extends StatelessWidget {
                 ],
               ),
 
-            // Markers — only pins for the active day are shown.
-            // When no day is selected all pins are visible.
+            // Markers — displayMarkers is already day+type filtered at source.
             MarkerLayer(
-              markers: displayMarkers
-                  .where((m) => activeDayId == null || m.day.id == activeDayId)
-                  .map((m) {
+              markers: displayMarkers.map((m) {
                 final focused     = focusedMarker?.id == m.id;
                 final isTransport = m.isTransportIcon;
                 final sz = isTransport
@@ -420,8 +410,8 @@ class _MapArea extends StatelessWidget {
               }).toList(),
             ),
 
-            // Distance labels rendered ABOVE pins so transport badges
-            // cannot obscure them.
+            // Distance labels — rendered after pins so they are never obscured.
+            // Alignment.center places the chip centred at the route midpoint.
             if (showRoute && routeMarkers.length > 1)
               MarkerLayer(
                 markers: MapViewMapperService.routeSegments(routeMarkers)
@@ -429,7 +419,7 @@ class _MapArea extends StatelessWidget {
                           point:     seg.midpoint,
                           width:     76,
                           height:    24,
-                          alignment: Alignment.bottomCenter,
+                          alignment: Alignment.center,
                           child: _DistanceLabel(distanceKm: seg.distanceKm),
                         ))
                     .toList(),
