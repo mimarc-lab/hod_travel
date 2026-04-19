@@ -39,7 +39,7 @@ class BoardTableHeader extends StatelessWidget {
           _HeaderCell(label: 'STATUS',      width: BoardColumns.status),
           _HeaderCell(label: 'ASSIGNED TO', width: BoardColumns.assignedTo),
           _HeaderCell(label: 'DESTINATION', width: BoardColumns.destination),
-          _HeaderCell(label: 'TRAVEL DATE', width: BoardColumns.travelDate),
+          _HeaderCell(label: 'START DATE', width: BoardColumns.travelDate),
           _HeaderCell(label: 'DUE DATE',    width: BoardColumns.dueDate),
           _HeaderCell(label: 'SUPPLIER',    width: BoardColumns.supplier),
           _HeaderCell(label: 'PRIORITY',    width: BoardColumns.priority),

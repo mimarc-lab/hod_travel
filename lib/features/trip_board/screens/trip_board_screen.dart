@@ -17,6 +17,7 @@ import '../../../core/supabase/app_db.dart';
 import '../providers/board_provider.dart';
 import '../../../features/intelligence/widgets/trip_intelligence_panel.dart';
 import '../../../features/itinerary/providers/itinerary_provider.dart';
+import '../../../features/trips/providers/trip_provider.dart';
 import '../../../features/trips/screens/edit_trip_screen.dart';
 import '../widgets/board_group.dart';
 import '../widgets/task_detail/task_detail_panel.dart';
@@ -28,7 +29,11 @@ class TripBoardScreen extends StatefulWidget {
   /// When set, the board auto-selects this task after loading (used by Task Center).
   final String? initialTaskId;
 
-  const TripBoardScreen({super.key, required this.trip, this.initialTaskId});
+  /// When provided, delete is routed through this provider so the trips list
+  /// updates immediately without requiring a manual refresh.
+  final TripProvider? tripProvider;
+
+  const TripBoardScreen({super.key, required this.trip, this.initialTaskId, this.tripProvider});
 
   @override
   State<TripBoardScreen> createState() => _TripBoardScreenState();
@@ -115,7 +120,12 @@ class _TripBoardScreenState extends State<TripBoardScreen>
     );
     if (confirmed != true || !mounted) return;
     try {
-      await AppRepositories.instance?.trips.delete(_currentTrip.id);
+      if (widget.tripProvider != null) {
+        // Routes through provider so the trips list removes the entry immediately.
+        await widget.tripProvider!.deleteTrip(_currentTrip.id);
+      } else {
+        await AppRepositories.instance?.trips.delete(_currentTrip.id);
+      }
       if (!mounted) return;
       // ignore: use_build_context_synchronously
       Navigator.of(context).pop(); // back to trips list

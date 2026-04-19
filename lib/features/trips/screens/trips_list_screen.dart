@@ -54,7 +54,9 @@ class _TripsListScreenState extends State<TripsListScreen> {
 
   void _openTrip(Trip trip) {
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => TripBoardScreen(trip: trip)),
+      MaterialPageRoute(
+        builder: (_) => TripBoardScreen(trip: trip, tripProvider: _provider),
+      ),
     );
   }
 

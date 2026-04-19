@@ -280,7 +280,7 @@ class TaskInfoSection extends StatelessWidget {
 
         // Travel date
         DetailFieldRow(
-          label: 'Travel Date',
+          label: 'Start Date',
           icon: Icons.flight_outlined,
           value: _DateField(
             date: task.travelDate,
