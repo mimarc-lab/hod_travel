@@ -3,42 +3,61 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 enum TravelerRole {
-  primary, spouse, partner, child, infant, teen, parent, aide, guest, other;
+  primary,
+  spouse,
+  partner,
+  child,
+  infant,
+  teen,
+  parent,
+  aide,
+  guest,
+  other;
 
   String get label => switch (this) {
     TravelerRole.primary => 'Primary',
-    TravelerRole.spouse  => 'Spouse',
+    TravelerRole.spouse => 'Spouse',
     TravelerRole.partner => 'Partner',
-    TravelerRole.child   => 'Child',
-    TravelerRole.infant  => 'Infant',
-    TravelerRole.teen    => 'Teen',
-    TravelerRole.parent  => 'Parent',
-    TravelerRole.aide    => 'Aide / Assistant',
-    TravelerRole.guest   => 'Guest',
-    TravelerRole.other   => 'Other',
+    TravelerRole.child => 'Child',
+    TravelerRole.infant => 'Infant',
+    TravelerRole.teen => 'Teen',
+    TravelerRole.parent => 'Parent',
+    TravelerRole.aide => 'Aide / Assistant',
+    TravelerRole.guest => 'Guest',
+    TravelerRole.other => 'Other',
   };
 
   String get dbValue => name;
 
-  static TravelerRole fromDb(String? v) =>
-    TravelerRole.values.firstWhere((e) => e.dbValue == v, orElse: () => TravelerRole.guest);
+  static TravelerRole fromDb(String? v) => TravelerRole.values.firstWhere(
+    (e) => e.dbValue == v,
+    orElse: () => TravelerRole.guest,
+  );
 }
 
 enum AgeBracket {
-  infant, child, teen, adult, senior;
+  infant,
+  child,
+  teen,
+  adult,
+  senior;
 
   String get label => switch (this) {
     AgeBracket.infant => 'Infant (0–2)',
-    AgeBracket.child  => 'Child (3–12)',
-    AgeBracket.teen   => 'Teen (13–17)',
-    AgeBracket.adult  => 'Adult (18–64)',
+    AgeBracket.child => 'Child (3–12)',
+    AgeBracket.teen => 'Teen (13–17)',
+    AgeBracket.adult => 'Adult (18–64)',
     AgeBracket.senior => 'Senior (65+)',
   };
 
   String get dbValue => name;
 
-  static AgeBracket? fromDb(String? v) => v == null ? null :
-    AgeBracket.values.firstWhere((e) => e.dbValue == v, orElse: () => AgeBracket.adult);
+  static AgeBracket? fromDb(String? v) => v == null
+      ? null
+      : AgeBracket.values.firstWhere(
+          (e) => e.dbValue == v,
+          orElse: () => AgeBracket.adult,
+        );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -75,31 +94,31 @@ class ClientTraveler {
   });
 
   factory ClientTraveler.fromMap(Map<String, dynamic> r) => ClientTraveler(
-    id:               r['id'] as String,
-    dossierId:        r['dossier_id'] as String,
-    name:             r['name'] as String,
-    role:             TravelerRole.fromDb(r['role'] as String?),
-    ageBracket:       AgeBracket.fromDb(r['age_bracket'] as String?),
-    dietaryNotes:     r['dietary_notes']     as String?,
-    roomingNotes:     r['rooming_notes']     as String?,
-    activityNotes:    r['activity_notes']    as String?,
-    medicalNotes:     r['medical_notes']     as String?,
+    id: r['id'] as String,
+    dossierId: r['dossier_id'] as String,
+    name: r['name'] as String,
+    role: TravelerRole.fromDb(r['role'] as String?),
+    ageBracket: AgeBracket.fromDb(r['age_bracket'] as String?),
+    dietaryNotes: r['dietary_notes'] as String?,
+    roomingNotes: r['rooming_notes'] as String?,
+    activityNotes: r['activity_notes'] as String?,
+    medicalNotes: r['medical_notes'] as String?,
     personalityNotes: r['personality_notes'] as String?,
-    sortOrder:        (r['sort_order'] as num?)?.toInt() ?? 0,
-    createdAt:        DateTime.parse(r['created_at'] as String),
+    sortOrder: (r['sort_order'] as num?)?.toInt() ?? 0,
+    createdAt: DateTime.parse(r['created_at'] as String),
   );
 
   Map<String, dynamic> toMap({String? dossierId}) => {
-    if (dossierId != null) 'dossier_id': dossierId,
-    'name':              name,
-    'role':              role.dbValue,
-    'age_bracket':       ageBracket?.dbValue,
-    'dietary_notes':     dietaryNotes,
-    'rooming_notes':     roomingNotes,
-    'activity_notes':    activityNotes,
-    'medical_notes':     medicalNotes,
+    'dossier_id': ?dossierId,
+    'name': name,
+    'role': role.dbValue,
+    'age_bracket': ageBracket?.dbValue,
+    'dietary_notes': dietaryNotes,
+    'rooming_notes': roomingNotes,
+    'activity_notes': activityNotes,
+    'medical_notes': medicalNotes,
     'personality_notes': personalityNotes,
-    'sort_order':        sortOrder,
+    'sort_order': sortOrder,
   };
 
   ClientTraveler copyWith({
@@ -118,19 +137,20 @@ class ClientTraveler {
     String? personalityNotes,
     bool clearPersonality = false,
     int? sortOrder,
-  }) =>
-      ClientTraveler(
-        id:               id,
-        dossierId:        dossierId,
-        name:             name             ?? this.name,
-        role:             role             ?? this.role,
-        ageBracket:       clearAgeBracket  ? null : (ageBracket ?? this.ageBracket),
-        dietaryNotes:     clearDietary     ? null : (dietaryNotes ?? this.dietaryNotes),
-        roomingNotes:     clearRooming     ? null : (roomingNotes ?? this.roomingNotes),
-        activityNotes:    clearActivity    ? null : (activityNotes ?? this.activityNotes),
-        medicalNotes:     clearMedical     ? null : (medicalNotes ?? this.medicalNotes),
-        personalityNotes: clearPersonality ? null : (personalityNotes ?? this.personalityNotes),
-        sortOrder:        sortOrder        ?? this.sortOrder,
-        createdAt:        createdAt,
-      );
+  }) => ClientTraveler(
+    id: id,
+    dossierId: dossierId,
+    name: name ?? this.name,
+    role: role ?? this.role,
+    ageBracket: clearAgeBracket ? null : (ageBracket ?? this.ageBracket),
+    dietaryNotes: clearDietary ? null : (dietaryNotes ?? this.dietaryNotes),
+    roomingNotes: clearRooming ? null : (roomingNotes ?? this.roomingNotes),
+    activityNotes: clearActivity ? null : (activityNotes ?? this.activityNotes),
+    medicalNotes: clearMedical ? null : (medicalNotes ?? this.medicalNotes),
+    personalityNotes: clearPersonality
+        ? null
+        : (personalityNotes ?? this.personalityNotes),
+    sortOrder: sortOrder ?? this.sortOrder,
+    createdAt: createdAt,
+  );
 }

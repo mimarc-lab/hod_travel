@@ -63,14 +63,19 @@ const List<QSection> kDreamMakerQuestionnaire = [
         key: 'luxury_expectation',
         label: 'Luxury expectation',
         type: QItemType.choice,
-        options: ['Ultra Luxury (best of best)', 'High End', 'Comfortable & Considered'],
+        options: [
+          'Ultra Luxury (best of best)',
+          'High End',
+          'Comfortable & Considered',
+        ],
       ),
       QItem(
         key: 'structure_vs_flexibility',
         label: 'Structure vs. flexibility',
         type: QItemType.choice,
         options: ['Highly Structured', 'Balanced', 'Spontaneous'],
-        hint: 'Do they prefer every day fully planned, or prefer room to explore?',
+        hint:
+            'Do they prefer every day fully planned, or prefer room to explore?',
       ),
       QItem(
         key: 'guide_preference',
@@ -122,8 +127,14 @@ const List<QSection> kDreamMakerQuestionnaire = [
         label: 'Property amenity priorities',
         type: QItemType.multiChoice,
         options: [
-          'Private pool', 'Beach access', 'Gym', 'Spa', 'Butler service',
-          'Kids club', 'Restaurant on site', 'Quiet / no families',
+          'Private pool',
+          'Beach access',
+          'Gym',
+          'Spa',
+          'Butler service',
+          'Kids club',
+          'Restaurant on site',
+          'Quiet / no families',
         ],
       ),
       QItem(
@@ -144,7 +155,11 @@ const List<QSection> kDreamMakerQuestionnaire = [
         key: 'dining_style',
         label: 'Preferred dining style',
         type: QItemType.choice,
-        options: ['Fine Dining / Michelin-level', 'Casual & Local', 'Mix of both'],
+        options: [
+          'Fine Dining / Michelin-level',
+          'Casual & Local',
+          'Mix of both',
+        ],
       ),
       QItem(
         key: 'cuisine_preferences',
@@ -157,8 +172,15 @@ const List<QSection> kDreamMakerQuestionnaire = [
         label: 'Dietary restrictions',
         type: QItemType.multiChoice,
         options: [
-          'Vegetarian', 'Vegan', 'Gluten-free', 'Dairy-free',
-          'Halal', 'Kosher', 'No pork', 'No shellfish', 'None',
+          'Vegetarian',
+          'Vegan',
+          'Gluten-free',
+          'Dairy-free',
+          'Halal',
+          'Kosher',
+          'No pork',
+          'No shellfish',
+          'None',
         ],
       ),
       QItem(
@@ -177,7 +199,13 @@ const List<QSection> kDreamMakerQuestionnaire = [
         key: 'alcohol_preference',
         label: 'Alcohol preference',
         type: QItemType.choice,
-        options: ['Wine-focused', 'Cocktails', 'Champagne', 'Non-drinking', 'Flexible'],
+        options: [
+          'Wine-focused',
+          'Cocktails',
+          'Champagne',
+          'Non-drinking',
+          'Flexible',
+        ],
       ),
       QItem(
         key: 'dining_notes',
@@ -324,7 +352,11 @@ const List<QSection> kDreamMakerQuestionnaire = [
         key: 'photography_sensitivity',
         label: 'Photography / privacy sensitivity',
         type: QItemType.choice,
-        options: ['Very sensitive — no photography', 'Standard', 'Happy to be photographed'],
+        options: [
+          'Very sensitive — no photography',
+          'Standard',
+          'Happy to be photographed',
+        ],
       ),
       QItem(
         key: 'security_needs',
@@ -361,19 +393,19 @@ enum ResponseStatus {
   applied;
 
   String get label => switch (this) {
-    ResponseStatus.draft     => 'Draft',
+    ResponseStatus.draft => 'Draft',
     ResponseStatus.submitted => 'Submitted',
-    ResponseStatus.reviewed  => 'Reviewed',
-    ResponseStatus.applied   => 'Applied',
+    ResponseStatus.reviewed => 'Reviewed',
+    ResponseStatus.applied => 'Applied',
   };
 
   String get dbValue => name;
 
   static ResponseStatus fromDb(String? v) => switch (v) {
     'submitted' => ResponseStatus.submitted,
-    'reviewed'  => ResponseStatus.reviewed,
-    'applied'   => ResponseStatus.applied,
-    _           => ResponseStatus.draft,
+    'reviewed' => ResponseStatus.reviewed,
+    'applied' => ResponseStatus.applied,
+    _ => ResponseStatus.draft,
   };
 }
 
@@ -407,46 +439,46 @@ class ClientQuestionnaireResponse {
   });
 
   String get sourceLabel => switch (source) {
-    QuestionnaireSource.internal   => 'Internal entry',
+    QuestionnaireSource.internal => 'Internal entry',
     QuestionnaireSource.clientCall => 'Client call',
-    QuestionnaireSource.direct     => 'Client submitted',
+    QuestionnaireSource.direct => 'Client submitted',
   };
 
-  bool get isDraft     => status == ResponseStatus.draft;
+  bool get isDraft => status == ResponseStatus.draft;
   bool get isSubmitted => status == ResponseStatus.submitted;
-  bool get isApplied   => status == ResponseStatus.applied;
+  bool get isApplied => status == ResponseStatus.applied;
 
   factory ClientQuestionnaireResponse.fromMap(Map<String, dynamic> r) =>
       ClientQuestionnaireResponse(
-        id:          r['id'] as String,
-        dossierId:   r['dossier_id'] as String,
-        teamId:      r['team_id'] as String,
-        tripId:      r['trip_id'] as String?,
+        id: r['id'] as String,
+        dossierId: r['dossier_id'] as String,
+        teamId: r['team_id'] as String,
+        tripId: r['trip_id'] as String?,
         completedBy: r['completed_by'] as String?,
         completedAt: r['completed_at'] != null
             ? DateTime.parse(r['completed_at'] as String)
             : DateTime.now(),
-        updatedAt:   r['updated_at'] != null
+        updatedAt: r['updated_at'] != null
             ? DateTime.parse(r['updated_at'] as String)
             : null,
-        appliedAt:   r['applied_at'] != null
+        appliedAt: r['applied_at'] != null
             ? DateTime.parse(r['applied_at'] as String)
             : null,
-        responses:   (r['responses'] as Map<String, dynamic>?) ?? {},
-        notes:       r['notes'] as String?,
-        source:      _sourceFromDb(r['source'] as String?),
-        status:      ResponseStatus.fromDb(r['status'] as String?),
+        responses: (r['responses'] as Map<String, dynamic>?) ?? {},
+        notes: r['notes'] as String?,
+        source: _sourceFromDb(r['source'] as String?),
+        status: ResponseStatus.fromDb(r['status'] as String?),
       );
 
   Map<String, dynamic> toMap({String? dossierId, String? teamId}) => {
-    if (dossierId != null) 'dossier_id': dossierId,
-    if (teamId != null)    'team_id':    teamId,
-    if (tripId != null)    'trip_id':    tripId,
+    'dossier_id': ?dossierId,
+    'team_id': ?teamId,
+    if (tripId != null) 'trip_id': tripId,
     if (completedBy != null) 'completed_by': completedBy,
     'responses': responses,
-    'notes':     notes,
-    'source':    _sourceToDb(source),
-    'status':    status.dbValue,
+    'notes': notes,
+    'source': _sourceToDb(source),
+    'status': status.dbValue,
   };
 
   ClientQuestionnaireResponse copyWith({
@@ -457,31 +489,30 @@ class ClientQuestionnaireResponse {
     ResponseStatus? status,
     DateTime? completedAt,
     DateTime? appliedAt,
-  }) =>
-      ClientQuestionnaireResponse(
-        id:          id          ?? this.id,
-        dossierId:   dossierId,
-        teamId:      teamId,
-        tripId:      tripId,
-        completedBy: completedBy,
-        completedAt: completedAt ?? this.completedAt,
-        updatedAt:   DateTime.now(),
-        appliedAt:   appliedAt   ?? this.appliedAt,
-        responses:   responses   ?? this.responses,
-        notes:       notes       ?? this.notes,
-        source:      source      ?? this.source,
-        status:      status      ?? this.status,
-      );
+  }) => ClientQuestionnaireResponse(
+    id: id ?? this.id,
+    dossierId: dossierId,
+    teamId: teamId,
+    tripId: tripId,
+    completedBy: completedBy,
+    completedAt: completedAt ?? this.completedAt,
+    updatedAt: DateTime.now(),
+    appliedAt: appliedAt ?? this.appliedAt,
+    responses: responses ?? this.responses,
+    notes: notes ?? this.notes,
+    source: source ?? this.source,
+    status: status ?? this.status,
+  );
 
   static QuestionnaireSource _sourceFromDb(String? v) => switch (v) {
     'client_call' => QuestionnaireSource.clientCall,
-    'direct'      => QuestionnaireSource.direct,
-    _             => QuestionnaireSource.internal,
+    'direct' => QuestionnaireSource.direct,
+    _ => QuestionnaireSource.internal,
   };
 
   static String _sourceToDb(QuestionnaireSource s) => switch (s) {
     QuestionnaireSource.clientCall => 'client_call',
-    QuestionnaireSource.direct     => 'direct',
-    QuestionnaireSource.internal   => 'internal',
+    QuestionnaireSource.direct => 'direct',
+    QuestionnaireSource.internal => 'internal',
   };
 }
