@@ -79,6 +79,12 @@ class _TripMapScreenState extends State<TripMapScreen>
       vsync:         this,
     );
     _itinerary.addListener(_onItineraryChanged);
+    // If the provider already has data (shared instance, loaded before this
+    // screen mounted), prime the markers immediately instead of waiting for
+    // the next notify call.
+    if (_itinerary.days.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _onItineraryChanged());
+    }
   }
 
   @override
