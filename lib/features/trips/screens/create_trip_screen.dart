@@ -10,7 +10,8 @@ import '../../../data/models/trip_template_model.dart';
 import '../../../data/models/user_model.dart';
 import '../../../data/models/scheduled_task_result.dart';
 import '../../../data/services/trip_templates.dart';
-import '../../../features/workflow_scheduling/backward_planning_service.dart';
+import '../../../data/models/trip_complexity_profile.dart';
+import '../../../features/workflow_scheduling/hybrid_schedule_engine.dart';
 import '../../../features/workflow_scheduling/planning_deadline_helper.dart';
 import '../providers/trip_provider.dart';
 import '../widgets/trip_form_fields.dart';
@@ -195,10 +196,17 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
 
         if (tasks.isNotEmpty) {
           seededTaskCount = await _insertTemplateTasks(
-            tripId:    created.id,
-            teamId:    teamId,
-            tasks:     tasks,
-            startDate: created.startDate,
+            tripId:     created.id,
+            teamId:     teamId,
+            tasks:      tasks,
+            startDate:  created.startDate,
+            complexity: TripComplexityProfile(
+              numberOfCities:  destinations.length,
+              numberOfDays:    (_startDate != null && _endDate != null)
+                  ? _endDate!.difference(_startDate!).inDays + 1
+                  : 1,
+              numberOfGuests:  _guests,
+            ),
           );
         }
       } catch (e) {
@@ -245,6 +253,7 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
     required String teamId,
     required List<Map<String, dynamic>> tasks,
     DateTime? startDate,
+    TripComplexityProfile complexity = const TripComplexityProfile(),
   }) async {
     final client = db;
     final userId = client.auth.currentUser?.id ?? '';
@@ -286,9 +295,10 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
     ScheduleAnalysis? analysis;
 
     if (startDate != null) {
-      analysis = BackwardPlanningService.scheduleFromTemplateMaps(
+      analysis = HybridScheduleEngine.scheduleFromTemplateMaps(
         templateTasks:      tasks,
         tripStartDate:      startDate,
+        complexity:         complexity,
         planningBufferDays: PlanningDeadlineHelper.defaultBufferDays,
       );
       scheduleByIndex = {

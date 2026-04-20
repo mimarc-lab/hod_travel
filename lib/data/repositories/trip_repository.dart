@@ -61,6 +61,9 @@ Trip tripFromRow(
     planningCompleteBy: row['planning_complete_by'] != null
         ? DateTime.parse(row['planning_complete_by'] as String)
         : null,
+    hasSignatureExperiences: row['has_signature_experiences'] as bool? ?? false,
+    hasMobilityRequirements: row['has_mobility_requirements'] as bool? ?? false,
+    hasPrivateTransport:     row['has_private_transport']     as bool? ?? false,
   );
 }
 
@@ -74,9 +77,12 @@ Map<String, dynamic> _tripToRow(Trip t, String? teamId) => {
   'trip_lead_id': t.tripLead.id == 'unknown' ? null : t.tripLead.id,
   'status': t.status.dbValue,
   'notes': t.notes,
-  'planning_buffer_days': t.planningBufferDays,
+  'planning_buffer_days':        t.planningBufferDays,
   if (t.planningCompleteBy != null)
-    'planning_complete_by': t.planningCompleteBy!.toIso8601String().substring(0, 10),
+    'planning_complete_by':      t.planningCompleteBy!.toIso8601String().substring(0, 10),
+  'has_signature_experiences':   t.hasSignatureExperiences,
+  'has_mobility_requirements':   t.hasMobilityRequirements,
+  'has_private_transport':       t.hasPrivateTransport,
 };
 
 // ─────────────────────────────────────────────────────────────────────────────

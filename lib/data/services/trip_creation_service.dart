@@ -2,9 +2,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/trip_model.dart';
 import '../repositories/trip_repository.dart';
 import 'trip_templates.dart';
-import '../../features/workflow_scheduling/backward_planning_service.dart';
+import '../../features/workflow_scheduling/hybrid_schedule_engine.dart';
 import '../../features/workflow_scheduling/planning_deadline_helper.dart';
 import '../models/scheduled_task_result.dart';
+import '../models/trip_complexity_profile.dart';
 
 // =============================================================================
 // TripCreationService
@@ -54,9 +55,19 @@ class TripCreationService {
     if (tasks.isNotEmpty) {
       // Compute schedule if trip has a start date
       if (created.startDate != null) {
-        analysis = BackwardPlanningService.scheduleFromTemplateMaps(
+        analysis = HybridScheduleEngine.scheduleFromTemplateMaps(
           templateTasks:      tasks,
           tripStartDate:      created.startDate!,
+          complexity:         TripComplexityProfile(
+            numberOfCities:  created.destinations.length,
+            numberOfDays:    created.endDate != null
+                ? created.endDate!.difference(created.startDate!).inDays + 1
+                : 1,
+            numberOfGuests:          created.guestCount,
+            hasSignatureExperiences: created.hasSignatureExperiences,
+            hasMobilityRequirements: created.hasMobilityRequirements,
+            hasPrivateTransport:     created.hasPrivateTransport,
+          ),
           planningBufferDays: created.planningBufferDays,
         );
         await _insertScheduledTasks(
@@ -214,9 +225,19 @@ class ScheduleRecalculator {
       );
     }
 
-    return BackwardPlanningService.scheduleFromTemplateMaps(
+    return HybridScheduleEngine.scheduleFromTemplateMaps(
       templateTasks:      templateTaskMaps,
       tripStartDate:      trip.startDate!,
+      complexity:         TripComplexityProfile(
+        numberOfCities:          trip.destinations.length,
+        numberOfDays:            trip.endDate != null
+            ? trip.endDate!.difference(trip.startDate!).inDays + 1
+            : 1,
+        numberOfGuests:          trip.guestCount,
+        hasSignatureExperiences: trip.hasSignatureExperiences,
+        hasMobilityRequirements: trip.hasMobilityRequirements,
+        hasPrivateTransport:     trip.hasPrivateTransport,
+      ),
       planningBufferDays: trip.planningBufferDays,
     );
   }

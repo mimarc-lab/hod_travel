@@ -1,5 +1,4 @@
-// Output of the WorkflowScheduleEngine for a single task.
-
+/// Output of the HybridScheduleEngine for a single task.
 class ScheduledTaskResult {
   final String   templateTaskId;
   final String   groupName;
@@ -8,7 +7,16 @@ class ScheduledTaskResult {
   final int      sortOrder;
   final DateTime scheduledStartDate;
   final DateTime dueDate;
-  final int      estimatedDurationDays;
+
+  // ── Duration breakdown ─────────────────────────────────────────────────────
+  final int baseDurationDays;      // from task template (or group fallback)
+  final int complexityAdjDays;     // added by ComplexityRules
+  final int bufferDays;            // from task.bufferDays
+  final int effectiveDurationDays; // = base + complexityAdj + buffer
+
+  /// Legacy alias kept so existing DB-write code requires no change.
+  int get estimatedDurationDays => effectiveDurationDays;
+
   final bool     isCompressed;
   final String?  scheduleNote;
   final String?  defaultAssigneeId;
@@ -21,14 +29,19 @@ class ScheduledTaskResult {
     required this.sortOrder,
     required this.scheduledStartDate,
     required this.dueDate,
-    required this.estimatedDurationDays,
-    this.isCompressed = false,
+    required this.effectiveDurationDays,
+    this.baseDurationDays     = 0,
+    this.complexityAdjDays    = 0,
+    this.bufferDays           = 0,
+    this.isCompressed         = false,
     this.scheduleNote,
     this.defaultAssigneeId,
   });
 }
 
-// Summary of an entire schedule computation.
+// ── ScheduleAnalysis ──────────────────────────────────────────────────────────
+
+/// Summary of an entire schedule computation.
 class ScheduleAnalysis {
   final List<ScheduledTaskResult> tasks;
   final DateTime planningStart;

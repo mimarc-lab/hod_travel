@@ -49,6 +49,11 @@ class Trip {
   final int     planningBufferDays; // days before trip start that planning must complete
   final DateTime? planningCompleteBy; // computed: startDate - planningBufferDays
 
+  // ── Complexity flags (used by HybridScheduleEngine) ────────────────────────
+  final bool hasSignatureExperiences;
+  final bool hasMobilityRequirements;
+  final bool hasPrivateTransport;
+
   const Trip({
     required this.id,
     this.teamId,
@@ -62,8 +67,11 @@ class Trip {
     required this.status,
     this.notes,
     this.dossierId,
-    this.planningBufferDays = 7,
+    this.planningBufferDays        = 7,
     this.planningCompleteBy,
+    this.hasSignatureExperiences   = false,
+    this.hasMobilityRequirements   = false,
+    this.hasPrivateTransport       = false,
   });
 
   String get destinationSummary => destinations.join(' · ');
@@ -84,6 +92,9 @@ class Trip {
     bool clearNotes = false,
     String? dossierId,
     bool clearDossierId = false,
+    bool? hasSignatureExperiences,
+    bool? hasMobilityRequirements,
+    bool? hasPrivateTransport,
   }) {
     return Trip(
       id:           id,
@@ -98,6 +109,9 @@ class Trip {
       status:       status        ?? this.status,
       notes:        clearNotes    ? null : (notes ?? this.notes),
       dossierId:    clearDossierId ? null : (dossierId ?? this.dossierId),
+      hasSignatureExperiences: hasSignatureExperiences ?? this.hasSignatureExperiences,
+      hasMobilityRequirements: hasMobilityRequirements ?? this.hasMobilityRequirements,
+      hasPrivateTransport:     hasPrivateTransport     ?? this.hasPrivateTransport,
     );
   }
 }
