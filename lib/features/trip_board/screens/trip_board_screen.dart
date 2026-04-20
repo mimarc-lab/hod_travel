@@ -168,7 +168,7 @@ class _TripBoardScreenState extends State<TripBoardScreen>
                             _tabController.animateTo(5), // Intelligence tab
                       ),
                       TimelineScreen(trip: widget.trip, provider: _provider), // Timeline
-                      TripMapScreen(trip: widget.trip), // Map
+                      TripMapScreen(trip: widget.trip, provider: _itineraryProvider), // Map
                       ItineraryScreen(trip: widget.trip, provider: _itineraryProvider),
                       TripBudgetScreen(trip: widget.trip),
                       TripIntelligencePanel(

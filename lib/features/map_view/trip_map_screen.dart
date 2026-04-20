@@ -26,7 +26,8 @@ import 'widgets/map_pin_detail_card.dart';
 /// State is preserved across tab switches via [AutomaticKeepAliveClientMixin].
 class TripMapScreen extends StatefulWidget {
   final Trip trip;
-  const TripMapScreen({super.key, required this.trip});
+  final ItineraryProvider? provider;
+  const TripMapScreen({super.key, required this.trip, this.provider});
 
   @override
   State<TripMapScreen> createState() => _TripMapScreenState();
@@ -36,6 +37,7 @@ class _TripMapScreenState extends State<TripMapScreen>
     with AutomaticKeepAliveClientMixin, TickerProviderStateMixin {
   // ── Providers ──────────────────────────────────────────────────────────────
   late final ItineraryProvider _itinerary;
+  bool _ownsProvider = false; // true when we created the provider ourselves
 
   // ── Map ────────────────────────────────────────────────────────────────────
   final MapController _mapController = MapController();
@@ -62,11 +64,16 @@ class _TripMapScreenState extends State<TripMapScreen>
   @override
   void initState() {
     super.initState();
-    _itinerary = ItineraryProvider(
-      widget.trip,
-      repository: AppRepositories.instance?.itinerary,
-      teamId:     AppRepositories.instance?.currentTeamId,
-    );
+    if (widget.provider != null) {
+      _itinerary = widget.provider!;
+    } else {
+      _itinerary = ItineraryProvider(
+        widget.trip,
+        repository: AppRepositories.instance?.itinerary,
+        teamId:     AppRepositories.instance?.currentTeamId,
+      );
+      _ownsProvider = true;
+    }
     _transition = MapTransitionController(
       mapController: _mapController,
       vsync:         this,
@@ -77,7 +84,7 @@ class _TripMapScreenState extends State<TripMapScreen>
   @override
   void dispose() {
     _itinerary.removeListener(_onItineraryChanged);
-    _itinerary.dispose();
+    if (_ownsProvider) _itinerary.dispose();
     _transition.dispose();
     _mapController.dispose();
     super.dispose();
