@@ -131,6 +131,13 @@ class HybridScheduleEngine {
   }
 
   // ── Backward scheduler ─────────────────────────────────────────────────────
+  //
+  // Processes tasks PHASE BY PHASE (4 → 1).  Within each phase, tasks that
+  // share no dependency run in PARALLEL — they all receive `due = phaseCursor`
+  // and only the longest dependency chain (critical path) advances the cursor.
+  //
+  // This prevents the old bug where every task advanced the cursor, turning
+  // parallel work into a sequential chain and inflating the total span.
 
   static List<ScheduledTaskResult> _scheduleBackward({
     required List<WorkflowTaskScheduleRule> ordered,
@@ -138,64 +145,127 @@ class HybridScheduleEngine {
     required DateTime planningStart,
     required DateTime planningDeadline,
   }) {
-    final built  = <ScheduledTaskResult>[];
-    var   cursor = planningDeadline;
-
-    // `ordered` arrives in phase-descending order (phase 4 → 1).
-    // We walk it sequentially, moving the cursor backward for each task.
-    // Tasks in the same phase that are topo-independent do NOT share the
-    // cursor advance, so they naturally overlap (parallel execution).
-    int? lastPhase;
-
+    // Group tasks by phase while preserving topo order within each phase.
+    // ordered already arrives phase-desc (4→1) from DependencyResolver.
+    final phaseGroups = <int, List<WorkflowTaskScheduleRule>>{};
     for (final task in ordered) {
-      final breakdown = durations[task.id]!;
-      final effective = breakdown.effectiveDays;
-      final phase     = DependencyResolver.phaseFor(task.groupName);
+      (phaseGroups[DependencyResolver.phaseFor(task.groupName)] ??= [])
+          .add(task);
+    }
 
-      // Insert a 1-day phase gap when we cross a phase boundary
-      if (lastPhase != null && phase != lastPhase) {
-        cursor = cursor.subtract(const Duration(days: 1));
+    final allResults = <ScheduledTaskResult>[];
+    var   cursor     = planningDeadline;
+    bool  firstPhase = true;
+
+    for (int phase = 4; phase >= 1; phase--) {
+      final phaseTasks = phaseGroups[phase];
+      if (phaseTasks == null || phaseTasks.isEmpty) continue;
+
+      // 1-day gap between phases (skip for the very first phase)
+      if (!firstPhase) cursor = cursor.subtract(const Duration(days: 1));
+      firstPhase = false;
+
+      final result = _schedulePhase(
+        phaseTasks:    phaseTasks,
+        durations:     durations,
+        phaseDue:      cursor,
+        planningStart: planningStart,
+        planningDeadline: planningDeadline,
+      );
+
+      allResults.addAll(result.results);
+      // Cursor moves to the day before the earliest task start in this phase.
+      cursor = result.earliestStart.subtract(const Duration(days: 1));
+    }
+
+    return allResults.reversed.toList();
+  }
+
+  // Schedules one phase's tasks with parallel execution.
+  //
+  // Algorithm (backward):
+  //   1. Build a successor map (which tasks depend on task X).
+  //   2. Walk tasks in reverse-topo order (leaves first).
+  //      • Leaf (no in-phase successors): due = phaseDue.
+  //      • Predecessor: due = earliest(successor.start) − 1.
+  //   3. Cursor for the next phase = earliest task start in this phase.
+  //
+  // Result: parallel tasks share the same due date; only dependency chains
+  // push predecessors further back — exactly the critical-path behaviour.
+  static ({List<ScheduledTaskResult> results, DateTime earliestStart})
+      _schedulePhase({
+    required List<WorkflowTaskScheduleRule> phaseTasks,
+    required Map<String, DurationBreakdown> durations,
+    required DateTime phaseDue,
+    required DateTime planningStart,
+    required DateTime planningDeadline,
+  }) {
+    final phaseIds = {for (final t in phaseTasks) t.id};
+
+    // successorsOf[X] = list of tasks in this phase that depend on X
+    final successorsOf = <String, List<String>>{
+      for (final t in phaseTasks) t.id: [],
+    };
+    for (final task in phaseTasks) {
+      for (final depId in task.dependencyTaskIds) {
+        if (phaseIds.contains(depId)) successorsOf[depId]!.add(task.id);
       }
-      lastPhase = phase;
+    }
+
+    // phaseTasks is topo-sorted roots-first; reversing gives leaves first.
+    final dates = <String, ({DateTime start, DateTime due})>{};
+
+    for (final task in phaseTasks.reversed) {
+      final eff          = durations[task.id]!.effectiveDays;
+      final mySuccessors = successorsOf[task.id]!
+          .where((s) => dates.containsKey(s))
+          .toList();
 
       final DateTime due;
-      final DateTime start;
-
       if (task.schedulingMode == SchedulingMode.milestoneAligned &&
           task.latestFinishOffsetDays != null) {
-        // Pin this task to a fixed offset from the deadline
-        due   = planningDeadline
+        due = planningDeadline
             .subtract(Duration(days: task.latestFinishOffsetDays!));
-        start = due.subtract(Duration(days: effective - 1));
-        // Milestone-pinned tasks do NOT advance the cursor
+      } else if (mySuccessors.isEmpty) {
+        due = phaseDue;
       } else {
-        due    = cursor;
-        start  = cursor.subtract(Duration(days: effective - 1));
-        cursor = start.subtract(const Duration(days: 1));
+        // Due the day before the earliest successor's start
+        due = mySuccessors
+            .map((s) => dates[s]!.start.subtract(const Duration(days: 1)))
+            .reduce((a, b) => a.isBefore(b) ? a : b);
       }
 
-      final compressed = start.isBefore(planningStart);
-      built.add(ScheduledTaskResult(
+      dates[task.id] = (start: due.subtract(Duration(days: eff - 1)), due: due);
+    }
+
+    final earliestStart = dates.values
+        .map((d) => d.start)
+        .reduce((a, b) => a.isBefore(b) ? a : b);
+
+    final results = phaseTasks.map((task) {
+      final d          = dates[task.id]!;
+      final bd         = durations[task.id]!;
+      final compressed = d.start.isBefore(planningStart);
+      return ScheduledTaskResult(
         templateTaskId:        task.id,
         groupName:             task.groupName,
         title:                 task.title,
         priority:              task.priority,
         sortOrder:             task.sortOrder,
-        scheduledStartDate:    compressed ? planningStart : start,
-        dueDate:               due,
-        baseDurationDays:      breakdown.baseDays,
-        complexityAdjDays:     breakdown.complexityDays,
-        bufferDays:            breakdown.bufferDays,
-        effectiveDurationDays: effective,
+        scheduledStartDate:    compressed ? planningStart : d.start,
+        dueDate:               d.due,
+        baseDurationDays:      bd.baseDays,
+        complexityAdjDays:     bd.complexityDays,
+        bufferDays:            bd.bufferDays,
+        effectiveDurationDays: bd.effectiveDays,
         isCompressed:          compressed,
         scheduleNote:          compressed
             ? 'Timeline compressed — start adjusted to today.'
             : null,
         defaultAssigneeId:     task.defaultAssigneeId,
-      ));
-    }
+      );
+    }).toList();
 
-    // Reverse to chronological order (earliest task first).
-    return built.reversed.toList();
+    return (results: results, earliestStart: earliestStart);
   }
 }

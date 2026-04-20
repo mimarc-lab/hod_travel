@@ -21,7 +21,19 @@ class ScheduleValidator {
   }) {
     final planningStart   = PlanningDeadlineHelper.planningStart();
     final available       = PlanningDeadlineHelper.availableDays(planningDeadline);
-    final required        = tasks.fold(0, (sum, t) => sum + t.effectiveDurationDays);
+
+    // Use the actual schedule SPAN (latest due − earliest start), not the sum
+    // of durations.  Summing inflates the number when parallel tasks overlap.
+    final required = tasks.isEmpty ? 0 : (() {
+      final earliest = tasks
+          .map((t) => t.scheduledStartDate)
+          .reduce((a, b) => a.isBefore(b) ? a : b);
+      final latest = tasks
+          .map((t) => t.dueDate)
+          .reduce((a, b) => a.isAfter(b) ? a : b);
+      return latest.difference(earliest).inDays + 1;
+    })();
+
     final compressedTasks = tasks.where((t) => t.isCompressed).toList();
     final compressed      = compressedTasks.isNotEmpty;
     final impossible      = available <= 0;
