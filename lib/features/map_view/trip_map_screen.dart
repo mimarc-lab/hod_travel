@@ -97,7 +97,14 @@ class _TripMapScreenState extends State<TripMapScreen>
       days:          _itinerary.days,
       itemsByDayId:  _itineraryItemsByDayId,
     );
-    setState(() => _allMarkers = markers);
+    setState(() {
+      _allMarkers = markers;
+      // Auto-select the first day so only Day 1 pins are visible on load.
+      // Only set once; preserves the user's current selection on subsequent updates.
+      if (_selectedDayId == null && _itinerary.days.isNotEmpty) {
+        _selectedDayId = _itinerary.days.first.id;
+      }
+    });
 
     // Fit camera once on first load
     if (!_mapReady && markers.isNotEmpty) {
