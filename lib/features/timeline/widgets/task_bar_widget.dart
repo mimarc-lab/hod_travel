@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
@@ -47,6 +49,7 @@ class _TaskBarWidgetState extends State<TaskBarWidget> {
   bool _isHovered = false;
 
   OverlayEntry? _tooltip;
+  Timer?        _tooltipTimer;
 
   final _barKey = GlobalKey();
 
@@ -79,8 +82,15 @@ class _TaskBarWidgetState extends State<TaskBarWidget> {
 
   // ── Tooltip ───────────────────────────────────────────────────────────────
 
-  void _showTooltip() {
-    _removeTooltip();
+  // Debounced show: waits 40 ms before inserting the overlay so that rapid
+  // enter/exit events (cursor grazing the bar edge) don't flash the tooltip.
+  void _scheduleTooltip() {
+    _tooltipTimer?.cancel();
+    _tooltipTimer = Timer(const Duration(milliseconds: 40), _insertTooltip);
+  }
+
+  void _insertTooltip() {
+    if (!mounted || _tooltip != null) return;
     final box = _barKey.currentContext?.findRenderObject() as RenderBox?;
     if (box == null) return;
     final pos = box.localToGlobal(Offset.zero);
@@ -88,14 +98,20 @@ class _TaskBarWidgetState extends State<TaskBarWidget> {
     _tooltip = OverlayEntry(
       builder: (_) => Positioned(
         left: pos.dx,
-        top:  pos.dy - 88,
-        child: _TooltipCard(task: widget.task),
+        top:  pos.dy - 96,
+        // IgnorePointer is critical: prevents the tooltip from intercepting
+        // mouse events and causing the enter/exit vibration feedback loop.
+        child: IgnorePointer(
+          child: _TooltipCard(task: widget.task),
+        ),
       ),
     );
     Overlay.of(context).insert(_tooltip!);
   }
 
   void _removeTooltip() {
+    _tooltipTimer?.cancel();
+    _tooltipTimer = null;
     _tooltip?.remove();
     _tooltip = null;
   }
@@ -121,7 +137,7 @@ class _TaskBarWidgetState extends State<TaskBarWidget> {
       child: MouseRegion(
         onEnter: (_) {
           setState(() => _isHovered = true);
-          _showTooltip();
+          _scheduleTooltip();
         },
         onExit: (_) {
           setState(() => _isHovered = false);
