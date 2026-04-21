@@ -20,6 +20,7 @@ import '../../../features/itinerary/providers/itinerary_provider.dart';
 import '../../../features/trips/providers/trip_provider.dart';
 import '../../../features/trips/screens/edit_trip_screen.dart';
 import '../widgets/board_group.dart';
+import '../widgets/planning_timeline_banner.dart';
 import '../widgets/task_detail/task_detail_panel.dart';
 import '../widgets/task_row.dart';
 
@@ -152,6 +153,7 @@ class _TripBoardScreenState extends State<TripBoardScreen>
             onRunSheet: () => _openRunSheet(context),
           ),
           _BoardTabBar(controller: _tabController, tabs: _tabs),
+          PlanningTimelineBanner(trip: _currentTrip, provider: _provider),
           Expanded(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,

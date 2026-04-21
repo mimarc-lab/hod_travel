@@ -358,22 +358,26 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
       await client.from('tasks').insert(rows);
     }
 
-    // Show post-navigation snackbar with schedule result
+    // Show post-navigation snackbar with planning timeline summary
     if (analysis != null && mounted) {
-      final msg = analysis.hasWarnings
-          ? analysis.warnings.first
-          : '$scheduledCount/${rows.length} tasks scheduled '
-            '(${_fmtDate(analysis.planningDeadline)} deadline)';
+      final a = analysis!;
+      final startLabel    = a.earliestStartDate != null ? _fmtDate(a.earliestStartDate!) : '—';
+      final deadlineLabel = _fmtDate(a.planningDeadline);
+      final timelineMsg   = 'Planning: $startLabel → $deadlineLabel  ·  '
+          '${a.timelineDurationDays} days  ·  ${a.totalEffortDays} task-days effort';
+      final msg = a.hasWarnings
+          ? '${a.warnings.first}\n$timelineMsg'
+          : timelineMsg;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(msg),
-              backgroundColor: analysis!.isCompressed
+              backgroundColor: a.isCompressed
                   ? Colors.orange.shade700
                   : Colors.blue.shade700,
               behavior: SnackBarBehavior.floating,
-              duration: const Duration(seconds: 6),
+              duration: const Duration(seconds: 8),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8)),
             ),

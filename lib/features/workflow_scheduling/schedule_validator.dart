@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import '../../data/models/scheduled_task_result.dart';
 import 'planning_deadline_helper.dart';
 
@@ -31,7 +32,10 @@ class ScheduleValidator {
       final latest = tasks
           .map((t) => t.dueDate)
           .reduce((a, b) => a.isAfter(b) ? a : b);
-      return latest.difference(earliest).inDays + 1;
+      final span = latest.difference(earliest).inDays + 1;
+      final effort = tasks.fold(0, (s, t) => s + t.effectiveDurationDays);
+      debugPrint('[ScheduleValidator] earliestStart=$earliest latestDue=$latest span=$span days totalEffort=$effort task-days available=$available');
+      return span;
     })();
 
     final compressedTasks = tasks.where((t) => t.isCompressed).toList();

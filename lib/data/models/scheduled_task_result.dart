@@ -64,4 +64,25 @@ class ScheduleAnalysis {
   });
 
   bool get hasWarnings => warnings.isNotEmpty;
+
+  // ── Derived metrics ────────────────────────────────────────────────────────
+
+  /// Earliest scheduledStartDate across all tasks (null when no tasks).
+  DateTime? get earliestStartDate => tasks.isEmpty
+      ? null
+      : tasks.map((t) => t.scheduledStartDate).reduce((a, b) => a.isBefore(b) ? a : b);
+
+  /// Latest dueDate across all tasks (null when no tasks).
+  DateTime? get latestDueDate => tasks.isEmpty
+      ? null
+      : tasks.map((t) => t.dueDate).reduce((a, b) => a.isAfter(b) ? a : b);
+
+  /// Actual timeline SPAN in days (= latestDue − earliestStart + 1).
+  /// This is identical to [requiredDays] but exposed as a named getter for clarity.
+  int get timelineDurationDays => requiredDays;
+
+  /// Sum of every task's effectiveDurationDays.
+  /// Represents total work effort, NOT timeline length (parallel tasks inflate this).
+  int get totalEffortDays =>
+      tasks.fold(0, (sum, t) => sum + t.effectiveDurationDays);
 }
