@@ -432,61 +432,170 @@ enum _RowAction { delete }
 
 // ── Inline subtask row (shown directly in the board table) ───────────────────
 
-class _InlineSubtaskRow extends StatelessWidget {
-  final dynamic subtask;  // Subtask
+class _InlineSubtaskRow extends StatefulWidget {
+  final dynamic subtask; // Subtask
   final BoardProvider provider;
   const _InlineSubtaskRow({required this.subtask, required this.provider});
 
   @override
+  State<_InlineSubtaskRow> createState() => _InlineSubtaskRowState();
+}
+
+class _InlineSubtaskRowState extends State<_InlineSubtaskRow> {
+  bool _hovered = false;
+  bool _editing = false;
+  late final TextEditingController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = TextEditingController(text: widget.subtask.title as String);
+  }
+
+  @override
+  void didUpdateWidget(_InlineSubtaskRow old) {
+    super.didUpdateWidget(old);
+    if (!_editing && old.subtask.title != widget.subtask.title) {
+      _ctrl.text = widget.subtask.title as String;
+    }
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  void _commitEdit() {
+    final text = _ctrl.text.trim();
+    if (text.isNotEmpty && text != widget.subtask.title) {
+      widget.provider.updateSubtaskTitle(widget.subtask, text);
+    } else {
+      _ctrl.text = widget.subtask.title as String;
+    }
+    setState(() => _editing = false);
+  }
+
+  void _delete() => widget.provider.deleteSubtask(widget.subtask);
+
+  @override
   Widget build(BuildContext context) {
-    final s = subtask;
+    final s    = widget.subtask;
     final bool done = s.isCompleted as bool;
-    return Container(
-      height: 28,
-      color: AppColors.surfaceAlt,
-      child: Row(
-        children: [
-          // Indent + left border echo
-          const SizedBox(width: 3),
-          Container(width: 1, height: 28, color: AppColors.border),
-          const SizedBox(width: 20),
 
-          // Checkbox
-          GestureDetector(
-            onTap: () => provider.toggleSubtask(s),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 120),
-              width: 14,
-              height: 14,
-              decoration: BoxDecoration(
-                color: done ? AppColors.accent : Colors.transparent,
-                borderRadius: BorderRadius.circular(3),
-                border: Border.all(
-                  color: done ? AppColors.accent : AppColors.border,
-                  width: 1.5,
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit:  (_) => setState(() => _hovered = false),
+      child: Container(
+        height: 28,
+        color: _hovered ? const Color(0xFFF0F0F0) : AppColors.surfaceAlt,
+        child: Row(
+          children: [
+            // Indent + left border echo
+            const SizedBox(width: 3),
+            Container(width: 1, height: 28, color: AppColors.border),
+            const SizedBox(width: 20),
+
+            // Checkbox
+            GestureDetector(
+              onTap: () => widget.provider.toggleSubtask(s),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 120),
+                width: 14,
+                height: 14,
+                decoration: BoxDecoration(
+                  color: done ? AppColors.accent : Colors.transparent,
+                  borderRadius: BorderRadius.circular(3),
+                  border: Border.all(
+                    color: done ? AppColors.accent : AppColors.border,
+                    width: 1.5,
+                  ),
                 ),
+                child: done
+                    ? const Icon(Icons.check, size: 9, color: Colors.white)
+                    : null,
               ),
-              child: done
-                  ? const Icon(Icons.check, size: 9, color: Colors.white)
-                  : null,
             ),
-          ),
-          const SizedBox(width: 8),
+            const SizedBox(width: 8),
 
-          // Title
-          Expanded(
-            child: Text(
-              s.title as String,
-              style: AppTextStyles.tableCell.copyWith(
-                fontSize: 11,
-                color: done ? AppColors.textMuted : AppColors.textSecondary,
-                decoration: done ? TextDecoration.lineThrough : TextDecoration.none,
-              ),
-              overflow: TextOverflow.ellipsis,
+            // Title — editable on double-tap
+            Expanded(
+              child: _editing
+                  ? TextField(
+                      controller:  _ctrl,
+                      autofocus:   true,
+                      style: AppTextStyles.tableCell.copyWith(fontSize: 11),
+                      decoration: const InputDecoration(
+                        border:         InputBorder.none,
+                        isDense:        true,
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                      onSubmitted: (_) => _commitEdit(),
+                      onTapOutside: (_) => _commitEdit(),
+                    )
+                  : GestureDetector(
+                      onDoubleTap: () => setState(() => _editing = true),
+                      child: Text(
+                        s.title as String,
+                        style: AppTextStyles.tableCell.copyWith(
+                          fontSize: 11,
+                          color: done ? AppColors.textMuted : AppColors.textSecondary,
+                          decoration: done
+                              ? TextDecoration.lineThrough
+                              : TextDecoration.none,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
             ),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-        ],
+
+            // Action buttons — visible on hover or while editing
+            if (_hovered || _editing) ...[
+              _ActionIcon(
+                icon:    Icons.edit_outlined,
+                tooltip: 'Edit',
+                onTap:   () => setState(() => _editing = true),
+              ),
+              _ActionIcon(
+                icon:    Icons.close_rounded,
+                tooltip: 'Delete',
+                color:   const Color(0xFFEF4444),
+                onTap:   _delete,
+              ),
+              const SizedBox(width: 4),
+            ] else
+              const SizedBox(width: AppSpacing.sm),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ActionIcon extends StatelessWidget {
+  final IconData icon;
+  final String   tooltip;
+  final Color    color;
+  final VoidCallback onTap;
+
+  const _ActionIcon({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+    this.color = AppColors.textMuted,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      waitDuration: const Duration(milliseconds: 500),
+      child: GestureDetector(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 3),
+          child: Icon(icon, size: 13, color: color),
+        ),
       ),
     );
   }
