@@ -377,6 +377,11 @@ class BoardProvider extends ChangeNotifier {
         }).eq('id', result.templateTaskId);
       }
 
+      // Force an immediate board reload so the planning banner reflects the
+      // new dates without waiting for the realtime subscription to fire.
+      _groupsSub?.cancel();
+      _subscribeToBoard();
+
       return analysis;
     } finally {
       _isRecalculating = false;

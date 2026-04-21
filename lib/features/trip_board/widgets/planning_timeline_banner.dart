@@ -53,11 +53,13 @@ class PlanningTimelineBanner extends StatelessWidget {
         .reduce((a, b) => a.isAfter(b) ? a : b);
     final durationDays = latest.difference(earliest).inDays + 1;
 
-    // Total effort (sum — may be larger than span due to parallel tasks)
+    // Total effort = sum of every task's duration (parallel tasks inflate this
+    // beyond the timeline span — it represents cumulative team workload).
     final totalEffort = tasks.fold<int>(
       0,
       (sum, t) => sum + (t.estimatedDurationDays ?? 0),
     );
+    final approxHours = totalEffort * 8;
 
     // Planning complete-by deadline
     final deadline = trip.startDate
@@ -103,7 +105,13 @@ class PlanningTimelineBanner extends StatelessWidget {
             _Divider(),
             _Stat(label: 'Duration', value: '$durationDays days'),
             _Divider(),
-            _Stat(label: 'Total Effort', value: '$totalEffort task-days'),
+            _Stat(
+              label: 'Team Effort',
+              value: '$totalEffort task-days  (~${approxHours}h)',
+              tooltip: 'Sum of all individual task durations — '
+                  'larger than the timeline span because tasks run in parallel. '
+                  'Working hours assume 8h per task-day.',
+            ),
           ],
         ),
     );
@@ -116,11 +124,12 @@ class _Stat extends StatelessWidget {
   final String label;
   final String value;
   final Color? valueColor;
-  const _Stat({required this.label, required this.value, this.valueColor});
+  final String? tooltip;
+  const _Stat({required this.label, required this.value, this.valueColor, this.tooltip});
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    final row = Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
@@ -134,8 +143,17 @@ class _Stat extends StatelessWidget {
             color: valueColor ?? AppColors.textPrimary,
           ),
         ),
+        if (tooltip != null) ...[
+          const SizedBox(width: 3),
+          Tooltip(
+            message: tooltip!,
+            preferBelow: true,
+            child: const Icon(Icons.info_outline_rounded, size: 11, color: AppColors.textMuted),
+          ),
+        ],
       ],
     );
+    return row;
   }
 }
 
