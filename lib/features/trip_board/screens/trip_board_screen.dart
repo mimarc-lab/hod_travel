@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
@@ -89,6 +90,79 @@ class _TripBoardScreenState extends State<TripBoardScreen>
     }
   }
 
+  Future<void> _onRecalculate(BuildContext context) async {
+    if (_currentTrip.startDate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Trip has no start date — cannot recalculate schedule.')),
+      );
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Recalculate Schedule?'),
+        content: const Text(
+          'This will re-run the planning engine and update the start date and '
+          'due date of every task based on their current durations.\n\n'
+          'Any manual date adjustments will be overwritten.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Recalculate'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    try {
+      final analysis = await _provider.recalculateSchedule();
+      if (!mounted) return;
+      if (analysis == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No tasks to reschedule.')),
+        );
+        return;
+      }
+      final start    = analysis.earliestStartDate;
+      final deadline = analysis.planningDeadline;
+      final msg = analysis.hasWarnings
+          ? analysis.warnings.first
+          : 'Schedule updated — ${analysis.tasks.length} tasks rescheduled. '
+            'Planning: ${_fmtDate(start)} → ${_fmtDate(deadline)}  ·  '
+            '${analysis.timelineDurationDays} days  ·  ${analysis.totalEffortDays} task-days';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(msg),
+          backgroundColor: analysis.isCompressed
+              ? Colors.orange.shade700
+              : Colors.green.shade700,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 8),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      );
+    } catch (e) {
+      debugPrint('[Recalculate] error: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not recalculate schedule. Please try again.')),
+      );
+    }
+  }
+
+  static String _fmtDate(DateTime? d) {
+    if (d == null) return '—';
+    const m = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return '${m[d.month]} ${d.day}';
+  }
+
   void _openRunSheet(BuildContext context) {
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -168,6 +242,7 @@ class _TripBoardScreenState extends State<TripBoardScreen>
                         provider: _provider,
                         onAiAssist: () =>
                             _tabController.animateTo(5), // Intelligence tab
+                        onRecalculate: () => _onRecalculate(context),
                       ),
                       TimelineScreen(trip: widget.trip, provider: _provider), // Timeline
                       TripMapScreen(trip: widget.trip, provider: _itineraryProvider), // Map
@@ -416,7 +491,8 @@ class _BoardTabBar extends StatelessWidget {
 class _BoardTab extends StatelessWidget {
   final BoardProvider provider;
   final VoidCallback? onAiAssist;
-  const _BoardTab({required this.provider, this.onAiAssist});
+  final VoidCallback? onRecalculate;
+  const _BoardTab({required this.provider, this.onAiAssist, this.onRecalculate});
 
   static const double _totalWidth =
       BoardColumns.taskName +
@@ -434,7 +510,7 @@ class _BoardTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        _BoardToolbar(onAiAssist: onAiAssist),
+        _BoardToolbar(onAiAssist: onAiAssist, onRecalculate: onRecalculate, provider: provider),
         Expanded(
           child: ListenableBuilder(
             listenable: provider,
@@ -471,8 +547,10 @@ class _BoardTab extends StatelessWidget {
 // ── Toolbar ───────────────────────────────────────────────────────────────────
 
 class _BoardToolbar extends StatelessWidget {
+  final BoardProvider provider;
   final VoidCallback? onAiAssist;
-  const _BoardToolbar({this.onAiAssist});
+  final VoidCallback? onRecalculate;
+  const _BoardToolbar({required this.provider, this.onAiAssist, this.onRecalculate});
 
   @override
   Widget build(BuildContext context) {
@@ -493,6 +571,48 @@ class _BoardToolbar extends StatelessWidget {
           const SizedBox(width: AppSpacing.sm),
           _ToolbarBtn(icon: Icons.sort_rounded,          label: 'Sort'),
           const Spacer(),
+          // Recalculate Schedule button
+          if (onRecalculate != null) ...[
+            ListenableBuilder(
+              listenable: provider,
+              builder: (_, __) {
+                final busy = provider.isRecalculating;
+                return GestureDetector(
+                  onTap: busy ? null : onRecalculate,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF0FDF4),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: const Color(0xFF16A34A).withAlpha(60)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (busy)
+                          const SizedBox(
+                            width: 11,
+                            height: 11,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 1.5,
+                              color: Color(0xFF16A34A),
+                            ),
+                          )
+                        else
+                          const Icon(Icons.refresh_rounded, size: 13, color: Color(0xFF16A34A)),
+                        const SizedBox(width: 5),
+                        Text(
+                          busy ? 'Recalculating…' : 'Recalculate Schedule',
+                          style: AppTextStyles.labelMedium.copyWith(color: const Color(0xFF16A34A)),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(width: AppSpacing.sm),
+          ],
           if (onAiAssist != null) ...[
             GestureDetector(
               onTap: onAiAssist,

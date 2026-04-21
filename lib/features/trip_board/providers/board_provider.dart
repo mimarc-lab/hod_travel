@@ -3,11 +3,15 @@ import 'package:flutter/material.dart';
 import '../../../core/supabase/app_db.dart';
 import '../../../data/models/approval_model.dart';
 import '../../../data/models/board_group_model.dart';
+import '../../../data/models/scheduled_task_result.dart';
 import '../../../data/models/task_comment_model.dart';
 import '../../../data/models/task_model.dart';
+import '../../../data/models/trip_complexity_profile.dart';
 import '../../../data/models/trip_model.dart';
 import '../../../data/models/user_model.dart';
+import '../../../data/models/workflow_task_schedule_rule.dart';
 import '../../../data/repositories/task_repository.dart';
+import '../../../features/workflow_scheduling/hybrid_schedule_engine.dart';
 
 /// Holds all mutable board state for one trip.
 /// Consumed via ListenableBuilder — no external package required.
@@ -30,6 +34,7 @@ class BoardProvider extends ChangeNotifier {
   String? _pendingInitialTaskId;
   final Map<String, List<TaskComment>> _comments = {};
   bool _isLoading = false;
+  bool _isRecalculating = false;
   String? _error;
 
   StreamSubscription<List<BoardGroup>>? _groupsSub;
@@ -51,11 +56,12 @@ class BoardProvider extends ChangeNotifier {
 
   // ── Getters ───────────────────────────────────────────────────────────────
 
-  List<BoardGroup> get groups  => _groups;
-  List<AppUser>    get members => _members;
-  Task? get selectedTask       => _selectedTask;
-  bool get isLoading           => _isLoading;
-  String? get error            => _error;
+  List<BoardGroup> get groups          => _groups;
+  List<AppUser>    get members         => _members;
+  Task? get selectedTask               => _selectedTask;
+  bool get isLoading                   => _isLoading;
+  bool get isRecalculating             => _isRecalculating;
+  String? get error                    => _error;
 
   // ── Board subscription ────────────────────────────────────────────────────
 
@@ -316,6 +322,66 @@ class BoardProvider extends ChangeNotifier {
           avatarColor: avatarColorFor(0),
           role:        'Staff',
         );
+  }
+
+  // ── Schedule recalculation ────────────────────────────────────────────────
+
+  /// Re-runs HybridScheduleEngine against the current live tasks and writes
+  /// updated travel_date / due_date / estimated_duration_days back to the DB.
+  /// Returns null when the trip has no start date or there are no tasks.
+  Future<ScheduleAnalysis?> recalculateSchedule() async {
+    if (trip.startDate == null) return null;
+
+    final rules = <WorkflowTaskScheduleRule>[];
+    int i = 0;
+    for (final group in _groups) {
+      for (final task in group.tasks) {
+        rules.add(WorkflowTaskScheduleRule(
+          id:                    task.id,
+          groupName:             group.name,
+          title:                 task.name,
+          priority:              task.priority.label,
+          sortOrder:             i++,
+          estimatedDurationDays: task.estimatedDurationDays ?? 1,
+        ));
+      }
+    }
+    if (rules.isEmpty) return null;
+
+    _isRecalculating = true;
+    notifyListeners();
+
+    try {
+      final analysis = HybridScheduleEngine.scheduleFromRules(
+        rules:              rules,
+        tripStartDate:      trip.startDate!,
+        complexity: TripComplexityProfile(
+          numberOfCities:          trip.destinations.length,
+          numberOfDays:            trip.endDate != null
+              ? trip.endDate!.difference(trip.startDate!).inDays + 1
+              : 1,
+          numberOfGuests:          trip.guestCount,
+          hasSignatureExperiences: trip.hasSignatureExperiences,
+          hasMobilityRequirements: trip.hasMobilityRequirements,
+          hasPrivateTransport:     trip.hasPrivateTransport,
+        ),
+        planningBufferDays: trip.planningBufferDays,
+      );
+
+      // Write updated dates back to the DB for every scheduled task.
+      for (final result in analysis.tasks) {
+        await db.from('tasks').update({
+          'travel_date':             result.scheduledStartDate.toIso8601String().substring(0, 10),
+          'due_date':                result.dueDate.toIso8601String().substring(0, 10),
+          'estimated_duration_days': result.effectiveDurationDays,
+        }).eq('id', result.templateTaskId);
+      }
+
+      return analysis;
+    } finally {
+      _isRecalculating = false;
+      notifyListeners();
+    }
   }
 
   @override
