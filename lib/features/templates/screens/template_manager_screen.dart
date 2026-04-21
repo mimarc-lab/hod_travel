@@ -4,8 +4,10 @@ import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/supabase/app_db.dart';
 import '../../../data/models/board_group_model.dart';
+import '../../../data/models/subtask.dart';
 import '../../../data/models/trip_template_model.dart';
 import '../../../data/models/user_model.dart';
+import '../../../data/repositories/subtask_repository.dart';
 import '../../../data/repositories/trip_template_repository.dart';
 
 // =============================================================================
@@ -319,14 +321,17 @@ class _TemplateEditorScreenState extends State<TemplateEditorScreen> {
   late TripTemplate _template;
   bool _saving = false;
   List<AppUser> _members = [];
+  Map<String, List<SubtaskTemplate>> _subtaskTemplates = {};
 
-  TripTemplateRepository? get _repo => AppRepositories.instance?.templates;
+  TripTemplateRepository? get _repo    => AppRepositories.instance?.templates;
+  SubtaskRepository?      get _subRepo => AppRepositories.instance?.subtasks;
 
   @override
   void initState() {
     super.initState();
     _template = widget.template;
     _loadMembers();
+    _loadSubtaskTemplates();
   }
 
   Future<void> _loadMembers() async {
@@ -343,6 +348,44 @@ class _TemplateEditorScreenState extends State<TemplateEditorScreen> {
     } catch (e) {
       debugPrint('_loadMembers error: $e');
     }
+  }
+
+  Future<void> _loadSubtaskTemplates() async {
+    if (_subRepo == null) return;
+    try {
+      final all = await _subRepo!.fetchAllTemplates();
+      final grouped = <String, List<SubtaskTemplate>>{};
+      for (final t in all) {
+        grouped.putIfAbsent(t.taskType, () => []).add(t);
+      }
+      if (mounted) setState(() => _subtaskTemplates = grouped);
+    } catch (e) {
+      debugPrint('_loadSubtaskTemplates error: $e');
+    }
+  }
+
+  Future<void> _addSubtaskTemplate(String groupName) async {
+    final title = await _showSubtaskTemplateDialog(context, existing: null);
+    if (title == null || title.isEmpty) return;
+    final current = _subtaskTemplates[groupName] ?? [];
+    await _subRepo!.createTemplate(
+      taskType:   groupName,
+      title:      title,
+      orderIndex: current.length,
+    );
+    await _loadSubtaskTemplates();
+  }
+
+  Future<void> _editSubtaskTemplate(SubtaskTemplate t) async {
+    final title = await _showSubtaskTemplateDialog(context, existing: t.title);
+    if (title == null || title.isEmpty) return;
+    await _subRepo!.updateTemplate(t.copyWith(title: title));
+    await _loadSubtaskTemplates();
+  }
+
+  Future<void> _deleteSubtaskTemplate(SubtaskTemplate t) async {
+    await _subRepo!.deleteTemplate(t.id);
+    await _loadSubtaskTemplates();
   }
 
   Future<void> _reload() async {
@@ -464,12 +507,16 @@ class _TemplateEditorScreenState extends State<TemplateEditorScreen> {
                 ),
                 const SizedBox(height: AppSpacing.base),
                 ...defaultBoardGroupNames.map((group) => _GroupSection(
-                      groupName: group,
-                      tasks:     _template.tasksForGroup(group),
-                      members:   _members,
-                      onAdd:     () => _addTask(group),
-                      onEdit:    _editTask,
-                      onDelete:  _deleteTask,
+                      groupName:        group,
+                      tasks:            _template.tasksForGroup(group),
+                      members:          _members,
+                      subtaskTemplates: _subtaskTemplates[group] ?? [],
+                      onAdd:            () => _addTask(group),
+                      onEdit:           _editTask,
+                      onDelete:         _deleteTask,
+                      onAddSubtask:     () => _addSubtaskTemplate(group),
+                      onEditSubtask:    _editSubtaskTemplate,
+                      onDeleteSubtask:  _deleteSubtaskTemplate,
                     )),
               ],
             ),
@@ -483,17 +530,25 @@ class _GroupSection extends StatelessWidget {
   final String groupName;
   final List<TripTemplateTask> tasks;
   final List<AppUser> members;
+  final List<SubtaskTemplate> subtaskTemplates;
   final VoidCallback onAdd;
   final Future<void> Function(TripTemplateTask) onEdit;
   final Future<void> Function(TripTemplateTask) onDelete;
+  final VoidCallback onAddSubtask;
+  final Future<void> Function(SubtaskTemplate) onEditSubtask;
+  final Future<void> Function(SubtaskTemplate) onDeleteSubtask;
 
   const _GroupSection({
     required this.groupName,
     required this.tasks,
     required this.members,
+    required this.subtaskTemplates,
     required this.onAdd,
     required this.onEdit,
     required this.onDelete,
+    required this.onAddSubtask,
+    required this.onEditSubtask,
+    required this.onDeleteSubtask,
   });
 
   @override
@@ -508,7 +563,7 @@ class _GroupSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Group header
+          // ── Group header ─────────────────────────────────────────────────
           Padding(
             padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.base, vertical: AppSpacing.sm),
@@ -546,15 +601,65 @@ class _GroupSection extends StatelessWidget {
               ],
             ),
           ),
+
+          // ── Task rows ────────────────────────────────────────────────────
           if (tasks.isNotEmpty)
             const Divider(height: 1, color: AppColors.divider),
-          // Task rows
           ...tasks.map((t) => _TaskRow(
                 task:     t,
                 members:  members,
                 onEdit:   () => onEdit(t),
                 onDelete: () => onDelete(t),
               )),
+
+          // ── Subtask templates ────────────────────────────────────────────
+          const Divider(height: 1, color: AppColors.divider),
+          Padding(
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.base, vertical: AppSpacing.sm),
+            child: Row(
+              children: [
+                const Icon(Icons.checklist_rounded,
+                    size: 13, color: AppColors.textMuted),
+                const SizedBox(width: 5),
+                Text('Default subtasks',
+                    style: AppTextStyles.labelSmall
+                        .copyWith(color: AppColors.textSecondary)),
+                const Spacer(),
+                GestureDetector(
+                  onTap: onAddSubtask,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.add_rounded,
+                          size: 13, color: AppColors.accent),
+                      const SizedBox(width: 3),
+                      Text('Add',
+                          style: AppTextStyles.labelSmall
+                              .copyWith(color: AppColors.accent)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (subtaskTemplates.isEmpty)
+            Padding(
+              padding: const EdgeInsets.only(
+                  left: AppSpacing.base,
+                  right: AppSpacing.base,
+                  bottom: AppSpacing.sm),
+              child: Text('No default subtasks for this group.',
+                  style: AppTextStyles.labelSmall
+                      .copyWith(color: AppColors.textMuted)),
+            )
+          else
+            ...subtaskTemplates.map((st) => _SubtaskTemplateRow(
+                  template: st,
+                  onEdit:   () => onEditSubtask(st),
+                  onDelete: () => onDeleteSubtask(st),
+                )),
+          const SizedBox(height: AppSpacing.xs),
         ],
       ),
     );
@@ -648,6 +753,86 @@ class _TaskRow extends StatelessWidget {
       ),
     );
   }
+}
+
+// ── Subtask template row ──────────────────────────────────────────────────────
+
+class _SubtaskTemplateRow extends StatelessWidget {
+  final SubtaskTemplate template;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+  const _SubtaskTemplateRow({
+    required this.template,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onEdit,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.base, vertical: 6),
+          child: Row(
+            children: [
+              const Icon(Icons.check_box_outline_blank_rounded,
+                  size: 13, color: AppColors.textMuted),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Text(template.title,
+                    style: AppTextStyles.bodySmall,
+                    overflow: TextOverflow.ellipsis),
+              ),
+              GestureDetector(
+                onTap: onDelete,
+                child: const Icon(Icons.close_rounded,
+                    size: 14, color: AppColors.textMuted),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Subtask template dialog ───────────────────────────────────────────────────
+
+Future<String?> _showSubtaskTemplateDialog(
+  BuildContext context, {
+  required String? existing,
+}) {
+  final ctrl = TextEditingController(text: existing ?? '');
+  return showDialog<String>(
+    context: context,
+    builder: (_) => AlertDialog(
+      title: Text(existing == null ? 'Add Default Subtask' : 'Edit Subtask'),
+      content: TextField(
+        controller: ctrl,
+        autofocus: true,
+        textCapitalization: TextCapitalization.sentences,
+        decoration: const InputDecoration(
+          hintText: 'e.g. Confirm booking with supplier',
+          border: OutlineInputBorder(),
+        ),
+        onSubmitted: (v) => Navigator.of(context).pop(v.trim()),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          style: FilledButton.styleFrom(backgroundColor: AppColors.accent),
+          onPressed: () => Navigator.of(context).pop(ctrl.text.trim()),
+          child: Text(existing == null ? 'Add' : 'Save'),
+        ),
+      ],
+    ),
+  );
 }
 
 // ── Task result record ────────────────────────────────────────────────────────

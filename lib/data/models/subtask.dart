@@ -61,4 +61,11 @@ class SubtaskTemplate {
     required this.title,
     required this.orderIndex,
   });
+
+  SubtaskTemplate copyWith({String? title, int? orderIndex}) => SubtaskTemplate(
+    id:         id,
+    taskType:   taskType,
+    title:      title      ?? this.title,
+    orderIndex: orderIndex ?? this.orderIndex,
+  );
 }

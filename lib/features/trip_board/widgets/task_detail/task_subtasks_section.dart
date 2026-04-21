@@ -34,6 +34,14 @@ class _TaskSubtasksSectionState extends State<TaskSubtasksSection> {
   bool  _showInput  = false;
 
   @override
+  void initState() {
+    super.initState();
+    // Ensure subscription exists regardless of how this screen was opened
+    // (desktop selectTask vs mobile direct push both need this).
+    widget.provider.subscribeToSubtasks(widget.task.id);
+  }
+
+  @override
   void dispose() {
     _addCtrl.dispose();
     _addFocus.dispose();
