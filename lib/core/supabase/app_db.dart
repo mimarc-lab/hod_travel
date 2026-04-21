@@ -8,6 +8,7 @@ import '../../data/repositories/itinerary_repository.dart';
 import '../../data/repositories/notification_repository.dart';
 import '../../data/repositories/profile_repository.dart';
 import '../../data/repositories/supplier_repository.dart';
+import '../../data/repositories/subtask_repository.dart';
 import '../../data/repositories/task_repository.dart';
 import '../../data/repositories/team_repository.dart';
 import '../../data/repositories/trip_repository.dart';
@@ -58,8 +59,9 @@ class AppRepositories {
   final TeamRepository teams;
 
   // ── Trips & board ─────────────────────────────────────────────────────────
-  final TripRepository trips;
-  final TaskRepository tasks;
+  final TripRepository     trips;
+  final TaskRepository     tasks;
+  final SubtaskRepository  subtasks;
   final ItineraryRepository itinerary;
   final TripTemplateRepository templates;
 
@@ -102,6 +104,7 @@ class AppRepositories {
     required this.teams,
     required this.trips,
     required this.tasks,
+    required this.subtasks,
     required this.itinerary,
     required this.templates,
     required this.suppliers,
@@ -136,6 +139,7 @@ class AppRepositories {
       teams:        teamRepo,
       trips:        SupabaseTripRepository(client),
       tasks:        SupabaseTaskRepository(client),
+      subtasks:     SupabaseSubtaskRepository(client),
       itinerary:    SupabaseItineraryRepository(client),
       templates:    SupabaseTripTemplateRepository(client),
       suppliers:    SupabaseSupplierRepository(client),

@@ -59,10 +59,11 @@ class _TripBoardScreenState extends State<TripBoardScreen>
     _tabController = TabController(length: _tabs.length, vsync: this);
     _provider = BoardProvider(
       widget.trip,
-      repository:    AppRepositories.instance?.tasks,
-      teamId:        AppRepositories.instance?.currentTeamId,
-      currentUserId: AppRepositories.instance?.currentUserId,
-      initialTaskId: widget.initialTaskId,
+      repository:        AppRepositories.instance?.tasks,
+      subtaskRepository: AppRepositories.instance?.subtasks,
+      teamId:            AppRepositories.instance?.currentTeamId,
+      currentUserId:     AppRepositories.instance?.currentUserId,
+      initialTaskId:     widget.initialTaskId,
     );
     _itineraryProvider = ItineraryProvider(
       widget.trip,

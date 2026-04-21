@@ -172,18 +172,61 @@ class TaskRow extends StatelessWidget {
                 color: isSelected ? AppColors.accent : Colors.transparent,
               ),
 
-              // Task name
+              // Task name + optional subtask progress
               SizedBox(
                 width: BoardColumns.taskName - 3,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-                  child: Text(
-                    task.name,
-                    style: AppTextStyles.tableCell.copyWith(
-                      fontWeight: isSelected ? FontWeight.w500 : FontWeight.w400,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  child: task.hasSubtasks
+                      ? Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              task.name,
+                              style: AppTextStyles.tableCell.copyWith(
+                                fontWeight: isSelected ? FontWeight.w500 : FontWeight.w400,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 3),
+                            Row(
+                              children: [
+                                SizedBox(
+                                  width: 60,
+                                  height: 3,
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(2),
+                                    child: LinearProgressIndicator(
+                                      value:            task.subtaskProgress,
+                                      backgroundColor:  AppColors.border,
+                                      valueColor: AlwaysStoppedAnimation(
+                                        task.subtaskProgress == 1.0
+                                            ? const Color(0xFF16A34A)
+                                            : AppColors.accent,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 5),
+                                Text(
+                                  '${task.completedSubtaskCount}/${task.subtaskCount}',
+                                  style: const TextStyle(
+                                    fontSize: 9,
+                                    color: AppColors.textMuted,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        )
+                      : Text(
+                          task.name,
+                          style: AppTextStyles.tableCell.copyWith(
+                            fontWeight: isSelected ? FontWeight.w500 : FontWeight.w400,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                 ),
               ),
 

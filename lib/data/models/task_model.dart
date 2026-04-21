@@ -129,6 +129,14 @@ class Task {
   final ApprovalStatus approvalStatus;
   final int? estimatedDurationDays; // set by backward planning engine
 
+  // ── Subtask progress (denormalised from DB trigger) ────────────────────────
+  final int subtaskCount;
+  final int completedSubtaskCount;
+
+  double get subtaskProgress =>
+      subtaskCount == 0 ? 0 : completedSubtaskCount / subtaskCount;
+  bool get hasSubtasks => subtaskCount > 0;
+
   const Task({
     required this.id,
     this.tripId,
@@ -148,6 +156,8 @@ class Task {
     this.clientVisible = false,
     this.approvalStatus = ApprovalStatus.draft,
     this.estimatedDurationDays,
+    this.subtaskCount = 0,
+    this.completedSubtaskCount = 0,
   });
 
   Task copyWith({
@@ -173,6 +183,8 @@ class Task {
     ApprovalStatus? approvalStatus,
     int? estimatedDurationDays,
     bool clearEstimatedDuration = false,
+    int? subtaskCount,
+    int? completedSubtaskCount,
   }) {
     return Task(
       id:             id,
@@ -195,6 +207,8 @@ class Task {
       estimatedDurationDays: clearEstimatedDuration
           ? null
           : (estimatedDurationDays ?? this.estimatedDurationDays),
+      subtaskCount:           subtaskCount           ?? this.subtaskCount,
+      completedSubtaskCount:  completedSubtaskCount  ?? this.completedSubtaskCount,
     );
   }
 }

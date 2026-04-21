@@ -12,6 +12,7 @@ import 'task_attachments_section.dart';
 import 'task_comments_section.dart';
 import 'task_info_section.dart';
 import 'task_linked_section.dart';
+import 'task_subtasks_section.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TaskDetailPanel — side panel container (desktop/tablet)
@@ -218,6 +219,15 @@ class _TaskDetailContentState extends State<_TaskDetailContent> {
                   destinationCtrl: _destinationCtrl,
                   supplierCtrl: _supplierCtrl,
                   onUpdate: _update,
+                ),
+                const SizedBox(height: AppSpacing.xl),
+                const Divider(height: 1, color: AppColors.divider),
+                const SizedBox(height: AppSpacing.base),
+
+                // Subtasks
+                TaskSubtasksSection(
+                  task:     _task,
+                  provider: widget.provider,
                 ),
                 const SizedBox(height: AppSpacing.xl),
                 const Divider(height: 1, color: AppColors.divider),

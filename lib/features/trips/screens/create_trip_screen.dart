@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
@@ -355,7 +356,21 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
     debugPrint('[Scheduling] inserting ${rows.length} tasks, $scheduledCount with scheduled dates');
 
     if (rows.isNotEmpty) {
-      await client.from('tasks').insert(rows);
+      // Use .select() to get back the inserted task IDs for subtask generation.
+      final inserted = await client.from('tasks').insert(rows).select('id, board_group_id');
+
+      // Build groupId → groupName reverse map
+      final groupNameById = {
+        for (final e in groupIdByName.entries) e.value: e.key,
+      };
+
+      // Auto-generate subtasks from templates for each inserted task
+      await _generateSubtasks(
+        client:    client,
+        teamId:    teamId,
+        inserted:  inserted,
+        groupNameById: groupNameById,
+      );
     }
 
     // Show post-navigation snackbar with planning timeline summary
@@ -387,6 +402,56 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
     }
 
     return rows.length;
+  }
+
+  static Future<void> _generateSubtasks({
+    required SupabaseClient client,
+    required String teamId,
+    required List<dynamic> inserted,
+    required Map<String, String> groupNameById,
+  }) async {
+    try {
+      // Fetch all subtask templates in one query
+      final templateRows = await client
+          .from('subtask_templates')
+          .select('task_type, title, order_index')
+          .order('task_type')
+          .order('order_index');
+
+      // Group templates by task_type (= group name)
+      final byGroup = <String, List<Map<String, dynamic>>>{};
+      for (final r in templateRows) {
+        final type = r['task_type'] as String;
+        (byGroup[type] ??= []).add(r as Map<String, dynamic>);
+      }
+
+      // Build subtask rows for all inserted tasks
+      final subtaskRows = <Map<String, dynamic>>[];
+      for (final row in inserted) {
+        final taskId   = row['id']             as String;
+        final groupId  = row['board_group_id'] as String?;
+        final groupName = groupId != null ? groupNameById[groupId] : null;
+        if (groupName == null) continue;
+
+        final templates = byGroup[groupName] ?? [];
+        for (final t in templates) {
+          subtaskRows.add({
+            'parent_task_id': taskId,
+            'team_id':        teamId,
+            'title':          t['title'],
+            'order_index':    t['order_index'],
+            'is_completed':   false,
+          });
+        }
+      }
+
+      if (subtaskRows.isNotEmpty) {
+        await client.from('subtasks').insert(subtaskRows);
+        debugPrint('[Subtasks] generated ${subtaskRows.length} subtasks for ${inserted.length} tasks');
+      }
+    } catch (e) {
+      debugPrint('[Subtasks] generation failed: $e');
+    }
   }
 
   static String _fmtDate(DateTime d) {

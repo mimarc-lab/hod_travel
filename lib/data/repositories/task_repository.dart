@@ -90,7 +90,9 @@ Task _taskFromRow(Map<String, dynamic> row, Map<String, AppUser> profiles) {
     supplierId: row['supplier_id'] as String?,
     clientVisible: row['is_client_visible'] as bool? ?? false,
     approvalStatus: approvalStatusFromDb(row['approval_status'] as String? ?? 'draft'),
-    estimatedDurationDays: row['estimated_duration_days'] as int?,
+    estimatedDurationDays:  row['estimated_duration_days']  as int?,
+    subtaskCount:           row['subtask_count']            as int? ?? 0,
+    completedSubtaskCount:  row['completed_subtask_count']  as int? ?? 0,
   );
 }
 
