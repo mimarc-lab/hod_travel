@@ -66,6 +66,7 @@ class PlanningTimelineBanner extends StatelessWidget {
     final isPast = deadline?.isBefore(DateTime.now()) ?? false;
 
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
       decoration: BoxDecoration(
         color: isPast
