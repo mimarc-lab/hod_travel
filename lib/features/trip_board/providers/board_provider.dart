@@ -102,6 +102,13 @@ class BoardProvider extends ChangeNotifier {
             _pendingInitialTaskId = null;
           }
         }
+        // Subscribe to subtasks for all tasks that have them so they're
+        // available for inline display in the board without opening the panel.
+        for (final group in groups) {
+          for (final task in group.tasks) {
+            if (task.hasSubtasks) subscribeToSubtasks(task.id);
+          }
+        }
         notifyListeners();
       },
       onError: (_) {
@@ -143,7 +150,6 @@ class BoardProvider extends ChangeNotifier {
   }
 
   void clearSelection() {
-    if (_selectedTask != null) cancelSubtaskSubscription(_selectedTask!.id);
     _selectedTask = null;
     _commentsSub?.cancel();
     _commentsSub = null;

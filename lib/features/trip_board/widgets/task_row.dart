@@ -70,7 +70,7 @@ class _HeaderCell extends StatelessWidget {
 
 // ── Task row ──────────────────────────────────────────────────────────────────
 
-class TaskRow extends StatelessWidget {
+class TaskRow extends StatefulWidget {
   final Task task;
   final BoardProvider provider;
   final bool isSelected;
@@ -82,19 +82,24 @@ class TaskRow extends StatelessWidget {
     this.isSelected = false,
   });
 
+  @override
+  State<TaskRow> createState() => _TaskRowState();
+}
+
+class _TaskRowState extends State<TaskRow> {
+  bool _subtasksExpanded = true;
+
   void _onTap(BuildContext context) {
     if (Responsive.isMobile(context)) {
-      // Mobile: push full-screen detail
       Navigator.of(context).push(MaterialPageRoute(
         builder: (_) => TaskDetailScreen(
-          key: ValueKey(task.id),
-          task: task,
-          provider: provider,
+          key: ValueKey(widget.task.id),
+          task: widget.task,
+          provider: widget.provider,
         ),
       ));
     } else {
-      // Desktop/tablet: open side panel
-      provider.selectTask(task);
+      widget.provider.selectTask(widget.task);
     }
   }
 
@@ -128,7 +133,7 @@ class TaskRow extends StatelessWidget {
               borderRadius: BorderRadius.circular(12)),
           title: const Text('Delete task?'),
           content: Text(
-            '"${task.name}" will be permanently removed.',
+            '"${widget.task.name}" will be permanently removed.',
             style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
           ),
           actions: [
@@ -145,224 +150,347 @@ class TaskRow extends StatelessWidget {
           ],
         ),
       );
-      if (confirmed == true) provider.deleteTask(task.id);
+      if (confirmed == true) widget.provider.deleteTask(widget.task.id);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final task = widget.task;
     return GestureDetector(
       onSecondaryTapUp: (d) => _onRightClick(context, d.globalPosition),
-      child: Material(
-      color: isSelected ? AppColors.accentFaint : Colors.transparent,
-      child: InkWell(
-        onTap: () => _onTap(context),
-        hoverColor: isSelected ? AppColors.accentFaint : AppColors.surfaceAlt,
-        highlightColor: Colors.transparent,
-        splashColor: Colors.transparent,
-        child: SizedBox(
-          height: AppSpacing.boardTaskRowH,
-          child: Row(
-            children: [
-              // Selected accent bar
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
-                width: 3,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Main task row ────────────────────────────────────────────────
+          Material(
+            color: widget.isSelected ? AppColors.accentFaint : Colors.transparent,
+            child: InkWell(
+              onTap: () => _onTap(context),
+              hoverColor: widget.isSelected ? AppColors.accentFaint : AppColors.surfaceAlt,
+              highlightColor: Colors.transparent,
+              splashColor: Colors.transparent,
+              child: SizedBox(
                 height: AppSpacing.boardTaskRowH,
-                color: isSelected ? AppColors.accent : Colors.transparent,
-              ),
+                child: Row(
+                  children: [
+                    // Selected accent bar
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 150),
+                      width: 3,
+                      height: AppSpacing.boardTaskRowH,
+                      color: widget.isSelected ? AppColors.accent : Colors.transparent,
+                    ),
 
-              // Task name + optional subtask progress
-              SizedBox(
-                width: BoardColumns.taskName - 3,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-                  child: task.hasSubtasks
-                      ? Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              task.name,
-                              style: AppTextStyles.tableCell.copyWith(
-                                fontWeight: isSelected ? FontWeight.w500 : FontWeight.w400,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 3),
-                            Row(
-                              children: [
-                                SizedBox(
-                                  width: 60,
-                                  height: 3,
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(2),
-                                    child: LinearProgressIndicator(
-                                      value:            task.subtaskProgress,
-                                      backgroundColor:  AppColors.border,
-                                      valueColor: AlwaysStoppedAnimation(
-                                        task.subtaskProgress == 1.0
-                                            ? const Color(0xFF16A34A)
-                                            : AppColors.accent,
+                    // Task name + subtask toggle/progress
+                    SizedBox(
+                      width: BoardColumns.taskName - 3,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                        child: task.hasSubtasks
+                            ? Row(
+                                children: [
+                                  // Expand/collapse chevron
+                                  GestureDetector(
+                                    behavior: HitTestBehavior.opaque,
+                                    onTap: () => setState(() =>
+                                        _subtasksExpanded = !_subtasksExpanded),
+                                    child: Padding(
+                                      padding: const EdgeInsets.only(right: 4),
+                                      child: AnimatedRotation(
+                                        turns: _subtasksExpanded ? 0 : -0.25,
+                                        duration: const Duration(milliseconds: 150),
+                                        child: const Icon(
+                                          Icons.expand_more_rounded,
+                                          size: 14,
+                                          color: AppColors.textMuted,
+                                        ),
                                       ),
                                     ),
                                   ),
-                                ),
-                                const SizedBox(width: 5),
-                                Text(
-                                  '${task.completedSubtaskCount}/${task.subtaskCount}',
-                                  style: const TextStyle(
-                                    fontSize: 9,
-                                    color: AppColors.textMuted,
+                                  Expanded(
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          task.name,
+                                          style: AppTextStyles.tableCell.copyWith(
+                                            fontWeight: widget.isSelected
+                                                ? FontWeight.w500
+                                                : FontWeight.w400,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        const SizedBox(height: 3),
+                                        Row(
+                                          children: [
+                                            SizedBox(
+                                              width: 52,
+                                              height: 3,
+                                              child: ClipRRect(
+                                                borderRadius: BorderRadius.circular(2),
+                                                child: LinearProgressIndicator(
+                                                  value: task.subtaskProgress,
+                                                  backgroundColor: AppColors.border,
+                                                  valueColor: AlwaysStoppedAnimation(
+                                                    task.subtaskProgress == 1.0
+                                                        ? const Color(0xFF16A34A)
+                                                        : AppColors.accent,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 5),
+                                            Text(
+                                              '${task.completedSubtaskCount}/${task.subtaskCount}',
+                                              style: const TextStyle(
+                                                fontSize: 9,
+                                                color: AppColors.textMuted,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
                                   ),
+                                ],
+                              )
+                            : Text(
+                                task.name,
+                                style: AppTextStyles.tableCell.copyWith(
+                                  fontWeight: widget.isSelected
+                                      ? FontWeight.w500
+                                      : FontWeight.w400,
                                 ),
-                              ],
-                            ),
-                          ],
-                        )
-                      : Text(
-                          task.name,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                      ),
+                    ),
+
+                    // Status
+                    SizedBox(
+                      width: BoardColumns.status,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: TaskStatusChip(status: task.status),
+                        ),
+                      ),
+                    ),
+
+                    // Assigned to
+                    SizedBox(
+                      width: BoardColumns.assignedTo,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                        child: task.assignedTo != null
+                            ? Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  UserAvatar(user: task.assignedTo!, size: 20),
+                                  const SizedBox(width: 6),
+                                  Flexible(
+                                    child: Text(
+                                      task.assignedTo!.name.split(' ').first,
+                                      style: AppTextStyles.tableCell,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              )
+                            : Text('—',
+                                style: AppTextStyles.tableCell
+                                    .copyWith(color: AppColors.textMuted)),
+                      ),
+                    ),
+
+                    // Destination
+                    SizedBox(
+                      width: BoardColumns.destination,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                        child: Text(
+                          task.destination ?? '—',
+                          style: AppTextStyles.tableCell,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+
+                    // Travel date
+                    SizedBox(
+                      width: BoardColumns.travelDate,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                        child: Text(
+                          task.travelDate != null
+                              ? DateFormat('d MMM').format(task.travelDate!)
+                              : '—',
+                          style: AppTextStyles.tableCell,
+                        ),
+                      ),
+                    ),
+
+                    // Due date
+                    SizedBox(
+                      width: BoardColumns.dueDate,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                        child: _DueDateCell(dueDate: task.dueDate),
+                      ),
+                    ),
+
+                    // Supplier
+                    SizedBox(
+                      width: BoardColumns.supplier,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                        child: Text(
+                          task.supplierId ?? '—',
                           style: AppTextStyles.tableCell.copyWith(
-                            fontWeight: isSelected ? FontWeight.w500 : FontWeight.w400,
+                            color: task.supplierId != null
+                                ? AppColors.textPrimary
+                                : AppColors.textMuted,
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
-                ),
-              ),
-
-              // Status
-              SizedBox(
-                width: BoardColumns.status,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: TaskStatusChip(status: task.status),
-                  ),
-                ),
-              ),
-
-              // Assigned to
-              SizedBox(
-                width: BoardColumns.assignedTo,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-                  child: task.assignedTo != null
-                      ? Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            UserAvatar(user: task.assignedTo!, size: 20),
-                            const SizedBox(width: 6),
-                            Flexible(
-                              child: Text(
-                                task.assignedTo!.name.split(' ').first,
-                                style: AppTextStyles.tableCell,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        )
-                      : Text('—', style: AppTextStyles.tableCell.copyWith(color: AppColors.textMuted)),
-                ),
-              ),
-
-              // Destination
-              SizedBox(
-                width: BoardColumns.destination,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-                  child: Text(
-                    task.destination ?? '—',
-                    style: AppTextStyles.tableCell,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ),
-
-              // Travel date
-              SizedBox(
-                width: BoardColumns.travelDate,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-                  child: Text(
-                    task.travelDate != null ? DateFormat('d MMM').format(task.travelDate!) : '—',
-                    style: AppTextStyles.tableCell,
-                  ),
-                ),
-              ),
-
-              // Due date
-              SizedBox(
-                width: BoardColumns.dueDate,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-                  child: _DueDateCell(dueDate: task.dueDate),
-                ),
-              ),
-
-              // Supplier
-              SizedBox(
-                width: BoardColumns.supplier,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-                  child: Text(
-                    task.supplierId ?? '—',
-                    style: AppTextStyles.tableCell.copyWith(
-                      color: task.supplierId != null ? AppColors.textPrimary : AppColors.textMuted,
+                      ),
                     ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ),
 
-              // Priority
-              SizedBox(
-                width: BoardColumns.priority,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: PriorityChip(priority: task.priority),
-                  ),
-                ),
-              ),
+                    // Priority
+                    SizedBox(
+                      width: BoardColumns.priority,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: PriorityChip(priority: task.priority),
+                        ),
+                      ),
+                    ),
 
-              // Cost status
-              SizedBox(
-                width: BoardColumns.costStatus,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: CostStatusChip(status: task.costStatus),
-                  ),
-                ),
-              ),
+                    // Cost status
+                    SizedBox(
+                      width: BoardColumns.costStatus,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: CostStatusChip(status: task.costStatus),
+                        ),
+                      ),
+                    ),
 
-              // Client visible
-              SizedBox(
-                width: BoardColumns.clientVisible,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-                  child: Icon(
-                    task.clientVisible
-                        ? Icons.visibility_rounded
-                        : Icons.visibility_off_outlined,
-                    size: 15,
-                    color: task.clientVisible ? AppColors.accent : AppColors.textMuted,
-                  ),
+                    // Client visible
+                    SizedBox(
+                      width: BoardColumns.clientVisible,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                        child: Icon(
+                          task.clientVisible
+                              ? Icons.visibility_rounded
+                              : Icons.visibility_off_outlined,
+                          size: 15,
+                          color: task.clientVisible
+                              ? AppColors.accent
+                              : AppColors.textMuted,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
+            ),
           ),
-        ),
+
+          // ── Inline subtask rows (expandable) ──────────────────────────────
+          if (task.hasSubtasks && _subtasksExpanded)
+            ListenableBuilder(
+              listenable: widget.provider,
+              builder: (context, _) {
+                final subtasks = widget.provider.subtasksFor(task.id);
+                if (subtasks.isEmpty) return const SizedBox.shrink();
+                return Column(
+                  children: subtasks
+                      .map((s) => _InlineSubtaskRow(
+                            subtask:  s,
+                            provider: widget.provider,
+                          ))
+                      .toList(),
+                );
+              },
+            ),
+        ],
       ),
-      ), // GestureDetector
     );
   }
 }
 
 enum _RowAction { delete }
+
+// ── Inline subtask row (shown directly in the board table) ───────────────────
+
+class _InlineSubtaskRow extends StatelessWidget {
+  final dynamic subtask;  // Subtask
+  final BoardProvider provider;
+  const _InlineSubtaskRow({required this.subtask, required this.provider});
+
+  @override
+  Widget build(BuildContext context) {
+    final s = subtask;
+    final bool done = s.isCompleted as bool;
+    return Container(
+      height: 28,
+      color: AppColors.surfaceAlt,
+      child: Row(
+        children: [
+          // Indent + left border echo
+          const SizedBox(width: 3),
+          Container(width: 1, height: 28, color: AppColors.border),
+          const SizedBox(width: 20),
+
+          // Checkbox
+          GestureDetector(
+            onTap: () => provider.toggleSubtask(s),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 120),
+              width: 14,
+              height: 14,
+              decoration: BoxDecoration(
+                color: done ? AppColors.accent : Colors.transparent,
+                borderRadius: BorderRadius.circular(3),
+                border: Border.all(
+                  color: done ? AppColors.accent : AppColors.border,
+                  width: 1.5,
+                ),
+              ),
+              child: done
+                  ? const Icon(Icons.check, size: 9, color: Colors.white)
+                  : null,
+            ),
+          ),
+          const SizedBox(width: 8),
+
+          // Title
+          Expanded(
+            child: Text(
+              s.title as String,
+              style: AppTextStyles.tableCell.copyWith(
+                fontSize: 11,
+                color: done ? AppColors.textMuted : AppColors.textSecondary,
+                decoration: done ? TextDecoration.lineThrough : TextDecoration.none,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+        ],
+      ),
+    );
+  }
+}
 
 // ── Due date cell ─────────────────────────────────────────────────────────────
 
