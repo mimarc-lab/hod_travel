@@ -76,10 +76,9 @@ class PlanningTimelineBanner extends StatelessWidget {
           bottom: BorderSide(color: AppColors.border),
         ),
       ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: [
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
             Icon(
               Icons.schedule_outlined,
               size: 13,
@@ -107,7 +106,6 @@ class PlanningTimelineBanner extends StatelessWidget {
             _Stat(label: 'Total Effort', value: '$totalEffort task-days'),
           ],
         ),
-      ),
     );
   }
 
