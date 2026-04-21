@@ -50,22 +50,25 @@ class Subtask {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class SubtaskTemplate {
-  final String id;
-  final String taskType;   // matches board group name exactly
-  final String title;
-  final int    orderIndex;
+  final String  id;
+  final String? taskType;             // group-name key (legacy seed data)
+  final String? tripTemplateTaskId;   // per-task link (new style)
+  final String  title;
+  final int     orderIndex;
 
   const SubtaskTemplate({
     required this.id,
-    required this.taskType,
+    this.taskType,
+    this.tripTemplateTaskId,
     required this.title,
     required this.orderIndex,
   });
 
   SubtaskTemplate copyWith({String? title, int? orderIndex}) => SubtaskTemplate(
-    id:         id,
-    taskType:   taskType,
-    title:      title      ?? this.title,
-    orderIndex: orderIndex ?? this.orderIndex,
+    id:                  id,
+    taskType:            taskType,
+    tripTemplateTaskId:  tripTemplateTaskId,
+    title:               title      ?? this.title,
+    orderIndex:          orderIndex ?? this.orderIndex,
   );
 }

@@ -16,7 +16,9 @@ abstract class SubtaskRepository {
   Future<void>                  reorderSubtasks(List<({String id, int orderIndex})> updates);
   Future<List<SubtaskTemplate>> fetchTemplatesForType(String taskType);
   Future<List<SubtaskTemplate>> fetchAllTemplates();
+  Future<List<SubtaskTemplate>> fetchTemplatesForTemplateTask(String templateTaskId);
   Future<SubtaskTemplate>       createTemplate({required String taskType, required String title, required int orderIndex});
+  Future<SubtaskTemplate>       createTemplateForTask({required String templateTaskId, required String title, required int orderIndex});
   Future<SubtaskTemplate>       updateTemplate(SubtaskTemplate template);
   Future<void>                  deleteTemplate(String templateId);
 }
@@ -49,10 +51,11 @@ Map<String, dynamic> _subtaskToRow(Subtask s) => {
 };
 
 SubtaskTemplate _templateFromRow(Map<String, dynamic> row) => SubtaskTemplate(
-  id:         row['id']          as String,
-  taskType:   row['task_type']   as String,
-  title:      row['title']       as String,
-  orderIndex: row['order_index'] as int? ?? 0,
+  id:                 row['id']                    as String,
+  taskType:           row['task_type']             as String?,
+  tripTemplateTaskId: row['trip_template_task_id'] as String?,
+  title:              row['title']                 as String,
+  orderIndex:         row['order_index']           as int? ?? 0,
 );
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -193,6 +196,16 @@ class SupabaseSubtaskRepository implements SubtaskRepository {
   }
 
   @override
+  Future<List<SubtaskTemplate>> fetchTemplatesForTemplateTask(String templateTaskId) async {
+    final rows = await _client
+        .from('subtask_templates')
+        .select()
+        .eq('trip_template_task_id', templateTaskId)
+        .order('order_index');
+    return rows.map(_templateFromRow).toList();
+  }
+
+  @override
   Future<SubtaskTemplate> createTemplate({
     required String taskType,
     required String title,
@@ -202,6 +215,20 @@ class SupabaseSubtaskRepository implements SubtaskRepository {
       'task_type':   taskType,
       'title':       title,
       'order_index': orderIndex,
+    }).select().single();
+    return _templateFromRow(row);
+  }
+
+  @override
+  Future<SubtaskTemplate> createTemplateForTask({
+    required String templateTaskId,
+    required String title,
+    required int orderIndex,
+  }) async {
+    final row = await _client.from('subtask_templates').insert({
+      'trip_template_task_id': templateTaskId,
+      'title':                 title,
+      'order_index':           orderIndex,
     }).select().single();
     return _templateFromRow(row);
   }

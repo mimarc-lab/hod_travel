@@ -185,11 +185,12 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
         final List<Map<String, dynamic>> tasks;
         if (saved != null) {
           tasks = saved.tasks.map((t) => <String, dynamic>{
-            'group':       t.groupName,
-            'title':       t.title,
-            'priority':    t.priority,
-            'duration':    t.estimatedDurationDays,
-            'assignee_id': t.defaultAssigneeId,
+            'group':              t.groupName,
+            'title':              t.title,
+            'priority':           t.priority,
+            'duration':           t.estimatedDurationDays,
+            'assignee_id':        t.defaultAssigneeId,
+            'template_task_id':   t.id,   // used to look up per-task subtasks
           }).toList();
         } else {
           tasks = templateTasks(_templateId);
@@ -359,23 +360,31 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
       // Use .select() to get back the inserted task IDs for subtask generation.
       final inserted = await client.from('tasks').insert(rows).select('id, board_group_id');
 
-      // Build groupId → groupName reverse map
+      // Build index → templateTaskId map from the source task list.
+      final templateTaskIdByIndex = <int, String>{};
+      for (var i = 0; i < tasks.length; i++) {
+        final tid = tasks[i]['template_task_id'] as String?;
+        if (tid != null) templateTaskIdByIndex[i] = tid;
+      }
+
+      // Build groupId → groupName reverse map (fallback for built-in templates)
       final groupNameById = {
         for (final e in groupIdByName.entries) e.value: e.key,
       };
 
       // Auto-generate subtasks from templates for each inserted task
       await _generateSubtasks(
-        client:    client,
-        teamId:    teamId,
-        inserted:  inserted,
-        groupNameById: groupNameById,
+        client:               client,
+        teamId:               teamId,
+        inserted:             inserted,
+        groupNameById:        groupNameById,
+        templateTaskIdByIndex: templateTaskIdByIndex,
       );
     }
 
     // Show post-navigation snackbar with planning timeline summary
     if (analysis != null && mounted) {
-      final a = analysis!;
+      final a = analysis;
       final startLabel    = a.earliestStartDate != null ? _fmtDate(a.earliestStartDate!) : '—';
       final deadlineLabel = _fmtDate(a.planningDeadline);
       final timelineMsg   = 'Planning: $startLabel → $deadlineLabel  ·  '
@@ -409,39 +418,72 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
     required String teamId,
     required List<dynamic> inserted,
     required Map<String, String> groupNameById,
+    Map<int, String> templateTaskIdByIndex = const {},
   }) async {
     try {
-      // Fetch all subtask templates in one query
-      final templateRows = await client
-          .from('subtask_templates')
-          .select('task_type, title, order_index')
-          .order('task_type')
-          .order('order_index');
-
-      // Group templates by task_type (= group name)
-      final byGroup = <String, List<Map<String, dynamic>>>{};
-      for (final r in templateRows) {
-        final type = r['task_type'] as String;
-        (byGroup[type] ??= []).add(r as Map<String, dynamic>);
-      }
-
-      // Build subtask rows for all inserted tasks
       final subtaskRows = <Map<String, dynamic>>[];
-      for (final row in inserted) {
-        final taskId   = row['id']             as String;
-        final groupId  = row['board_group_id'] as String?;
-        final groupName = groupId != null ? groupNameById[groupId] : null;
-        if (groupName == null) continue;
 
-        final templates = byGroup[groupName] ?? [];
-        for (final t in templates) {
-          subtaskRows.add({
-            'parent_task_id': taskId,
-            'team_id':        teamId,
-            'title':          t['title'],
-            'order_index':    t['order_index'],
-            'is_completed':   false,
-          });
+      if (templateTaskIdByIndex.isNotEmpty) {
+        // Saved template: fetch per-task subtask templates in one query.
+        final allTemplateTaskIds = templateTaskIdByIndex.values.toList();
+        final templateRows = await client
+            .from('subtask_templates')
+            .select('trip_template_task_id, title, order_index')
+            .inFilter('trip_template_task_id', allTemplateTaskIds)
+            .order('trip_template_task_id')
+            .order('order_index');
+
+        // Group by template task id
+        final byTemplateTask = <String, List<Map<String, dynamic>>>{};
+        for (final r in templateRows) {
+          final key = r['trip_template_task_id'] as String;
+          (byTemplateTask[key] ??= []).add(r);
+        }
+
+        // Match inserted tasks to their template task id by index
+        for (var i = 0; i < inserted.length; i++) {
+          final taskId        = inserted[i]['id'] as String;
+          final templateTaskId = templateTaskIdByIndex[i];
+          if (templateTaskId == null) continue;
+          for (final t in byTemplateTask[templateTaskId] ?? []) {
+            subtaskRows.add({
+              'parent_task_id': taskId,
+              'team_id':        teamId,
+              'title':          t['title'],
+              'order_index':    t['order_index'],
+              'is_completed':   false,
+            });
+          }
+        }
+      } else {
+        // Built-in template: fall back to group-name matching.
+        final templateRows = await client
+            .from('subtask_templates')
+            .select('task_type, title, order_index')
+            .not('task_type', 'is', null)
+            .order('task_type')
+            .order('order_index');
+
+        final byGroup = <String, List<Map<String, dynamic>>>{};
+        for (final r in templateRows) {
+          final type = r['task_type'] as String;
+          (byGroup[type] ??= []).add(r);
+        }
+
+        for (final row in inserted) {
+          final taskId    = row['id']             as String;
+          final groupId   = row['board_group_id'] as String?;
+          final groupName = groupId != null ? groupNameById[groupId] : null;
+          if (groupName == null) continue;
+          for (final t in byGroup[groupName] ?? []) {
+            subtaskRows.add({
+              'parent_task_id': taskId,
+              'team_id':        teamId,
+              'title':          t['title'],
+              'order_index':    t['order_index'],
+              'is_completed':   false,
+            });
+          }
         }
       }
 

@@ -182,17 +182,16 @@ class BoardProvider extends ChangeNotifier {
     }).toList();
     notifyListeners();
     try {
-      final saved = await _repo.createTask(task, trip.id, _teamId);
-      // Swap the optimistic placeholder (id='') with the real DB task.
-      _groups = _groups.map((g) {
-        if (g.id != saved.boardGroupId) return g;
-        return BoardGroup(
-          id: g.id, name: g.name, accentColor: g.accentColor,
-          tasks: g.tasks
-              .map((t) => t.id == task.id ? saved : t)
-              .toList(),
-        );
-      }).toList();
+      await _repo.createTask(task, trip.id, _teamId);
+      // Re-fetch from DB so the board always reflects persisted state,
+      // regardless of whether the realtime channel fires in time.
+      final fresh = await _repo.fetchGroupsForTrip(trip.id);
+      _groups = fresh;
+      for (final g in fresh) {
+        for (final t in g.tasks) {
+          if (t.hasSubtasks) subscribeToSubtasks(t.id);
+        }
+      }
       notifyListeners();
     } catch (_) {
       // Rollback the optimistic entry.

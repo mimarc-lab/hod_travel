@@ -321,6 +321,7 @@ class _TemplateEditorScreenState extends State<TemplateEditorScreen> {
   late TripTemplate _template;
   bool _saving = false;
   List<AppUser> _members = [];
+  // keyed by TripTemplateTask.id
   Map<String, List<SubtaskTemplate>> _subtaskTemplates = {};
 
   TripTemplateRepository? get _repo    => AppRepositories.instance?.templates;
@@ -337,9 +338,8 @@ class _TemplateEditorScreenState extends State<TemplateEditorScreen> {
   Future<void> _loadMembers() async {
     final repos  = AppRepositories.instance;
     if (repos == null) return;
-    final teamId = _template.teamId;
     try {
-      final teamMembers = await repos.teams.fetchMembers(teamId);
+      final teamMembers = await repos.teams.fetchMembers(_template.teamId);
       final users = teamMembers
           .where((m) => m.profile != null)
           .map((m) => m.profile!)
@@ -353,25 +353,25 @@ class _TemplateEditorScreenState extends State<TemplateEditorScreen> {
   Future<void> _loadSubtaskTemplates() async {
     if (_subRepo == null) return;
     try {
-      final all = await _subRepo!.fetchAllTemplates();
-      final grouped = <String, List<SubtaskTemplate>>{};
-      for (final t in all) {
-        grouped.putIfAbsent(t.taskType, () => []).add(t);
+      // Fetch per-task templates for all tasks in this template
+      final result = <String, List<SubtaskTemplate>>{};
+      for (final task in _template.tasks) {
+        result[task.id] = await _subRepo!.fetchTemplatesForTemplateTask(task.id);
       }
-      if (mounted) setState(() => _subtaskTemplates = grouped);
+      if (mounted) setState(() => _subtaskTemplates = result);
     } catch (e) {
       debugPrint('_loadSubtaskTemplates error: $e');
     }
   }
 
-  Future<void> _addSubtaskTemplate(String groupName) async {
+  Future<void> _addSubtaskTemplate(TripTemplateTask task) async {
     final title = await _showSubtaskTemplateDialog(context, existing: null);
     if (title == null || title.isEmpty) return;
-    final current = _subtaskTemplates[groupName] ?? [];
-    await _subRepo!.createTemplate(
-      taskType:   groupName,
-      title:      title,
-      orderIndex: current.length,
+    final current = _subtaskTemplates[task.id] ?? [];
+    await _subRepo!.createTemplateForTask(
+      templateTaskId: task.id,
+      title:          title,
+      orderIndex:     current.length,
     );
     await _loadSubtaskTemplates();
   }
@@ -507,16 +507,16 @@ class _TemplateEditorScreenState extends State<TemplateEditorScreen> {
                 ),
                 const SizedBox(height: AppSpacing.base),
                 ...defaultBoardGroupNames.map((group) => _GroupSection(
-                      groupName:        group,
-                      tasks:            _template.tasksForGroup(group),
-                      members:          _members,
-                      subtaskTemplates: _subtaskTemplates[group] ?? [],
-                      onAdd:            () => _addTask(group),
-                      onEdit:           _editTask,
-                      onDelete:         _deleteTask,
-                      onAddSubtask:     () => _addSubtaskTemplate(group),
-                      onEditSubtask:    _editSubtaskTemplate,
-                      onDeleteSubtask:  _deleteSubtaskTemplate,
+                      groupName:           group,
+                      tasks:               _template.tasksForGroup(group),
+                      members:             _members,
+                      subtaskTemplatesById: _subtaskTemplates,
+                      onAdd:               () => _addTask(group),
+                      onEdit:              _editTask,
+                      onDelete:            _deleteTask,
+                      onAddSubtask:        _addSubtaskTemplate,
+                      onEditSubtask:       _editSubtaskTemplate,
+                      onDeleteSubtask:     _deleteSubtaskTemplate,
                     )),
               ],
             ),
@@ -530,11 +530,12 @@ class _GroupSection extends StatelessWidget {
   final String groupName;
   final List<TripTemplateTask> tasks;
   final List<AppUser> members;
-  final List<SubtaskTemplate> subtaskTemplates;
+  // keyed by TripTemplateTask.id
+  final Map<String, List<SubtaskTemplate>> subtaskTemplatesById;
   final VoidCallback onAdd;
   final Future<void> Function(TripTemplateTask) onEdit;
   final Future<void> Function(TripTemplateTask) onDelete;
-  final VoidCallback onAddSubtask;
+  final Future<void> Function(TripTemplateTask) onAddSubtask;
   final Future<void> Function(SubtaskTemplate) onEditSubtask;
   final Future<void> Function(SubtaskTemplate) onDeleteSubtask;
 
@@ -542,7 +543,7 @@ class _GroupSection extends StatelessWidget {
     required this.groupName,
     required this.tasks,
     required this.members,
-    required this.subtaskTemplates,
+    required this.subtaskTemplatesById,
     required this.onAdd,
     required this.onEdit,
     required this.onDelete,
@@ -602,82 +603,48 @@ class _GroupSection extends StatelessWidget {
             ),
           ),
 
-          // ── Task rows ────────────────────────────────────────────────────
+          // ── Task rows (each manages its own subtask templates) ────────────
           if (tasks.isNotEmpty)
             const Divider(height: 1, color: AppColors.divider),
           ...tasks.map((t) => _TaskRow(
-                task:     t,
-                members:  members,
-                onEdit:   () => onEdit(t),
-                onDelete: () => onDelete(t),
+                key:               ValueKey(t.id),
+                task:              t,
+                members:           members,
+                subtaskTemplates:  subtaskTemplatesById[t.id] ?? [],
+                onEdit:            () => onEdit(t),
+                onDelete:          () => onDelete(t),
+                onAddSubtask:      () => onAddSubtask(t),
+                onEditSubtask:     onEditSubtask,
+                onDeleteSubtask:   onDeleteSubtask,
               )),
-
-          // ── Subtask templates ────────────────────────────────────────────
-          const Divider(height: 1, color: AppColors.divider),
-          Padding(
-            padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.base, vertical: AppSpacing.sm),
-            child: Row(
-              children: [
-                const Icon(Icons.checklist_rounded,
-                    size: 13, color: AppColors.textMuted),
-                const SizedBox(width: 5),
-                Text('Default subtasks',
-                    style: AppTextStyles.labelSmall
-                        .copyWith(color: AppColors.textSecondary)),
-                const Spacer(),
-                GestureDetector(
-                  onTap: onAddSubtask,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.add_rounded,
-                          size: 13, color: AppColors.accent),
-                      const SizedBox(width: 3),
-                      Text('Add',
-                          style: AppTextStyles.labelSmall
-                              .copyWith(color: AppColors.accent)),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (subtaskTemplates.isEmpty)
-            Padding(
-              padding: const EdgeInsets.only(
-                  left: AppSpacing.base,
-                  right: AppSpacing.base,
-                  bottom: AppSpacing.sm),
-              child: Text('No default subtasks for this group.',
-                  style: AppTextStyles.labelSmall
-                      .copyWith(color: AppColors.textMuted)),
-            )
-          else
-            ...subtaskTemplates.map((st) => _SubtaskTemplateRow(
-                  template: st,
-                  onEdit:   () => onEditSubtask(st),
-                  onDelete: () => onDeleteSubtask(st),
-                )),
-          const SizedBox(height: AppSpacing.xs),
         ],
       ),
     );
   }
 }
 
-// ── Task row ──────────────────────────────────────────────────────────────────
+// ── Task row (expandable with per-task subtask templates) ─────────────────────
 
-class _TaskRow extends StatelessWidget {
+class _TaskRow extends StatefulWidget {
   final TripTemplateTask task;
   final List<AppUser> members;
+  final List<SubtaskTemplate> subtaskTemplates;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
+  final VoidCallback onAddSubtask;
+  final Future<void> Function(SubtaskTemplate) onEditSubtask;
+  final Future<void> Function(SubtaskTemplate) onDeleteSubtask;
+
   const _TaskRow({
+    super.key,
     required this.task,
     required this.members,
+    required this.subtaskTemplates,
     required this.onEdit,
     required this.onDelete,
+    required this.onAddSubtask,
+    required this.onEditSubtask,
+    required this.onDeleteSubtask,
   });
 
   static const _priorityColors = {
@@ -687,70 +654,173 @@ class _TaskRow extends StatelessWidget {
   };
 
   @override
+  State<_TaskRow> createState() => _TaskRowState();
+}
+
+class _TaskRowState extends State<_TaskRow> {
+  bool _expanded = false;
+
+  @override
   Widget build(BuildContext context) {
+    final task     = widget.task;
+    final members  = widget.members;
     final assignee = task.defaultAssigneeId == null
         ? null
         : members.where((m) => m.id == task.defaultAssigneeId).firstOrNull;
+    final subtasks = widget.subtaskTemplates;
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onEdit,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.base, vertical: AppSpacing.sm),
-          child: Row(
-            children: [
-              Container(
-                width: 6, height: 6,
-                decoration: BoxDecoration(
-                  color: _priorityColors[task.priority] ?? AppColors.textMuted,
-                  shape: BoxShape.circle,
-                ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: Text(task.title,
-                    style: AppTextStyles.bodySmall,
-                    overflow: TextOverflow.ellipsis),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              if (assignee != null) ...[
-                Container(
-                  width: 20, height: 20,
-                  decoration: BoxDecoration(
-                    color: assignee.avatarColor,
-                    shape: BoxShape.circle,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // ── Task row ───────────────────────────────────────────────────────
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: widget.onEdit,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.base, vertical: AppSpacing.sm),
+              child: Row(
+                children: [
+                  Container(
+                    width: 6, height: 6,
+                    decoration: BoxDecoration(
+                      color: _TaskRow._priorityColors[task.priority] ??
+                          AppColors.textMuted,
+                      shape: BoxShape.circle,
+                    ),
                   ),
-                  alignment: Alignment.center,
-                  child: Text(assignee.initials,
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Text(task.title,
+                        style: AppTextStyles.bodySmall,
+                        overflow: TextOverflow.ellipsis),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  if (assignee != null) ...[
+                    Container(
+                      width: 20, height: 20,
+                      decoration: BoxDecoration(
+                        color: assignee.avatarColor,
+                        shape: BoxShape.circle,
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(assignee.initials,
+                          style: AppTextStyles.labelSmall
+                              .copyWith(color: Colors.white, fontSize: 9)),
+                    ),
+                    const SizedBox(width: AppSpacing.xs),
+                  ],
+                  Text(
+                    task.estimatedDurationDays == 1
+                        ? '1d'
+                        : '${task.estimatedDurationDays}d',
+                    style: AppTextStyles.labelSmall
+                        .copyWith(color: AppColors.textMuted),
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  Text(task.priority,
                       style: AppTextStyles.labelSmall.copyWith(
-                          color: Colors.white, fontSize: 9)),
-                ),
-                const SizedBox(width: AppSpacing.xs),
-              ],
-              Text(
-                task.estimatedDurationDays == 1
-                    ? '1d'
-                    : '${task.estimatedDurationDays}d',
-                style: AppTextStyles.labelSmall
-                    .copyWith(color: AppColors.textMuted),
+                          color: _TaskRow._priorityColors[task.priority] ??
+                              AppColors.textMuted)),
+                  const SizedBox(width: AppSpacing.sm),
+                  // Subtask toggle
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => setState(() => _expanded = !_expanded),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.checklist_rounded,
+                              size: 13,
+                              color: subtasks.isNotEmpty
+                                  ? AppColors.accent
+                                  : AppColors.textMuted),
+                          if (subtasks.isNotEmpty) ...[
+                            const SizedBox(width: 2),
+                            Text('${subtasks.length}',
+                                style: AppTextStyles.labelSmall
+                                    .copyWith(color: AppColors.accent,
+                                              fontSize: 10)),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: widget.onDelete,
+                    child: const Icon(Icons.close_rounded,
+                        size: 14, color: AppColors.textMuted),
+                  ),
+                ],
               ),
-              const SizedBox(width: AppSpacing.xs),
-              Text(task.priority,
-                  style: AppTextStyles.labelSmall.copyWith(
-                      color: _priorityColors[task.priority] ??
-                          AppColors.textMuted)),
-              const SizedBox(width: AppSpacing.sm),
-              GestureDetector(
-                onTap: onDelete,
-                child: const Icon(Icons.close_rounded,
-                    size: 14, color: AppColors.textMuted),
-              ),
-            ],
+            ),
           ),
         ),
-      ),
+
+        // ── Subtask templates (expanded) ────────────────────────────────────
+        if (_expanded) ...[
+          Container(
+            margin: const EdgeInsets.only(
+                left: AppSpacing.base, right: AppSpacing.base, bottom: 6),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceAlt,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Sub-header
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.sm, vertical: 6),
+                  child: Row(
+                    children: [
+                      Text('Default subtasks',
+                          style: AppTextStyles.labelSmall
+                              .copyWith(color: AppColors.textSecondary)),
+                      const Spacer(),
+                      GestureDetector(
+                        onTap: widget.onAddSubtask,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.add_rounded,
+                                size: 13, color: AppColors.accent),
+                            const SizedBox(width: 2),
+                            Text('Add',
+                                style: AppTextStyles.labelSmall
+                                    .copyWith(color: AppColors.accent)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (subtasks.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(
+                        left: AppSpacing.sm,
+                        right: AppSpacing.sm,
+                        bottom: 8),
+                    child: Text('No default subtasks yet.',
+                        style: AppTextStyles.labelSmall
+                            .copyWith(color: AppColors.textMuted)),
+                  )
+                else
+                  ...subtasks.map((st) => _SubtaskTemplateRow(
+                        template:  st,
+                        onEdit:    () => widget.onEditSubtask(st),
+                        onDelete:  () => widget.onDeleteSubtask(st),
+                      )),
+              ],
+            ),
+          ),
+        ],
+      ],
     );
   }
 }
