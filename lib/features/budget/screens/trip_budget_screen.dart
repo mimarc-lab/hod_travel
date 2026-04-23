@@ -4,6 +4,7 @@ import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/supabase/app_db.dart';
 import '../../../core/utils/responsive.dart';
+import '../../../data/models/cost_item_model.dart';
 import '../../../data/models/supplier_model.dart';
 import '../../../data/models/trip_model.dart';
 import '../../../data/repositories/supplier_repository.dart';
@@ -12,6 +13,7 @@ import '../widgets/budget_filter_bar.dart';
 import '../widgets/budget_summary_cards.dart';
 import '../widgets/cost_item_editor.dart';
 import '../widgets/cost_item_row.dart';
+import '../widgets/cost_status_chip.dart';
 
 /// Trip-scoped budget tab, shown inside TripBoardScreen.
 /// Uses AutomaticKeepAliveClientMixin to preserve state across tab switches.
@@ -85,10 +87,12 @@ class _TripBudgetScreenState extends State<TripBudgetScreen>
         final summary = _provider.summary;
         final currency = dominantCurrency(items);
 
+        final isMobile = Responsive.isMobile(context);
         return Column(
           children: [
             _TripBudgetHeader(
-              trip: widget.trip,
+              summary:  summary,
+              currency: currency,
               onAdd: () => showCostItemEditor(
                 context,
                 provider: _provider,
@@ -97,7 +101,8 @@ class _TripBudgetScreenState extends State<TripBudgetScreen>
                 suppliers: _suppliers,
               ),
             ),
-            BudgetSummaryCards(summary: summary, currency: currency),
+            // On mobile keep the 2×2 summary grid; desktop shows it inline above.
+            if (isMobile) BudgetSummaryCards(summary: summary, currency: currency),
             BudgetFilterBar(provider: _provider),
             Expanded(
               child: items.isEmpty
@@ -152,35 +157,142 @@ class _TripBudgetScreenState extends State<TripBudgetScreen>
 // ── Trip budget header ────────────────────────────────────────────────────────
 
 class _TripBudgetHeader extends StatelessWidget {
-  final Trip trip;
+  final BudgetSummary summary;
+  final String currency;
   final VoidCallback onAdd;
-  const _TripBudgetHeader({required this.trip, required this.onAdd});
+  const _TripBudgetHeader({
+    required this.summary,
+    required this.currency,
+    required this.onAdd,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final hPad = Responsive.isMobile(context)
-        ? AppSpacing.pagePaddingHMobile
-        : AppSpacing.pagePaddingH;
+    final isMobile = Responsive.isMobile(context);
+    final hPad = isMobile ? AppSpacing.pagePaddingHMobile : AppSpacing.pagePaddingH;
+
+    if (isMobile) {
+      return Container(
+        color: AppColors.surface,
+        padding: EdgeInsets.symmetric(horizontal: hPad, vertical: AppSpacing.sm),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [BudgetAddButton(onTap: onAdd)],
+        ),
+      );
+    }
+
+    // Desktop: 4 compact stats + Add Item in one row, no title.
+    final marginPct = summary.totalSellPrice > 0
+        ? '${(summary.totalMargin / summary.totalSellPrice * 100).toStringAsFixed(1)}%'
+        : null;
 
     return Container(
       color: AppColors.surface,
-      padding: EdgeInsets.symmetric(horizontal: hPad, vertical: AppSpacing.base),
+      padding: EdgeInsets.symmetric(horizontal: hPad, vertical: AppSpacing.sm),
       child: Row(
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Budget', style: AppTextStyles.heading2),
-                Text(trip.name,
-                    style: AppTextStyles.bodySmall
-                        .copyWith(color: AppColors.textMuted)),
-              ],
-            ),
-          ),
+          Expanded(child: _CompactStat(
+            label: 'Net Cost',
+            icon: Icons.receipt_outlined,
+            iconColor: const Color(0xFF4A90A4),
+            amount: summary.totalNetCost,
+            currency: currency,
+          )),
+          const _StatDivider(),
+          Expanded(child: _CompactStat(
+            label: 'Sell Price',
+            icon: Icons.sell_outlined,
+            iconColor: AppColors.accent,
+            amount: summary.totalSellPrice,
+            currency: currency,
+          )),
+          const _StatDivider(),
+          Expanded(child: _CompactStat(
+            label: 'Margin',
+            icon: Icons.trending_up_rounded,
+            iconColor: const Color(0xFF5A9E6F),
+            amount: summary.totalMargin,
+            currency: currency,
+            subLabel: marginPct,
+          )),
+          const _StatDivider(),
+          Expanded(child: _CompactStat(
+            label: 'Outstanding',
+            icon: Icons.pending_outlined,
+            iconColor: const Color(0xFFD4845A),
+            amount: summary.outstandingAmount,
+            currency: currency,
+            subLabel: '${summary.itemCount} items',
+          )),
+          const SizedBox(width: AppSpacing.base),
           BudgetAddButton(onTap: onAdd),
         ],
       ),
     );
   }
+}
+
+// ── Compact stat block (desktop header) ───────────────────────────────────────
+
+class _CompactStat extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final Color iconColor;
+  final double amount;
+  final String currency;
+  final String? subLabel;
+
+  const _CompactStat({
+    required this.label,
+    required this.icon,
+    required this.iconColor,
+    required this.amount,
+    required this.currency,
+    this.subLabel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 11, color: iconColor),
+              const SizedBox(width: 4),
+              Text(label,
+                  style: AppTextStyles.labelSmall
+                      .copyWith(color: AppColors.textSecondary)),
+            ],
+          ),
+          const SizedBox(height: 2),
+          CurrencyAmount(
+            amount:   amount,
+            currency: currency,
+            style: AppTextStyles.labelMedium.copyWith(
+              fontWeight: FontWeight.w700,
+              fontSize:   15,
+            ),
+          ),
+          if (subLabel != null)
+            Text(subLabel!,
+                style: AppTextStyles.labelSmall
+                    .copyWith(color: AppColors.textMuted, fontSize: 10)),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatDivider extends StatelessWidget {
+  const _StatDivider();
+
+  @override
+  Widget build(BuildContext context) =>
+      Container(width: 1, height: 40, color: AppColors.border);
 }
