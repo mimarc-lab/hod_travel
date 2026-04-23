@@ -426,9 +426,9 @@ class _TravelerFormSheetState extends State<_TravelerFormSheet> {
 class _SheetField extends StatelessWidget {
   final String label;
   final TextEditingController ctrl;
-  final int maxLines;
+  final int? maxLines;
 
-  const _SheetField({required this.label, required this.ctrl});
+  const _SheetField({required this.label, required this.ctrl, this.maxLines});
 
   @override
   Widget build(BuildContext context) {
