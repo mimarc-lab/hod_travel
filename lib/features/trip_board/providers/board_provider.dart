@@ -360,7 +360,7 @@ class BoardProvider extends ChangeNotifier {
   Future<void> createSubtask(String taskId, String title) async {
     if (_subtaskRepo == null || _teamId == null) return;
     final order = subtasksFor(taskId).length;
-    await _subtaskRepo.createSubtask(Subtask(
+    final created = await _subtaskRepo.createSubtask(Subtask(
       id:           '',
       parentTaskId: taskId,
       teamId:       _teamId,
@@ -368,6 +368,10 @@ class BoardProvider extends ChangeNotifier {
       orderIndex:   order,
       createdAt:    DateTime.now(),
     ));
+    // Show the new subtask immediately without waiting for the realtime chain.
+    _subtasks[taskId] = [...subtasksFor(taskId), created];
+    subscribeToSubtasks(taskId);
+    notifyListeners();
   }
 
   Future<void> toggleSubtask(Subtask subtask) async {
@@ -385,7 +389,13 @@ class BoardProvider extends ChangeNotifier {
 
   Future<void> updateSubtaskTitle(Subtask subtask, String newTitle) async {
     if (_subtaskRepo == null) return;
-    await _subtaskRepo.updateSubtask(subtask.copyWith(title: newTitle.trim()));
+    final trimmed = newTitle.trim();
+    // Optimistic update so the title changes instantly in the UI.
+    _subtasks[subtask.parentTaskId] = subtasksFor(subtask.parentTaskId)
+        .map((s) => s.id == subtask.id ? s.copyWith(title: trimmed) : s)
+        .toList();
+    notifyListeners();
+    await _subtaskRepo.updateSubtask(subtask.copyWith(title: trimmed));
   }
 
   Future<void> deleteSubtask(Subtask subtask) async {
