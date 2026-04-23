@@ -14,9 +14,12 @@ enum DueDateFilter { overdue, today, thisWeek }
 extension DueDateFilterLabel on DueDateFilter {
   String get label {
     switch (this) {
-      case DueDateFilter.overdue:  return 'Overdue';
-      case DueDateFilter.today:    return 'Due Today';
-      case DueDateFilter.thisWeek: return 'This Week';
+      case DueDateFilter.overdue:
+        return 'Overdue';
+      case DueDateFilter.today:
+        return 'Due Today';
+      case DueDateFilter.thisWeek:
+        return 'This Week';
     }
   }
 }
@@ -49,22 +52,22 @@ class TaskCenterProvider extends ChangeNotifier {
     required TripRepository? tripRepo,
     required String teamId,
     String? currentUserId,
-  })  : _taskRepo = taskRepo,
-        _tripRepo = tripRepo,
-        _teamId = teamId,
-        _currentUserId = currentUserId {
+  }) : _taskRepo = taskRepo,
+       _tripRepo = tripRepo,
+       _teamId = teamId,
+       _currentUserId = currentUserId {
     _load();
   }
 
   // ── Getters ────────────────────────────────────────────────────────────────
 
-  String get search           => _search;
-  TaskStatus? get filterStatus   => _filterStatus;
+  String get search => _search;
+  TaskStatus? get filterStatus => _filterStatus;
   TaskPriority? get filterPriority => _filterPriority;
-  String? get filterTripId    => _filterTripId;
+  String? get filterTripId => _filterTripId;
   DueDateFilter? get filterDueDate => _filterDueDate;
-  Map<String, Trip> get tripsById  => _tripsById;
-  List<Trip> get allTrips          => _tripsById.values.toList();
+  Map<String, Trip> get tripsById => _tripsById;
+  List<Trip> get allTrips => _tripsById.values.toList();
 
   bool get hasActiveFilters =>
       _search.isNotEmpty ||
@@ -75,11 +78,30 @@ class TaskCenterProvider extends ChangeNotifier {
 
   // ── Filter setters ─────────────────────────────────────────────────────────
 
-  void setSearch(String v)                { _search = v;         notifyListeners(); }
-  void setFilterStatus(TaskStatus? v)     { _filterStatus = v;   notifyListeners(); }
-  void setFilterPriority(TaskPriority? v) { _filterPriority = v; notifyListeners(); }
-  void setFilterTripId(String? v)         { _filterTripId = v;   notifyListeners(); }
-  void setFilterDueDate(DueDateFilter? v) { _filterDueDate = v;  notifyListeners(); }
+  void setSearch(String v) {
+    _search = v;
+    notifyListeners();
+  }
+
+  void setFilterStatus(TaskStatus? v) {
+    _filterStatus = v;
+    notifyListeners();
+  }
+
+  void setFilterPriority(TaskPriority? v) {
+    _filterPriority = v;
+    notifyListeners();
+  }
+
+  void setFilterTripId(String? v) {
+    _filterTripId = v;
+    notifyListeners();
+  }
+
+  void setFilterDueDate(DueDateFilter? v) {
+    _filterDueDate = v;
+    notifyListeners();
+  }
 
   void clearFilters() {
     _search = '';
@@ -103,8 +125,7 @@ class TaskCenterProvider extends ChangeNotifier {
     return _allTasks.where((t) {
       if (t.dueDate == null || _isTerminal(t.status)) return false;
       return t.dueDate!.isBefore(today);
-    }).toList()
-      ..sort(_byDueDate);
+    }).toList()..sort(_byDueDate);
   }
 
   /// Filtered tasks grouped by tripId, sorted by due date within each group.
@@ -113,7 +134,9 @@ class TaskCenterProvider extends ChangeNotifier {
     for (final t in _filtered()) {
       result.putIfAbsent(t.tripId ?? '__no_trip__', () => []).add(t);
     }
-    for (final list in result.values) list.sort(_byDueDate);
+    for (final list in result.values) {
+      list.sort(_byDueDate);
+    }
     return result;
   }
 
@@ -136,7 +159,9 @@ class TaskCenterProvider extends ChangeNotifier {
     if (_search.isNotEmpty) {
       final q = _search.toLowerCase();
       tasks = tasks.where((t) {
-        final tripName = t.tripId != null ? (_tripsById[t.tripId]?.name ?? '') : '';
+        final tripName = t.tripId != null
+            ? (_tripsById[t.tripId]?.name ?? '')
+            : '';
         return t.name.toLowerCase().contains(q) ||
             tripName.toLowerCase().contains(q);
       }).toList();
@@ -152,7 +177,9 @@ class TaskCenterProvider extends ChangeNotifier {
       tasks = tasks.where((t) => t.tripId == _filterTripId).toList();
     }
     if (_filterDueDate != null) {
-      tasks = tasks.where((t) => _matchesDueFilter(t, _filterDueDate!)).toList();
+      tasks = tasks
+          .where((t) => _matchesDueFilter(t, _filterDueDate!))
+          .toList();
     }
 
     return tasks;
@@ -209,19 +236,21 @@ class TaskCenterProvider extends ChangeNotifier {
       notifyListeners();
       return;
     }
-    _tasksSub = _taskRepo.watchAllForTeam(_teamId).listen(
-      (tasks) {
-        _allTasks = tasks;
-        isLoading = false;
-        error = null;
-        notifyListeners();
-      },
-      onError: (_) {
-        error = 'Could not load tasks.';
-        isLoading = false;
-        notifyListeners();
-      },
-    );
+    _tasksSub = _taskRepo
+        .watchAllForTeam(_teamId)
+        .listen(
+          (tasks) {
+            _allTasks = tasks;
+            isLoading = false;
+            error = null;
+            notifyListeners();
+          },
+          onError: (_) {
+            error = 'Could not load tasks.';
+            isLoading = false;
+            notifyListeners();
+          },
+        );
   }
 
   @override

@@ -21,27 +21,27 @@ Future<void> showAddTaskDialog(
   // Supply all groups to let the user pick the destination column.
   List<BoardGroup>? allGroups,
   // Optional prefill — used when applying an AI suggestion.
-  String?       initialName,
+  String? initialName,
   TaskPriority? initialPriority,
 }) {
   return showDialog(
     context: context,
     builder: (_) => _AddTaskDialog(
-      group:           group,
-      provider:        provider,
-      allGroups:       allGroups,
-      initialName:     initialName,
+      group: group,
+      provider: provider,
+      allGroups: allGroups,
+      initialName: initialName,
       initialPriority: initialPriority,
     ),
   );
 }
 
 class _AddTaskDialog extends StatefulWidget {
-  final BoardGroup      group;
-  final BoardProvider   provider;
+  final BoardGroup group;
+  final BoardProvider provider;
   final List<BoardGroup>? allGroups;
-  final String?         initialName;
-  final TaskPriority?   initialPriority;
+  final String? initialName;
+  final TaskPriority? initialPriority;
 
   const _AddTaskDialog({
     required this.group,
@@ -59,18 +59,18 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
   late final TextEditingController _nameController;
   final _formKey = GlobalKey<FormState>();
 
-  late BoardGroup  _selectedGroup;
+  late BoardGroup _selectedGroup;
   late TaskPriority _priority;
   DateTime? _dueDate;
-  bool      _saving = false;
-  String?   _error;
+  bool _saving = false;
+  String? _error;
 
   @override
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.initialName ?? '');
-    _priority       = widget.initialPriority ?? TaskPriority.medium;
-    _selectedGroup  = widget.group;
+    _priority = widget.initialPriority ?? TaskPriority.medium;
+    _selectedGroup = widget.group;
   }
 
   @override
@@ -81,16 +81,19 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    setState(() { _saving = true; _error = null; });
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
 
     final task = Task(
-      id:           '',
+      id: '',
       boardGroupId: _selectedGroup.id,
-      name:         _nameController.text.trim(),
-      status:       TaskStatus.notStarted,
-      priority:     _priority,
-      costStatus:   TaskCostStatus.pending,
-      dueDate:      _dueDate,
+      name: _nameController.text.trim(),
+      status: TaskStatus.notStarted,
+      priority: _priority,
+      costStatus: TaskCostStatus.pending,
+      dueDate: _dueDate,
     );
 
     await widget.provider.createTask(task);
@@ -101,7 +104,7 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
     if (widget.provider.error != null) {
       setState(() {
         _saving = false;
-        _error  = widget.provider.error;
+        _error = widget.provider.error;
       });
       return;
     }
@@ -110,12 +113,12 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
   }
 
   Future<void> _pickDate() async {
-    final now    = DateTime.now();
+    final now = DateTime.now();
     final picked = await showDatePicker(
-      context:     context,
+      context: context,
       initialDate: _dueDate ?? now,
-      firstDate:   now.subtract(const Duration(days: 365)),
-      lastDate:    now.add(const Duration(days: 730)),
+      firstDate: now.subtract(const Duration(days: 365)),
+      lastDate: now.add(const Duration(days: 730)),
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(
           colorScheme: const ColorScheme.light(primary: AppColors.accent),
@@ -184,29 +187,35 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
                   Text('Board Column', style: AppTextStyles.labelMedium),
                   const SizedBox(height: AppSpacing.xs),
                   DropdownButtonFormField<BoardGroup>(
-                    value: _selectedGroup,
-                    style: AppTextStyles.bodyMedium
-                        .copyWith(color: AppColors.textPrimary),
+                    initialValue: _selectedGroup,
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.textPrimary,
+                    ),
                     decoration: _inputDecoration(null),
                     dropdownColor: AppColors.surface,
-                    validator: (v) => v == null ? 'Select a board column' : null,
-                    items: groups.map((g) => DropdownMenuItem(
-                      value: g,
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 8,
-                            height: 8,
-                            margin: const EdgeInsets.only(right: 8),
-                            decoration: BoxDecoration(
-                              color: g.accentColor,
-                              shape: BoxShape.circle,
+                    validator: (v) =>
+                        v == null ? 'Select a board column' : null,
+                    items: groups
+                        .map(
+                          (g) => DropdownMenuItem(
+                            value: g,
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 8,
+                                  height: 8,
+                                  margin: const EdgeInsets.only(right: 8),
+                                  decoration: BoxDecoration(
+                                    color: g.accentColor,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                Text(g.name),
+                              ],
                             ),
                           ),
-                          Text(g.name),
-                        ],
-                      ),
-                    )).toList(),
+                        )
+                        .toList(),
                     onChanged: (v) {
                       if (v != null) setState(() => _selectedGroup = v);
                     },
@@ -218,13 +227,16 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
                 Text('Task Name', style: AppTextStyles.labelMedium),
                 const SizedBox(height: AppSpacing.xs),
                 TextFormField(
-                  controller:    _nameController,
-                  autofocus:     true,
+                  controller: _nameController,
+                  autofocus: true,
                   textCapitalization: TextCapitalization.sentences,
-                  style:         AppTextStyles.bodyMedium,
-                  decoration:    _inputDecoration('e.g. Confirm Adora Luxury Hotel'),
-                  validator: (v) =>
-                      (v == null || v.trim().isEmpty) ? 'Task name is required' : null,
+                  style: AppTextStyles.bodyMedium,
+                  decoration: _inputDecoration(
+                    'e.g. Confirm Adora Luxury Hotel',
+                  ),
+                  validator: (v) => (v == null || v.trim().isEmpty)
+                      ? 'Task name is required'
+                      : null,
                   onFieldSubmitted: (_) => _submit(),
                 ),
                 const SizedBox(height: AppSpacing.base),
@@ -239,17 +251,20 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
                           Text('Priority', style: AppTextStyles.labelMedium),
                           const SizedBox(height: AppSpacing.xs),
                           DropdownButtonFormField<TaskPriority>(
-                            value: _priority,
-                            style: AppTextStyles.bodyMedium
-                                .copyWith(color: AppColors.textPrimary),
-                            decoration:   _inputDecoration(null),
+                            initialValue: _priority,
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: AppColors.textPrimary,
+                            ),
+                            decoration: _inputDecoration(null),
                             dropdownColor: AppColors.surface,
-                            items: TaskPriority.values.map((p) =>
-                              DropdownMenuItem(
-                                value: p,
-                                child: Text(p.label),
-                              ),
-                            ).toList(),
+                            items: TaskPriority.values
+                                .map(
+                                  (p) => DropdownMenuItem(
+                                    value: p,
+                                    child: Text(p.label),
+                                  ),
+                                )
+                                .toList(),
                             onChanged: (v) {
                               if (v != null) setState(() => _priority = v);
                             },
@@ -262,19 +277,23 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Due Date (optional)',
-                              style: AppTextStyles.labelMedium),
+                          Text(
+                            'Due Date (optional)',
+                            style: AppTextStyles.labelMedium,
+                          ),
                           const SizedBox(height: AppSpacing.xs),
                           GestureDetector(
                             onTap: _pickDate,
                             child: Container(
                               height: 48,
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: AppSpacing.md),
+                                horizontal: AppSpacing.md,
+                              ),
                               decoration: BoxDecoration(
                                 border: Border.all(color: AppColors.border),
                                 borderRadius: BorderRadius.circular(
-                                    AppSpacing.inputRadius),
+                                  AppSpacing.inputRadius,
+                                ),
                                 color: AppColors.surface,
                               ),
                               alignment: Alignment.centerLeft,
@@ -292,8 +311,11 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
                                       ),
                                     ),
                                   ),
-                                  const Icon(Icons.calendar_today_outlined,
-                                      size: 14, color: AppColors.textMuted),
+                                  const Icon(
+                                    Icons.calendar_today_outlined,
+                                    size: 14,
+                                    color: AppColors.textMuted,
+                                  ),
                                 ],
                               ),
                             ),
@@ -309,21 +331,27 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
                   const SizedBox(height: AppSpacing.sm),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 8),
+                      horizontal: 10,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFFFEE2E2),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.error_outline_rounded,
-                            size: 14, color: Color(0xFF991B1B)),
+                        const Icon(
+                          Icons.error_outline_rounded,
+                          size: 14,
+                          color: Color(0xFF991B1B),
+                        ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             _error!,
-                            style: AppTextStyles.labelSmall
-                                .copyWith(color: const Color(0xFF991B1B)),
+                            style: AppTextStyles.labelSmall.copyWith(
+                              color: const Color(0xFF991B1B),
+                            ),
                           ),
                         ),
                       ],
@@ -351,8 +379,9 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
                         backgroundColor: AppColors.accent,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.circular(AppSpacing.buttonRadius),
+                          borderRadius: BorderRadius.circular(
+                            AppSpacing.buttonRadius,
+                          ),
                         ),
                         padding: const EdgeInsets.symmetric(
                           horizontal: AppSpacing.xl,
@@ -381,33 +410,43 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
   }
 
   InputDecoration _inputDecoration(String? hint) => InputDecoration(
-        hintText:  hint,
-        hintStyle: AppTextStyles.bodyMedium.copyWith(color: AppColors.textMuted),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical:   AppSpacing.md,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
-          borderSide:   const BorderSide(color: AppColors.border),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
-          borderSide:   const BorderSide(color: AppColors.border),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
-          borderSide:   const BorderSide(color: AppColors.accent, width: 1.5),
-        ),
-        filled:    true,
-        fillColor: AppColors.surface,
-      );
+    hintText: hint,
+    hintStyle: AppTextStyles.bodyMedium.copyWith(color: AppColors.textMuted),
+    contentPadding: const EdgeInsets.symmetric(
+      horizontal: AppSpacing.md,
+      vertical: AppSpacing.md,
+    ),
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
+      borderSide: const BorderSide(color: AppColors.border),
+    ),
+    enabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
+      borderSide: const BorderSide(color: AppColors.border),
+    ),
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
+      borderSide: const BorderSide(color: AppColors.accent, width: 1.5),
+    ),
+    filled: true,
+    fillColor: AppColors.surface,
+  );
 
   String _formatDate(DateTime d) =>
       '${d.day} ${_months[d.month - 1]} ${d.year}';
 
   static const _months = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
   ];
 }

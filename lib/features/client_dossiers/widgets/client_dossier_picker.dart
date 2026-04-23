@@ -28,7 +28,10 @@ class ClientDossierPicker extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () async {
-        final result = await showDossierPickerSheet(context, provider: provider);
+        final result = await showDossierPickerSheet(
+          context,
+          provider: provider,
+        );
         if (result != null) onChanged(result);
       },
       child: Container(
@@ -43,38 +46,56 @@ class ClientDossierPicker extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(Icons.person_outline_rounded,
-                size: 16, color: AppColors.textMuted),
+            Icon(
+              Icons.person_outline_rounded,
+              size: 16,
+              color: AppColors.textMuted,
+            ),
             const SizedBox(width: AppSpacing.sm),
             Expanded(
               child: selected == null
-                  ? Text('Link a client dossier (optional)',
-                      style: AppTextStyles.bodySmall
-                          .copyWith(color: AppColors.textMuted))
+                  ? Text(
+                      'Link a client dossier (optional)',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.textMuted,
+                      ),
+                    )
                   : Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(selected!.displayName,
-                            style: AppTextStyles.labelMedium.copyWith(
-                                fontWeight: FontWeight.w600)),
+                        Text(
+                          selected!.displayName,
+                          style: AppTextStyles.labelMedium.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                         if (selected!.typicalTripType != null)
-                          Text(selected!.typicalTripType!.label,
-                              style: AppTextStyles.labelSmall
-                                  .copyWith(color: AppColors.textMuted)),
+                          Text(
+                            selected!.typicalTripType!.label,
+                            style: AppTextStyles.labelSmall.copyWith(
+                              color: AppColors.textMuted,
+                            ),
+                          ),
                       ],
                     ),
             ),
             if (selected != null) ...[
               GestureDetector(
                 onTap: () => onChanged(null),
-                child: Icon(Icons.close_rounded,
-                    size: 14, color: AppColors.textMuted),
+                child: Icon(
+                  Icons.close_rounded,
+                  size: 14,
+                  color: AppColors.textMuted,
+                ),
               ),
               const SizedBox(width: AppSpacing.sm),
             ],
-            Icon(Icons.arrow_drop_down_rounded,
-                size: 18, color: AppColors.textMuted),
+            Icon(
+              Icons.arrow_drop_down_rounded,
+              size: 18,
+              color: AppColors.textMuted,
+            ),
           ],
         ),
       ),
@@ -155,34 +176,46 @@ class _DossierPickerSheetState extends State<_DossierPickerSheet> {
                 TextField(
                   controller: _searchCtrl,
                   onChanged: (v) => setState(() => _query = v),
-                  style: AppTextStyles.bodySmall
-                      .copyWith(color: AppColors.textPrimary),
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.textPrimary,
+                  ),
                   decoration: InputDecoration(
                     hintText: 'Search clients…',
-                    hintStyle:
-                        AppTextStyles.bodySmall.copyWith(color: AppColors.textMuted),
-                    prefixIcon: const Icon(Icons.search_rounded,
-                        size: 16, color: AppColors.textMuted),
+                    hintStyle: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.textMuted,
+                    ),
+                    prefixIcon: const Icon(
+                      Icons.search_rounded,
+                      size: 16,
+                      color: AppColors.textMuted,
+                    ),
                     isDense: true,
                     filled: true,
                     fillColor: AppColors.surfaceAlt,
                     contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 10),
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
                     border: OutlineInputBorder(
-                      borderRadius:
-                          BorderRadius.circular(AppSpacing.inputRadius),
+                      borderRadius: BorderRadius.circular(
+                        AppSpacing.inputRadius,
+                      ),
                       borderSide: const BorderSide(color: AppColors.border),
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius:
-                          BorderRadius.circular(AppSpacing.inputRadius),
+                      borderRadius: BorderRadius.circular(
+                        AppSpacing.inputRadius,
+                      ),
                       borderSide: const BorderSide(color: AppColors.border),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius:
-                          BorderRadius.circular(AppSpacing.inputRadius),
+                      borderRadius: BorderRadius.circular(
+                        AppSpacing.inputRadius,
+                      ),
                       borderSide: const BorderSide(
-                          color: AppColors.accent, width: 1.5),
+                        color: AppColors.accent,
+                        width: 1.5,
+                      ),
                     ),
                   ),
                 ),
@@ -197,16 +230,22 @@ class _DossierPickerSheetState extends State<_DossierPickerSheet> {
                 final items = _filtered;
                 if (items.isEmpty) {
                   return Center(
-                    child: Text('No clients found',
-                        style: AppTextStyles.bodySmall
-                            .copyWith(color: AppColors.textMuted)),
+                    child: Text(
+                      'No clients found',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.textMuted,
+                      ),
+                    ),
                   );
                 }
                 return ListView.separated(
                   controller: scrollCtrl,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 4,
+                  ),
                   itemCount: items.length,
-                  separatorBuilder: (_, __) =>
+                  separatorBuilder: (_, _) =>
                       Divider(height: 1, color: AppColors.divider),
                   itemBuilder: (_, i) {
                     final d = items[i];
@@ -250,8 +289,10 @@ class _DossierPickerRow extends StatelessWidget {
                 dossier.displayName.isNotEmpty
                     ? dossier.displayName[0].toUpperCase()
                     : '?',
-                style: AppTextStyles.labelMedium
-                    .copyWith(color: AppColors.accent, fontWeight: FontWeight.w700),
+                style: AppTextStyles.labelMedium.copyWith(
+                  color: AppColors.accent,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
             const SizedBox(width: AppSpacing.sm),
@@ -259,24 +300,32 @@ class _DossierPickerRow extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(dossier.displayName,
-                      style: AppTextStyles.labelMedium
-                          .copyWith(fontWeight: FontWeight.w600)),
-                  if (dossier.homeBase != null || dossier.typicalTripType != null)
+                  Text(
+                    dossier.displayName,
+                    style: AppTextStyles.labelMedium.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  if (dossier.homeBase != null ||
+                      dossier.typicalTripType != null)
                     Text(
                       [
                         if (dossier.typicalTripType != null)
                           dossier.typicalTripType!.label,
                         if (dossier.homeBase != null) dossier.homeBase,
                       ].join(' · '),
-                      style: AppTextStyles.labelSmall
-                          .copyWith(color: AppColors.textMuted),
+                      style: AppTextStyles.labelSmall.copyWith(
+                        color: AppColors.textMuted,
+                      ),
                     ),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right_rounded,
-                size: 16, color: AppColors.textMuted),
+            const Icon(
+              Icons.chevron_right_rounded,
+              size: 16,
+              color: AppColors.textMuted,
+            ),
           ],
         ),
       ),

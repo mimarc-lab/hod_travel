@@ -46,7 +46,9 @@ class TravelerProfileCard extends StatelessWidget {
             child: Text(
               traveler.name.isNotEmpty ? traveler.name[0].toUpperCase() : '?',
               style: AppTextStyles.labelMedium.copyWith(
-                  color: AppColors.accent, fontWeight: FontWeight.w700),
+                color: AppColors.accent,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
           const SizedBox(width: AppSpacing.sm),
@@ -59,18 +61,25 @@ class TravelerProfileCard extends StatelessWidget {
                 Row(
                   children: [
                     Expanded(
-                      child: Text(traveler.name,
-                          style: AppTextStyles.labelMedium.copyWith(
-                              fontWeight: FontWeight.w600)),
+                      child: Text(
+                        traveler.name,
+                        style: AppTextStyles.labelMedium.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
                     _RoleBadge(label: traveler.role.label),
                   ],
                 ),
                 if (traveler.ageBracket != null) ...[
                   const SizedBox(height: 2),
-                  Text(traveler.ageBracket!.label,
-                      style: AppTextStyles.labelSmall
-                          .copyWith(color: AppColors.textMuted, fontSize: 11)),
+                  Text(
+                    traveler.ageBracket!.label,
+                    style: AppTextStyles.labelSmall.copyWith(
+                      color: AppColors.textMuted,
+                      fontSize: 11,
+                    ),
+                  ),
                 ],
                 if (_hasNotes) ...[
                   const SizedBox(height: AppSpacing.sm),
@@ -88,15 +97,21 @@ class TravelerProfileCard extends StatelessWidget {
                 if (onEdit != null)
                   GestureDetector(
                     onTap: onEdit,
-                    child: Icon(Icons.edit_outlined,
-                        size: 14, color: AppColors.textMuted),
+                    child: Icon(
+                      Icons.edit_outlined,
+                      size: 14,
+                      color: AppColors.textMuted,
+                    ),
                   ),
                 if (onDelete != null) ...[
                   const SizedBox(height: 6),
                   GestureDetector(
                     onTap: onDelete,
-                    child: Icon(Icons.delete_outline_rounded,
-                        size: 14, color: AppColors.textMuted),
+                    child: Icon(
+                      Icons.delete_outline_rounded,
+                      size: 14,
+                      color: AppColors.textMuted,
+                    ),
                   ),
                 ],
               ],
@@ -115,13 +130,25 @@ class TravelerProfileCard extends StatelessWidget {
   List<Widget> _buildNoteRows() {
     final rows = <Widget>[];
     if (traveler.dietaryNotes != null) {
-      rows.add(_NoteRow(icon: Icons.restaurant_outlined, text: traveler.dietaryNotes!));
+      rows.add(
+        _NoteRow(icon: Icons.restaurant_outlined, text: traveler.dietaryNotes!),
+      );
     }
     if (traveler.activityNotes != null) {
-      rows.add(_NoteRow(icon: Icons.directions_run_outlined, text: traveler.activityNotes!));
+      rows.add(
+        _NoteRow(
+          icon: Icons.directions_run_outlined,
+          text: traveler.activityNotes!,
+        ),
+      );
     }
     if (traveler.medicalNotes != null) {
-      rows.add(_NoteRow(icon: Icons.medical_information_outlined, text: traveler.medicalNotes!));
+      rows.add(
+        _NoteRow(
+          icon: Icons.medical_information_outlined,
+          text: traveler.medicalNotes!,
+        ),
+      );
     }
     return rows;
   }
@@ -140,9 +167,13 @@ class _RoleBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(4),
         border: Border.all(color: AppColors.border),
       ),
-      child: Text(label,
-          style: AppTextStyles.labelSmall
-              .copyWith(color: AppColors.textSecondary, fontSize: 10)),
+      child: Text(
+        label,
+        style: AppTextStyles.labelSmall.copyWith(
+          color: AppColors.textSecondary,
+          fontSize: 10,
+        ),
+      ),
     );
   }
 }
@@ -162,11 +193,15 @@ class _NoteRow extends StatelessWidget {
           Icon(icon, size: 11, color: AppColors.textMuted),
           const SizedBox(width: 5),
           Expanded(
-            child: Text(text,
-                style: AppTextStyles.labelSmall
-                    .copyWith(color: AppColors.textSecondary, fontSize: 11),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis),
+            child: Text(
+              text,
+              style: AppTextStyles.labelSmall.copyWith(
+                color: AppColors.textSecondary,
+                fontSize: 11,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ],
       ),
@@ -190,7 +225,8 @@ Future<ClientTraveler?> showTravelerFormSheet(
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
     ),
-    builder: (_) => _TravelerFormSheet(dossierId: dossierId, existing: existing),
+    builder: (_) =>
+        _TravelerFormSheet(dossierId: dossierId, existing: existing),
   );
 }
 
@@ -204,29 +240,29 @@ class _TravelerFormSheet extends StatefulWidget {
 }
 
 class _TravelerFormSheetState extends State<_TravelerFormSheet> {
-  final _nameCtrl          = TextEditingController();
-  final _dietaryCtrl       = TextEditingController();
-  final _roomingCtrl       = TextEditingController();
-  final _activityCtrl      = TextEditingController();
-  final _medicalCtrl       = TextEditingController();
-  final _personalityCtrl   = TextEditingController();
+  final _nameCtrl = TextEditingController();
+  final _dietaryCtrl = TextEditingController();
+  final _roomingCtrl = TextEditingController();
+  final _activityCtrl = TextEditingController();
+  final _medicalCtrl = TextEditingController();
+  final _personalityCtrl = TextEditingController();
 
-  TravelerRole _role        = TravelerRole.guest;
-  AgeBracket?  _ageBracket;
+  TravelerRole _role = TravelerRole.guest;
+  AgeBracket? _ageBracket;
 
   @override
   void initState() {
     super.initState();
     final e = widget.existing;
     if (e != null) {
-      _nameCtrl.text        = e.name;
-      _dietaryCtrl.text     = e.dietaryNotes ?? '';
-      _roomingCtrl.text     = e.roomingNotes ?? '';
-      _activityCtrl.text    = e.activityNotes ?? '';
-      _medicalCtrl.text     = e.medicalNotes ?? '';
+      _nameCtrl.text = e.name;
+      _dietaryCtrl.text = e.dietaryNotes ?? '';
+      _roomingCtrl.text = e.roomingNotes ?? '';
+      _activityCtrl.text = e.activityNotes ?? '';
+      _medicalCtrl.text = e.medicalNotes ?? '';
       _personalityCtrl.text = e.personalityNotes ?? '';
-      _role                 = e.role;
-      _ageBracket           = e.ageBracket;
+      _role = e.role;
+      _ageBracket = e.ageBracket;
     }
   }
 
@@ -243,21 +279,34 @@ class _TravelerFormSheetState extends State<_TravelerFormSheet> {
 
   void _save() {
     if (_nameCtrl.text.trim().isEmpty) return;
-    final traveler = (widget.existing ?? ClientTraveler(
-      id: '',
-      dossierId: widget.dossierId,
-      name: '',
-      createdAt: DateTime.now(),
-    )).copyWith(
-      name:             _nameCtrl.text.trim(),
-      role:             _role,
-      ageBracket:       _ageBracket,
-      dietaryNotes:     _dietaryCtrl.text.trim().isNotEmpty ? _dietaryCtrl.text.trim() : null,
-      roomingNotes:     _roomingCtrl.text.trim().isNotEmpty ? _roomingCtrl.text.trim() : null,
-      activityNotes:    _activityCtrl.text.trim().isNotEmpty ? _activityCtrl.text.trim() : null,
-      medicalNotes:     _medicalCtrl.text.trim().isNotEmpty ? _medicalCtrl.text.trim() : null,
-      personalityNotes: _personalityCtrl.text.trim().isNotEmpty ? _personalityCtrl.text.trim() : null,
-    );
+    final traveler =
+        (widget.existing ??
+                ClientTraveler(
+                  id: '',
+                  dossierId: widget.dossierId,
+                  name: '',
+                  createdAt: DateTime.now(),
+                ))
+            .copyWith(
+              name: _nameCtrl.text.trim(),
+              role: _role,
+              ageBracket: _ageBracket,
+              dietaryNotes: _dietaryCtrl.text.trim().isNotEmpty
+                  ? _dietaryCtrl.text.trim()
+                  : null,
+              roomingNotes: _roomingCtrl.text.trim().isNotEmpty
+                  ? _roomingCtrl.text.trim()
+                  : null,
+              activityNotes: _activityCtrl.text.trim().isNotEmpty
+                  ? _activityCtrl.text.trim()
+                  : null,
+              medicalNotes: _medicalCtrl.text.trim().isNotEmpty
+                  ? _medicalCtrl.text.trim()
+                  : null,
+              personalityNotes: _personalityCtrl.text.trim().isNotEmpty
+                  ? _personalityCtrl.text.trim()
+                  : null,
+            );
     Navigator.of(context).pop(traveler);
   }
 
@@ -271,16 +320,23 @@ class _TravelerFormSheetState extends State<_TravelerFormSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(children: [
-              Text(widget.existing == null ? 'Add Traveler' : 'Edit Traveler',
-                  style: AppTextStyles.heading3),
-              const Spacer(),
-              GestureDetector(
-                onTap: () => Navigator.of(context).pop(),
-                child: const Icon(Icons.close_rounded,
-                    size: 18, color: AppColors.textMuted),
-              ),
-            ]),
+            Row(
+              children: [
+                Text(
+                  widget.existing == null ? 'Add Traveler' : 'Edit Traveler',
+                  style: AppTextStyles.heading3,
+                ),
+                const Spacer(),
+                GestureDetector(
+                  onTap: () => Navigator.of(context).pop(),
+                  child: const Icon(
+                    Icons.close_rounded,
+                    size: 18,
+                    color: AppColors.textMuted,
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 20),
 
             _SheetField(label: 'Full name *', ctrl: _nameCtrl),
@@ -322,9 +378,15 @@ class _TravelerFormSheetState extends State<_TravelerFormSheet> {
             const SizedBox(height: 10),
             _SheetField(label: 'Activity notes', ctrl: _activityCtrl),
             const SizedBox(height: 10),
-            _SheetField(label: 'Medical / accessibility notes', ctrl: _medicalCtrl),
+            _SheetField(
+              label: 'Medical / accessibility notes',
+              ctrl: _medicalCtrl,
+            ),
             const SizedBox(height: 10),
-            _SheetField(label: 'Personality / preference notes', ctrl: _personalityCtrl),
+            _SheetField(
+              label: 'Personality / preference notes',
+              ctrl: _personalityCtrl,
+            ),
             const SizedBox(height: 24),
 
             SizedBox(
@@ -335,12 +397,16 @@ class _TravelerFormSheetState extends State<_TravelerFormSheet> {
                   height: 44,
                   decoration: BoxDecoration(
                     color: AppColors.accent,
-                    borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
+                    borderRadius: BorderRadius.circular(
+                      AppSpacing.buttonRadius,
+                    ),
                   ),
                   alignment: Alignment.center,
                   child: Text(
                     widget.existing == null ? 'Add Traveler' : 'Save Changes',
-                    style: AppTextStyles.labelMedium.copyWith(color: Colors.white),
+                    style: AppTextStyles.labelMedium.copyWith(
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ),
@@ -351,8 +417,10 @@ class _TravelerFormSheetState extends State<_TravelerFormSheet> {
     );
   }
 
-  Widget _label(String text) => Text(text,
-      style: AppTextStyles.labelSmall.copyWith(color: AppColors.textSecondary));
+  Widget _label(String text) => Text(
+    text,
+    style: AppTextStyles.labelSmall.copyWith(color: AppColors.textSecondary),
+  );
 }
 
 class _SheetField extends StatelessWidget {
@@ -360,20 +428,19 @@ class _SheetField extends StatelessWidget {
   final TextEditingController ctrl;
   final int maxLines;
 
-  const _SheetField({
-    required this.label,
-    required this.ctrl,
-    this.maxLines = 1,
-  });
+  const _SheetField({required this.label, required this.ctrl});
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
-            style: AppTextStyles.labelSmall
-                .copyWith(color: AppColors.textSecondary)),
+        Text(
+          label,
+          style: AppTextStyles.labelSmall.copyWith(
+            color: AppColors.textSecondary,
+          ),
+        ),
         const SizedBox(height: 5),
         TextField(
           controller: ctrl,
@@ -383,8 +450,10 @@ class _SheetField extends StatelessWidget {
             isDense: true,
             filled: true,
             fillColor: AppColors.surfaceAlt,
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 10,
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
               borderSide: const BorderSide(color: AppColors.border),
@@ -395,8 +464,7 @@ class _SheetField extends StatelessWidget {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
-              borderSide:
-                  const BorderSide(color: AppColors.accent, width: 1.5),
+              borderSide: const BorderSide(color: AppColors.accent, width: 1.5),
             ),
           ),
         ),

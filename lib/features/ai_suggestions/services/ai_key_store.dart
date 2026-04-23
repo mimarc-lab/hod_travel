@@ -5,19 +5,22 @@ import 'ai_config.dart';
 /// On web this is localStorage; on desktop it's platform storage.
 abstract class AiKeyStore {
   static const _keyApiKey = 'ai_anthropic_api_key';
-  static const _keyModel  = 'ai_model';
+  static const _keyModel = 'ai_model';
 
   /// Load the saved key (if any) and configure [AiConfig].
   /// Call once at app startup, after Supabase initialises.
   static Future<void> loadAndConfigure() async {
-    final prefs  = await SharedPreferences.getInstance();
+    final prefs = await SharedPreferences.getInstance();
     final apiKey = prefs.getString(_keyApiKey) ?? '';
-    var   model  = prefs.getString(_keyModel);
+    var model = prefs.getString(_keyModel);
 
     // Migrate any incorrect model IDs stored from previous sessions
     // back to the correct Anthropic model identifier.
-    const _wrongModels = {'claude-3-5-haiku-20241022', 'claude-3-haiku-20240307'};
-    if (model != null && _wrongModels.contains(model)) {
+    const wrongModels = {
+      'claude-3-5-haiku-20241022',
+      'claude-3-haiku-20240307',
+    };
+    if (model != null && wrongModels.contains(model)) {
       model = 'claude-haiku-4-5-20251001';
       await prefs.setString(_keyModel, model);
     }

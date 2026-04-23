@@ -46,8 +46,11 @@ class DossierSectionCard extends StatelessWidget {
             child: Row(
               children: [
                 if (isInternal) ...[
-                  Icon(Icons.lock_outline_rounded,
-                      size: 12, color: AppColors.accent),
+                  Icon(
+                    Icons.lock_outline_rounded,
+                    size: 12,
+                    color: AppColors.accent,
+                  ),
                   const SizedBox(width: AppSpacing.xs),
                 ],
                 Expanded(
@@ -66,14 +69,18 @@ class DossierSectionCard extends StatelessWidget {
                       ),
                       if (subtitle != null) ...[
                         const SizedBox(height: 2),
-                        Text(subtitle!,
-                            style: AppTextStyles.labelSmall.copyWith(
-                                color: AppColors.textMuted, fontSize: 11)),
+                        Text(
+                          subtitle!,
+                          style: AppTextStyles.labelSmall.copyWith(
+                            color: AppColors.textMuted,
+                            fontSize: 11,
+                          ),
+                        ),
                       ],
                     ],
                   ),
                 ),
-                if (trailing != null) trailing!,
+                ?trailing,
               ],
             ),
           ),
@@ -112,15 +119,22 @@ class DossierInfoRow extends StatelessWidget {
         children: [
           SizedBox(
             width: 140,
-            child: Text(label,
-                style: AppTextStyles.labelSmall
-                    .copyWith(color: AppColors.textSecondary)),
+            child: Text(
+              label,
+              style: AppTextStyles.labelSmall.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
           ),
           Expanded(
-            child: valueWidget ??
-                Text(value!,
-                    style: AppTextStyles.labelSmall
-                        .copyWith(color: AppColors.textPrimary)),
+            child:
+                valueWidget ??
+                Text(
+                  value!,
+                  style: AppTextStyles.labelSmall.copyWith(
+                    color: AppColors.textPrimary,
+                  ),
+                ),
           ),
         ],
       ),
@@ -146,9 +160,12 @@ class InterestBar extends StatelessWidget {
         children: [
           SizedBox(
             width: 140,
-            child: Text(label,
-                style: AppTextStyles.labelSmall
-                    .copyWith(color: AppColors.textSecondary)),
+            child: Text(
+              label,
+              style: AppTextStyles.labelSmall.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
           ),
           ...List.generate(5, (i) {
             final filled = i < clamped;
@@ -168,8 +185,10 @@ class InterestBar extends StatelessWidget {
           const SizedBox(width: 8),
           Text(
             _label(clamped),
-            style: AppTextStyles.labelSmall.copyWith(color: AppColors.textMuted,
-                fontSize: 10),
+            style: AppTextStyles.labelSmall.copyWith(
+              color: AppColors.textMuted,
+              fontSize: 10,
+            ),
           ),
         ],
       ),
@@ -199,17 +218,20 @@ class PreferenceChip extends StatelessWidget {
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: small ? 8 : 10,
-        vertical:   small ? 3 : 4,
+        vertical: small ? 3 : 4,
       ),
       decoration: BoxDecoration(
         color: AppColors.surfaceAlt,
         borderRadius: BorderRadius.circular(AppSpacing.chipRadius),
         border: Border.all(color: AppColors.border),
       ),
-      child: Text(label,
-          style: AppTextStyles.labelSmall.copyWith(
-              color: AppColors.textSecondary,
-              fontSize: small ? 11 : 12)),
+      child: Text(
+        label,
+        style: AppTextStyles.labelSmall.copyWith(
+          color: AppColors.textSecondary,
+          fontSize: small ? 11 : 12,
+        ),
+      ),
     );
   }
 }
@@ -228,9 +250,13 @@ class AlertChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppSpacing.chipRadius),
         border: Border.all(color: const Color(0xFFFCD34D)),
       ),
-      child: Text(label,
-          style: AppTextStyles.labelSmall.copyWith(
-              color: const Color(0xFF92400E), fontSize: 11)),
+      child: Text(
+        label,
+        style: AppTextStyles.labelSmall.copyWith(
+          color: const Color(0xFF92400E),
+          fontSize: 11,
+        ),
+      ),
     );
   }
 }

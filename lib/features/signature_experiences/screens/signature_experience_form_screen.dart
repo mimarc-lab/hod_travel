@@ -77,47 +77,70 @@ class _SignatureExperienceFormScreenState
   void initState() {
     super.initState();
     final e = widget.existing;
-    _titleCtrl       = TextEditingController(text: e?.title ?? '');
-    _shortDescCtrl   = TextEditingController(text: e?.shortDescriptionClient ?? '');
-    _longDescCtrl    = TextEditingController(text: e?.longDescriptionInternal ?? '');
-    _conceptCtrl     = TextEditingController(text: e?.conceptSummary ?? '');
-    _durationCtrl    = TextEditingController(text: e?.durationLabel ?? '');
+    _titleCtrl = TextEditingController(text: e?.title ?? '');
+    _shortDescCtrl = TextEditingController(
+      text: e?.shortDescriptionClient ?? '',
+    );
+    _longDescCtrl = TextEditingController(
+      text: e?.longDescriptionInternal ?? '',
+    );
+    _conceptCtrl = TextEditingController(text: e?.conceptSummary ?? '');
+    _durationCtrl = TextEditingController(text: e?.durationLabel ?? '');
     _locationNotesCtrl = TextEditingController(text: e?.locationNotes ?? '');
-    _indoorOutdoorCtrl = TextEditingController(text: e?.indoorOutdoorType ?? '');
-    _productionCtrl  = TextEditingController(text: e?.productionNotes ?? '');
-    _setupCtrl       = TextEditingController(text: e?.setupRequirements ?? '');
-    _complexityCtrl  = TextEditingController(text: e?.executionComplexity ?? '');
-    _costingCtrl     = TextEditingController(text: e?.costingNotes ?? '');
-    _pricingCtrl     = TextEditingController(text: e?.pricingNotes ?? '');
-    _culturalCtrl    = TextEditingController(text: e?.culturalSensitivityNotes ?? '');
-    _politicalCtrl   = TextEditingController(text: e?.politicalSensitivityNotes ?? '');
-    _securityCtrl    = TextEditingController(text: e?.securityNotes ?? '');
-    _briefingCtrl    = TextEditingController(text: e?.briefingNotes ?? '');
+    _indoorOutdoorCtrl = TextEditingController(
+      text: e?.indoorOutdoorType ?? '',
+    );
+    _productionCtrl = TextEditingController(text: e?.productionNotes ?? '');
+    _setupCtrl = TextEditingController(text: e?.setupRequirements ?? '');
+    _complexityCtrl = TextEditingController(text: e?.executionComplexity ?? '');
+    _costingCtrl = TextEditingController(text: e?.costingNotes ?? '');
+    _pricingCtrl = TextEditingController(text: e?.pricingNotes ?? '');
+    _culturalCtrl = TextEditingController(
+      text: e?.culturalSensitivityNotes ?? '',
+    );
+    _politicalCtrl = TextEditingController(
+      text: e?.politicalSensitivityNotes ?? '',
+    );
+    _securityCtrl = TextEditingController(text: e?.securityNotes ?? '');
+    _briefingCtrl = TextEditingController(text: e?.briefingNotes ?? '');
 
-    _status          = e?.status         ?? ExperienceStatus.draft;
-    _category        = e?.category        ?? ExperienceCategory.cultural;
-    _experienceType  = e?.experienceType  ?? ExperienceType.private;
-    _flexibility     = e?.destinationFlexibility ?? ExperienceFlexibility.adaptable;
-    _groupSizeMin    = e?.idealGroupSizeMin;
-    _groupSizeMax    = e?.idealGroupSizeMax;
-    _tags                 = List.from(e?.tags ?? []);
-    _audienceSuitability  = List.from(e?.audienceSuitability ?? []);
-    _requiredStaffRoles   = List.from(e?.requiredStaffRoles ?? []);
-    _requiredSuppliers    = List.from(e?.requiredSuppliers ?? []);
-    _mediaLinks           = List.from(e?.mediaLinks ?? []);
+    _status = e?.status ?? ExperienceStatus.draft;
+    _category = e?.category ?? ExperienceCategory.cultural;
+    _experienceType = e?.experienceType ?? ExperienceType.private;
+    _flexibility = e?.destinationFlexibility ?? ExperienceFlexibility.adaptable;
+    _groupSizeMin = e?.idealGroupSizeMin;
+    _groupSizeMax = e?.idealGroupSizeMax;
+    _tags = List.from(e?.tags ?? []);
+    _audienceSuitability = List.from(e?.audienceSuitability ?? []);
+    _requiredStaffRoles = List.from(e?.requiredStaffRoles ?? []);
+    _requiredSuppliers = List.from(e?.requiredSuppliers ?? []);
+    _mediaLinks = List.from(e?.mediaLinks ?? []);
   }
 
   @override
   void dispose() {
     for (final c in [
-      _titleCtrl, _shortDescCtrl, _longDescCtrl, _conceptCtrl,
-      _durationCtrl, _locationNotesCtrl, _indoorOutdoorCtrl,
-      _productionCtrl, _setupCtrl, _complexityCtrl,
-      _costingCtrl, _pricingCtrl,
-      _culturalCtrl, _politicalCtrl, _securityCtrl,
+      _titleCtrl,
+      _shortDescCtrl,
+      _longDescCtrl,
+      _conceptCtrl,
+      _durationCtrl,
+      _locationNotesCtrl,
+      _indoorOutdoorCtrl,
+      _productionCtrl,
+      _setupCtrl,
+      _complexityCtrl,
+      _costingCtrl,
+      _pricingCtrl,
+      _culturalCtrl,
+      _politicalCtrl,
+      _securityCtrl,
       _briefingCtrl,
-      _tagCtrl, _audienceCtrl, _staffRoleCtrl,
-      _requiredSupplierCtrl, _mediaLinkCtrl,
+      _tagCtrl,
+      _audienceCtrl,
+      _staffRoleCtrl,
+      _requiredSupplierCtrl,
+      _mediaLinkCtrl,
     ]) {
       c.dispose();
     }
@@ -155,35 +178,66 @@ class _SignatureExperienceFormScreenState
     final experience = SignatureExperience(
       id: widget.existing?.id ?? '',
       teamId: teamId.isNotEmpty ? teamId : null,
-      title:                     _titleCtrl.text.trim(),
-      status:                    _status,
-      category:                  _category,
-      experienceType:            _experienceType,
-      shortDescriptionClient:    _shortDescCtrl.text.trim().isEmpty ? null : _shortDescCtrl.text.trim(),
-      longDescriptionInternal:   _longDescCtrl.text.trim().isEmpty ? null : _longDescCtrl.text.trim(),
-      conceptSummary:            _conceptCtrl.text.trim().isEmpty ? null : _conceptCtrl.text.trim(),
-      audienceSuitability:       _audienceSuitability,
-      destinationFlexibility:    _flexibility,
-      tags:                      _tags,
-      durationLabel:             _durationCtrl.text.trim().isEmpty ? null : _durationCtrl.text.trim(),
-      idealGroupSizeMin:         _groupSizeMin,
-      idealGroupSizeMax:         _groupSizeMax,
-      indoorOutdoorType:         _indoorOutdoorCtrl.text.trim().isEmpty ? null : _indoorOutdoorCtrl.text.trim(),
-      locationNotes:             _locationNotesCtrl.text.trim().isEmpty ? null : _locationNotesCtrl.text.trim(),
-      productionNotes:           _productionCtrl.text.trim().isEmpty ? null : _productionCtrl.text.trim(),
-      setupRequirements:         _setupCtrl.text.trim().isEmpty ? null : _setupCtrl.text.trim(),
-      executionComplexity:       _complexityCtrl.text.trim().isEmpty ? null : _complexityCtrl.text.trim(),
-      requiredStaffRoles:        _requiredStaffRoles,
-      requiredSuppliers:         _requiredSuppliers,
-      costingNotes:              _costingCtrl.text.trim().isEmpty ? null : _costingCtrl.text.trim(),
-      pricingNotes:              _pricingCtrl.text.trim().isEmpty ? null : _pricingCtrl.text.trim(),
-      culturalSensitivityNotes:  _culturalCtrl.text.trim().isEmpty ? null : _culturalCtrl.text.trim(),
-      politicalSensitivityNotes: _politicalCtrl.text.trim().isEmpty ? null : _politicalCtrl.text.trim(),
-      securityNotes:             _securityCtrl.text.trim().isEmpty ? null : _securityCtrl.text.trim(),
-      mediaLinks:                _mediaLinks,
-      briefingNotes:             _briefingCtrl.text.trim().isEmpty ? null : _briefingCtrl.text.trim(),
-      createdBy:                 widget.existing?.createdBy ?? AppRepositories.instance?.currentUserId,
-      createdAt:                 widget.existing?.createdAt,
+      title: _titleCtrl.text.trim(),
+      status: _status,
+      category: _category,
+      experienceType: _experienceType,
+      shortDescriptionClient: _shortDescCtrl.text.trim().isEmpty
+          ? null
+          : _shortDescCtrl.text.trim(),
+      longDescriptionInternal: _longDescCtrl.text.trim().isEmpty
+          ? null
+          : _longDescCtrl.text.trim(),
+      conceptSummary: _conceptCtrl.text.trim().isEmpty
+          ? null
+          : _conceptCtrl.text.trim(),
+      audienceSuitability: _audienceSuitability,
+      destinationFlexibility: _flexibility,
+      tags: _tags,
+      durationLabel: _durationCtrl.text.trim().isEmpty
+          ? null
+          : _durationCtrl.text.trim(),
+      idealGroupSizeMin: _groupSizeMin,
+      idealGroupSizeMax: _groupSizeMax,
+      indoorOutdoorType: _indoorOutdoorCtrl.text.trim().isEmpty
+          ? null
+          : _indoorOutdoorCtrl.text.trim(),
+      locationNotes: _locationNotesCtrl.text.trim().isEmpty
+          ? null
+          : _locationNotesCtrl.text.trim(),
+      productionNotes: _productionCtrl.text.trim().isEmpty
+          ? null
+          : _productionCtrl.text.trim(),
+      setupRequirements: _setupCtrl.text.trim().isEmpty
+          ? null
+          : _setupCtrl.text.trim(),
+      executionComplexity: _complexityCtrl.text.trim().isEmpty
+          ? null
+          : _complexityCtrl.text.trim(),
+      requiredStaffRoles: _requiredStaffRoles,
+      requiredSuppliers: _requiredSuppliers,
+      costingNotes: _costingCtrl.text.trim().isEmpty
+          ? null
+          : _costingCtrl.text.trim(),
+      pricingNotes: _pricingCtrl.text.trim().isEmpty
+          ? null
+          : _pricingCtrl.text.trim(),
+      culturalSensitivityNotes: _culturalCtrl.text.trim().isEmpty
+          ? null
+          : _culturalCtrl.text.trim(),
+      politicalSensitivityNotes: _politicalCtrl.text.trim().isEmpty
+          ? null
+          : _politicalCtrl.text.trim(),
+      securityNotes: _securityCtrl.text.trim().isEmpty
+          ? null
+          : _securityCtrl.text.trim(),
+      mediaLinks: _mediaLinks,
+      briefingNotes: _briefingCtrl.text.trim().isEmpty
+          ? null
+          : _briefingCtrl.text.trim(),
+      createdBy:
+          widget.existing?.createdBy ?? AppRepositories.instance?.currentUserId,
+      createdAt: widget.existing?.createdAt,
     );
 
     final result = _isEdit
@@ -196,7 +250,9 @@ class _SignatureExperienceFormScreenState
     if (result != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(_isEdit ? 'Experience updated.' : 'Experience created.'),
+          content: Text(
+            _isEdit ? 'Experience updated.' : 'Experience created.',
+          ),
           backgroundColor: AppColors.statusDoneText,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -263,7 +319,8 @@ class _SignatureExperienceFormScreenState
                   const SizedBox(height: AppSpacing.xs),
                   _FormField(
                     controller: _titleCtrl,
-                    hint: 'e.g. Yin & Yang: Opposing Political Narratives Debate',
+                    hint:
+                        'e.g. Yin & Yang: Opposing Political Narratives Debate',
                     validator: (v) => _notEmpty(v, 'Title'),
                   ),
                   const SizedBox(height: AppSpacing.base),
@@ -388,7 +445,8 @@ class _SignatureExperienceFormScreenState
                   const SizedBox(height: AppSpacing.xs),
                   _FormField(
                     controller: _shortDescCtrl,
-                    hint: 'A compelling one-paragraph summary for the client proposal…',
+                    hint:
+                        'A compelling one-paragraph summary for the client proposal…',
                     maxLines: 3,
                   ),
                   const SizedBox(height: AppSpacing.base),
@@ -424,14 +482,16 @@ class _SignatureExperienceFormScreenState
                             _FieldLabel('Duration'),
                             const SizedBox(height: AppSpacing.xs),
                             _FormField(
-                                controller: _durationCtrl,
-                                hint: 'e.g. 3 hours, Full day'),
+                              controller: _durationCtrl,
+                              hint: 'e.g. 3 hours, Full day',
+                            ),
                             const SizedBox(height: AppSpacing.base),
                             _FieldLabel('Indoor / Outdoor'),
                             const SizedBox(height: AppSpacing.xs),
                             _FormField(
-                                controller: _indoorOutdoorCtrl,
-                                hint: 'e.g. Indoor, Outdoor, Both'),
+                              controller: _indoorOutdoorCtrl,
+                              hint: 'e.g. Indoor, Outdoor, Both',
+                            ),
                           ],
                         )
                       : Row(
@@ -444,8 +504,9 @@ class _SignatureExperienceFormScreenState
                                   _FieldLabel('Duration'),
                                   const SizedBox(height: AppSpacing.xs),
                                   _FormField(
-                                      controller: _durationCtrl,
-                                      hint: 'e.g. 3 hours, Full day'),
+                                    controller: _durationCtrl,
+                                    hint: 'e.g. 3 hours, Full day',
+                                  ),
                                 ],
                               ),
                             ),
@@ -457,8 +518,9 @@ class _SignatureExperienceFormScreenState
                                   _FieldLabel('Indoor / Outdoor'),
                                   const SizedBox(height: AppSpacing.xs),
                                   _FormField(
-                                      controller: _indoorOutdoorCtrl,
-                                      hint: 'e.g. Indoor, Outdoor, Both'),
+                                    controller: _indoorOutdoorCtrl,
+                                    hint: 'e.g. Indoor, Outdoor, Both',
+                                  ),
                                 ],
                               ),
                             ),
@@ -496,7 +558,8 @@ class _SignatureExperienceFormScreenState
                   const SizedBox(height: AppSpacing.xs),
                   _FormField(
                     controller: _locationNotesCtrl,
-                    hint: 'Specific venue requirements, destination constraints…',
+                    hint:
+                        'Specific venue requirements, destination constraints…',
                     maxLines: 2,
                   ),
                   const SizedBox(height: AppSpacing.base),
@@ -517,8 +580,11 @@ class _SignatureExperienceFormScreenState
                   ExpansionTile(
                     tilePadding: EdgeInsets.zero,
                     title: _FormSectionLabel(
-                        label: 'Operational (Internal)', bottom: 0),
-                    initiallyExpanded: _isEdit &&
+                      label: 'Operational (Internal)',
+                      bottom: 0,
+                    ),
+                    initiallyExpanded:
+                        _isEdit &&
                         (_productionCtrl.text.isNotEmpty ||
                             _setupCtrl.text.isNotEmpty ||
                             _complexityCtrl.text.isNotEmpty ||
@@ -530,7 +596,8 @@ class _SignatureExperienceFormScreenState
                       const SizedBox(height: AppSpacing.xs),
                       _FormField(
                         controller: _complexityCtrl,
-                        hint: 'e.g. Low, Medium, High, Requires advance logistics…',
+                        hint:
+                            'e.g. Low, Medium, High, Requires advance logistics…',
                         internal: true,
                       ),
                       const SizedBox(height: AppSpacing.base),
@@ -560,8 +627,7 @@ class _SignatureExperienceFormScreenState
                         hint: 'e.g. Lead Guide, Security, Translator…',
                         onAdd: () =>
                             _addChip(_staffRoleCtrl, _requiredStaffRoles),
-                        onRemove: (v) =>
-                            _removeChip(_requiredStaffRoles, v),
+                        onRemove: (v) => _removeChip(_requiredStaffRoles, v),
                         internal: true,
                       ),
                       const SizedBox(height: AppSpacing.base),
@@ -573,8 +639,7 @@ class _SignatureExperienceFormScreenState
                         hint: 'e.g. Private venue, Security firm…',
                         onAdd: () =>
                             _addChip(_requiredSupplierCtrl, _requiredSuppliers),
-                        onRemove: (v) =>
-                            _removeChip(_requiredSuppliers, v),
+                        onRemove: (v) => _removeChip(_requiredSuppliers, v),
                         internal: true,
                       ),
                       const SizedBox(height: AppSpacing.base),
@@ -586,8 +651,11 @@ class _SignatureExperienceFormScreenState
                   ExpansionTile(
                     tilePadding: EdgeInsets.zero,
                     title: _FormSectionLabel(
-                        label: 'Sensitivity Notes (Internal)', bottom: 0),
-                    initiallyExpanded: _isEdit &&
+                      label: 'Sensitivity Notes (Internal)',
+                      bottom: 0,
+                    ),
+                    initiallyExpanded:
+                        _isEdit &&
                         (_culturalCtrl.text.isNotEmpty ||
                             _politicalCtrl.text.isNotEmpty ||
                             _securityCtrl.text.isNotEmpty),
@@ -628,8 +696,11 @@ class _SignatureExperienceFormScreenState
                   ExpansionTile(
                     tilePadding: EdgeInsets.zero,
                     title: _FormSectionLabel(
-                        label: 'Commercial (Internal)', bottom: 0),
-                    initiallyExpanded: _isEdit &&
+                      label: 'Commercial (Internal)',
+                      bottom: 0,
+                    ),
+                    initiallyExpanded:
+                        _isEdit &&
                         (_costingCtrl.text.isNotEmpty ||
                             _pricingCtrl.text.isNotEmpty),
                     children: [
@@ -705,13 +776,17 @@ class _SignatureExperienceFormScreenState
                             side: const BorderSide(color: AppColors.border),
                             padding: const EdgeInsets.symmetric(vertical: 13),
                             shape: RoundedRectangleBorder(
-                              borderRadius:
-                                  BorderRadius.circular(AppSpacing.buttonRadius),
+                              borderRadius: BorderRadius.circular(
+                                AppSpacing.buttonRadius,
+                              ),
                             ),
                           ),
-                          child: Text('Cancel',
-                              style: AppTextStyles.bodyMedium
-                                  .copyWith(color: AppColors.textSecondary)),
+                          child: Text(
+                            'Cancel',
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
                         ),
                       ),
                       const SizedBox(width: AppSpacing.md),
@@ -725,8 +800,9 @@ class _SignatureExperienceFormScreenState
                             elevation: 0,
                             padding: const EdgeInsets.symmetric(vertical: 13),
                             shape: RoundedRectangleBorder(
-                              borderRadius:
-                                  BorderRadius.circular(AppSpacing.buttonRadius),
+                              borderRadius: BorderRadius.circular(
+                                AppSpacing.buttonRadius,
+                              ),
                             ),
                           ),
                           child: _submitting
@@ -734,8 +810,9 @@ class _SignatureExperienceFormScreenState
                                   width: 18,
                                   height: 18,
                                   child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Colors.white),
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
                                 )
                               : Text(
                                   _isEdit
@@ -772,9 +849,13 @@ class _FormSectionLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.only(bottom: bottom),
-      child: Text(label.toUpperCase(),
-          style: AppTextStyles.overline
-              .copyWith(color: AppColors.textSecondary, fontSize: 11)),
+      child: Text(
+        label.toUpperCase(),
+        style: AppTextStyles.overline.copyWith(
+          color: AppColors.textSecondary,
+          fontSize: 11,
+        ),
+      ),
     );
   }
 }
@@ -815,10 +896,11 @@ class _FormField extends StatelessWidget {
         hintText: hint,
         hintStyle: AppTextStyles.bodySmall,
         filled: true,
-        fillColor:
-            internal ? AppColors.surfaceAlt : AppColors.surface,
+        fillColor: internal ? AppColors.surfaceAlt : AppColors.surface,
         contentPadding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.md, vertical: 12),
+          horizontal: AppSpacing.md,
+          vertical: 12,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
           borderSide: const BorderSide(color: AppColors.border),
@@ -826,14 +908,12 @@ class _FormField extends StatelessWidget {
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
           borderSide: BorderSide(
-              color: internal
-                  ? AppColors.accentLight
-                  : AppColors.border),
+            color: internal ? AppColors.accentLight : AppColors.border,
+          ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
-          borderSide:
-              const BorderSide(color: AppColors.accent, width: 1.5),
+          borderSide: const BorderSide(color: AppColors.accent, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
@@ -841,8 +921,7 @@ class _FormField extends StatelessWidget {
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
-          borderSide:
-              const BorderSide(color: Colors.red, width: 1.5),
+          borderSide: const BorderSide(color: Colors.red, width: 1.5),
         ),
       ),
     );
@@ -853,8 +932,11 @@ class _GroupSizeField extends StatelessWidget {
   final String hint;
   final int? value;
   final ValueChanged<int?> onChanged;
-  const _GroupSizeField(
-      {required this.hint, required this.value, required this.onChanged});
+  const _GroupSizeField({
+    required this.hint,
+    required this.value,
+    required this.onChanged,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -869,7 +951,9 @@ class _GroupSizeField extends StatelessWidget {
         filled: true,
         fillColor: AppColors.surface,
         contentPadding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.md, vertical: 12),
+          horizontal: AppSpacing.md,
+          vertical: 12,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
           borderSide: const BorderSide(color: AppColors.border),
@@ -880,8 +964,7 @@ class _GroupSizeField extends StatelessWidget {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
-          borderSide:
-              const BorderSide(color: AppColors.accent, width: 1.5),
+          borderSide: const BorderSide(color: AppColors.accent, width: 1.5),
         ),
       ),
     );
@@ -931,26 +1014,33 @@ class _ChipInput extends StatelessWidget {
                         ? AppColors.surfaceAlt
                         : AppColors.surface,
                     contentPadding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.md, vertical: 0),
+                      horizontal: AppSpacing.md,
+                      vertical: 0,
+                    ),
                     border: OutlineInputBorder(
-                      borderRadius:
-                          BorderRadius.circular(AppSpacing.inputRadius),
-                      borderSide:
-                          const BorderSide(color: AppColors.border),
+                      borderRadius: BorderRadius.circular(
+                        AppSpacing.inputRadius,
+                      ),
+                      borderSide: const BorderSide(color: AppColors.border),
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius:
-                          BorderRadius.circular(AppSpacing.inputRadius),
+                      borderRadius: BorderRadius.circular(
+                        AppSpacing.inputRadius,
+                      ),
                       borderSide: BorderSide(
-                          color: internal
-                              ? AppColors.accentLight
-                              : AppColors.border),
+                        color: internal
+                            ? AppColors.accentLight
+                            : AppColors.border,
+                      ),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius:
-                          BorderRadius.circular(AppSpacing.inputRadius),
+                      borderRadius: BorderRadius.circular(
+                        AppSpacing.inputRadius,
+                      ),
                       borderSide: const BorderSide(
-                          color: AppColors.accent, width: 1.5),
+                        color: AppColors.accent,
+                        width: 1.5,
+                      ),
                     ),
                   ),
                 ),
@@ -964,15 +1054,17 @@ class _ChipInput extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 14),
                 decoration: BoxDecoration(
                   color: AppColors.accent,
-                  borderRadius:
-                      BorderRadius.circular(AppSpacing.buttonRadius),
+                  borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                 ),
                 child: const Center(
-                  child: Text('Add',
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600)),
+                  child: Text(
+                    'Add',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -985,29 +1077,29 @@ class _ChipInput extends StatelessWidget {
             runSpacing: 6,
             children: items.map((item) {
               return Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: accent
                       ? AppColors.accentFaint
                       : (internal
-                          ? AppColors.surfaceAlt
-                          : AppColors.surfaceAlt),
+                            ? AppColors.surfaceAlt
+                            : AppColors.surfaceAlt),
                   borderRadius: BorderRadius.circular(AppSpacing.chipRadius),
                   border: Border.all(
-                    color: accent
-                        ? AppColors.accentLight
-                        : AppColors.border,
+                    color: accent ? AppColors.accentLight : AppColors.border,
                   ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     if (chipIcon != null) ...[
-                      Icon(chipIcon, size: 11,
-                          color: accent
-                              ? AppColors.accentDark
-                              : AppColors.textMuted),
+                      Icon(
+                        chipIcon,
+                        size: 11,
+                        color: accent
+                            ? AppColors.accentDark
+                            : AppColors.textMuted,
+                      ),
                       const SizedBox(width: 4),
                     ],
                     Text(
@@ -1021,10 +1113,13 @@ class _ChipInput extends StatelessWidget {
                     const SizedBox(width: 4),
                     GestureDetector(
                       onTap: () => onRemove(item),
-                      child: Icon(Icons.close, size: 12,
-                          color: accent
-                              ? AppColors.accentDark
-                              : AppColors.textMuted),
+                      child: Icon(
+                        Icons.close,
+                        size: 12,
+                        color: accent
+                            ? AppColors.accentDark
+                            : AppColors.textMuted,
+                      ),
                     ),
                   ],
                 ),
@@ -1118,14 +1213,16 @@ class _AppDropdown<T> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DropdownButtonFormField<T>(
-      value: value,
+      initialValue: value,
       onChanged: onChanged,
       style: AppTextStyles.bodyMedium,
       decoration: InputDecoration(
         filled: true,
         fillColor: AppColors.surface,
         contentPadding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.md, vertical: 12),
+          horizontal: AppSpacing.md,
+          vertical: 12,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
           borderSide: const BorderSide(color: AppColors.border),
@@ -1136,15 +1233,14 @@ class _AppDropdown<T> extends StatelessWidget {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
-          borderSide:
-              const BorderSide(color: AppColors.accent, width: 1.5),
+          borderSide: const BorderSide(color: AppColors.accent, width: 1.5),
         ),
       ),
       items: items
-          .map((item) => DropdownMenuItem<T>(
-                value: item,
-                child: Text(labelOf(item)),
-              ))
+          .map(
+            (item) =>
+                DropdownMenuItem<T>(value: item, child: Text(labelOf(item))),
+          )
           .toList(),
     );
   }

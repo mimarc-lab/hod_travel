@@ -22,6 +22,11 @@ abstract class BoardColumns {
   static const double priority     =  90.0;
   static const double costStatus   = 110.0;
   static const double clientVisible =  90.0;
+
+  static const double totalWidth =
+      taskName + status + assignedTo + destination +
+      travelDate + dueDate + supplier + priority +
+      costStatus + clientVisible;
 }
 
 /// Header row with all column labels.
@@ -489,6 +494,7 @@ class _InlineSubtaskRowState extends State<_InlineSubtaskRow> {
       onExit:  (_) => setState(() => _hovered = false),
       child: SizedBox(
         height: 28,
+        width: BoardColumns.totalWidth,
         child: ColoredBox(
           color: _hovered ? const Color(0xFFF0F0F0) : AppColors.surfaceAlt,
           child: Row(
