@@ -415,6 +415,7 @@ class _TaskRowState extends State<TaskRow> {
                 return Column(
                   children: subtasks
                       .map((s) => _InlineSubtaskRow(
+                            key:      ValueKey(s.id),
                             subtask:  s,
                             provider: widget.provider,
                           ))
@@ -494,7 +495,7 @@ class _InlineSubtaskRowState extends State<_InlineSubtaskRow> {
             // Indent + left border echo
             const SizedBox(width: 3),
             Container(width: 1, height: 28, color: AppColors.border),
-            const SizedBox(width: 20),
+            const SizedBox(width: 8),
 
             // Checkbox
             GestureDetector(
