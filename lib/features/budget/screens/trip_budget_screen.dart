@@ -89,6 +89,7 @@ class _TripBudgetScreenState extends State<TripBudgetScreen>
 
         final isMobile = Responsive.isMobile(context);
         return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _TripBudgetHeader(
               summary:  summary,
