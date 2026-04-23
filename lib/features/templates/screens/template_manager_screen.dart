@@ -373,25 +373,61 @@ class _TemplateEditorScreenState extends State<TemplateEditorScreen> {
   Future<void> _addSubtaskTemplate(TripTemplateTask task) async {
     final title = await _showSubtaskTemplateDialog(context, existing: null);
     if (title == null || title.isEmpty) return;
-    final current = _subtaskTemplates[task.id] ?? [];
-    await _subRepo!.createTemplateForTask(
-      templateTaskId: task.id,
-      title:          title,
-      orderIndex:     current.length,
-    );
-    await _loadSubtaskTemplates();
+    try {
+      final current = _subtaskTemplates[task.id] ?? [];
+      final created = await _subRepo!.createTemplateForTask(
+        templateTaskId: task.id,
+        title:          title,
+        orderIndex:     current.length,
+      );
+      // Optimistic update — show the new template immediately.
+      if (mounted) {
+        setState(() {
+          _subtaskTemplates = {
+            ..._subtaskTemplates,
+            task.id: [...current, created],
+          };
+        });
+      }
+      await _loadSubtaskTemplates();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Could not add subtask: $e'),
+          backgroundColor: Colors.red,
+        ));
+      }
+    }
   }
 
   Future<void> _editSubtaskTemplate(SubtaskTemplate t) async {
     final title = await _showSubtaskTemplateDialog(context, existing: t.title);
     if (title == null || title.isEmpty) return;
-    await _subRepo!.updateTemplate(t.copyWith(title: title));
-    await _loadSubtaskTemplates();
+    try {
+      await _subRepo!.updateTemplate(t.copyWith(title: title));
+      await _loadSubtaskTemplates();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Could not update subtask: $e'),
+          backgroundColor: Colors.red,
+        ));
+      }
+    }
   }
 
   Future<void> _deleteSubtaskTemplate(SubtaskTemplate t) async {
-    await _subRepo!.deleteTemplate(t.id);
-    await _loadSubtaskTemplates();
+    try {
+      await _subRepo!.deleteTemplate(t.id);
+      await _loadSubtaskTemplates();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Could not delete subtask: $e'),
+          backgroundColor: Colors.red,
+        ));
+      }
+    }
   }
 
   Future<void> _reload() async {
