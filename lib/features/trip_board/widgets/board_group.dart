@@ -145,6 +145,7 @@ class _BoardGroupWidgetState extends State<BoardGroupWidget> {
               children: [
                 const Divider(height: 1, color: AppColors.divider),
                 TaskRow(
+                  key: ValueKey(task.id),
                   task: task,
                   provider: widget.provider,
                   isSelected: task.id == widget.selectedTaskId,

@@ -17,6 +17,7 @@ abstract class SubtaskRepository {
   Future<List<SubtaskTemplate>> fetchTemplatesForType(String taskType);
   Future<List<SubtaskTemplate>> fetchAllTemplates();
   Future<List<SubtaskTemplate>> fetchTemplatesForTemplateTask(String templateTaskId);
+  Future<List<SubtaskTemplate>> fetchTemplatesForTemplateTaskIds(List<String> templateTaskIds);
   Future<SubtaskTemplate>       createTemplate({required String taskType, required String title, required int orderIndex});
   Future<SubtaskTemplate>       createTemplateForTask({required String templateTaskId, required String title, required int orderIndex});
   Future<SubtaskTemplate>       updateTemplate(SubtaskTemplate template);
@@ -201,6 +202,17 @@ class SupabaseSubtaskRepository implements SubtaskRepository {
         .from('subtask_templates')
         .select()
         .eq('trip_template_task_id', templateTaskId)
+        .order('order_index');
+    return rows.map(_templateFromRow).toList();
+  }
+
+  @override
+  Future<List<SubtaskTemplate>> fetchTemplatesForTemplateTaskIds(List<String> templateTaskIds) async {
+    if (templateTaskIds.isEmpty) return [];
+    final rows = await _client
+        .from('subtask_templates')
+        .select()
+        .inFilter('trip_template_task_id', templateTaskIds)
         .order('order_index');
     return rows.map(_templateFromRow).toList();
   }

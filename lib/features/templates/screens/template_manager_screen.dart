@@ -352,11 +352,17 @@ class _TemplateEditorScreenState extends State<TemplateEditorScreen> {
 
   Future<void> _loadSubtaskTemplates() async {
     if (_subRepo == null) return;
+    final taskIds = _template.tasks.map((t) => t.id).toList();
+    if (taskIds.isEmpty) return;
     try {
-      // Fetch per-task templates for all tasks in this template
-      final result = <String, List<SubtaskTemplate>>{};
-      for (final task in _template.tasks) {
-        result[task.id] = await _subRepo!.fetchTemplatesForTemplateTask(task.id);
+      final all = await _subRepo!.fetchTemplatesForTemplateTaskIds(taskIds);
+      final result = <String, List<SubtaskTemplate>>{
+        for (final id in taskIds) id: [],
+      };
+      for (final st in all) {
+        if (st.tripTemplateTaskId != null) {
+          result.putIfAbsent(st.tripTemplateTaskId!, () => []).add(st);
+        }
       }
       if (mounted) setState(() => _subtaskTemplates = result);
     } catch (e) {

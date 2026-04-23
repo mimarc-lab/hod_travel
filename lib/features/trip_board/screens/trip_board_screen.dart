@@ -528,6 +528,7 @@ class _BoardTab extends StatelessWidget {
                         const BoardTableHeader(),
                         const Divider(height: 1, color: AppColors.border),
                         ...provider.groups.map((g) => BoardGroupWidget(
+                              key: ValueKey(g.id),
                               group: g,
                               provider: provider,
                               selectedTaskId: selectedId,
