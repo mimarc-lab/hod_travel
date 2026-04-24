@@ -3,8 +3,10 @@ import 'package:intl/intl.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../data/models/task_assignment_model.dart';
 import '../../../../data/models/task_model.dart';
 import '../../../../features/trip_board/providers/board_provider.dart';
+import '../../../../shared/widgets/stacked_avatars.dart';
 import '../../../../shared/widgets/status_chip.dart';
 import '../../../../shared/widgets/user_avatar.dart';
 
@@ -98,9 +100,9 @@ class _AssigneeDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final user = task.assignedTo;
+    final assignments = task.assignments;
     return PopupMenuButton<String>(
-      tooltip: 'Change assignee',
+      tooltip: 'Set primary assignee',
       onSelected: (id) {
         final selected = id == '__none__'
             ? null
@@ -141,17 +143,29 @@ class _AssigneeDropdown extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (user != null) ...[
-              UserAvatar(user: user, size: 18),
-              const SizedBox(width: 6),
-              Text(
-                user.name.split(' ').first,
-                style: AppTextStyles.labelMedium.copyWith(color: AppColors.textPrimary),
-              ),
-            ] else ...[
+            if (assignments.isEmpty) ...[
               Icon(Icons.person_add_alt_1_outlined, size: 14, color: AppColors.textMuted),
               const SizedBox(width: 5),
               Text('Assign', style: AppTextStyles.labelMedium),
+            ] else if (assignments.length == 1) ...[
+              UserAvatar(user: assignments.first.user, size: 18),
+              const SizedBox(width: 6),
+              Text(
+                assignments.first.user.name.split(' ').first,
+                style: AppTextStyles.labelMedium.copyWith(color: AppColors.textPrimary),
+              ),
+            ] else ...[
+              StackedAvatars(
+                users: assignments.map((a) => a.user).toList(),
+                size: 18,
+                maxVisible: 3,
+                overlap: 5,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                '${assignments.length} assigned',
+                style: AppTextStyles.labelMedium.copyWith(color: AppColors.textPrimary),
+              ),
             ],
             const SizedBox(width: 4),
             Icon(Icons.expand_more_rounded, size: 14, color: AppColors.textMuted),
@@ -476,6 +490,141 @@ class _DateField extends StatelessWidget {
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+// ── Assigned team section ─────────────────────────────────────────────────────
+
+class AssignedTeamSection extends StatelessWidget {
+  final Task task;
+  final BoardProvider provider;
+
+  const AssignedTeamSection({
+    super.key,
+    required this.task,
+    required this.provider,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final assignments = task.assignments;
+    final assignedIds = assignments.map((a) => a.user.id).toSet();
+    final available = provider.members
+        .where((u) => !assignedIds.contains(u.id))
+        .toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Expanded(child: PanelSectionHeader(label: 'ASSIGNED TEAM')),
+            if (available.isNotEmpty)
+              PopupMenuButton<String>(
+                tooltip: 'Add assignee',
+                onSelected: (id) {
+                  final user = provider.members.firstWhere((u) => u.id == id);
+                  provider.addTaskAssignee(task, user);
+                },
+                itemBuilder: (_) => available
+                    .map((u) => PopupMenuItem<String>(
+                          value: u.id,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              UserAvatar(user: u, size: 20),
+                              const SizedBox(width: 8),
+                              ConstrainedBox(
+                                constraints: const BoxConstraints(maxWidth: 160),
+                                child: Text(u.name,
+                                    style: AppTextStyles.bodySmall,
+                                    overflow: TextOverflow.ellipsis),
+                              ),
+                            ],
+                          ),
+                        ))
+                    .toList(),
+                child: Icon(Icons.person_add_alt_1_outlined,
+                    size: 15, color: AppColors.textMuted),
+              ),
+          ],
+        ),
+        if (assignments.isEmpty)
+          Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+            child: Text('No one assigned',
+                style: AppTextStyles.bodySmall
+                    .copyWith(color: AppColors.textMuted)),
+          )
+        else
+          ...assignments.map((a) => _AssigneeRow(
+                assignment: a,
+                task: task,
+                provider: provider,
+              )),
+      ],
+    );
+  }
+}
+
+class _AssigneeRow extends StatelessWidget {
+  final TaskAssignment assignment;
+  final Task task;
+  final BoardProvider provider;
+
+  const _AssigneeRow({
+    required this.assignment,
+    required this.task,
+    required this.provider,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          UserAvatar(user: assignment.user, size: 24),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(assignment.user.name,
+                style: AppTextStyles.bodySmall
+                    .copyWith(color: AppColors.textPrimary)),
+          ),
+          _RoleBadge(label: assignment.roleLabel),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: () => provider.removeTaskAssignee(task, assignment.user),
+            child: Icon(Icons.close_rounded,
+                size: 13, color: AppColors.textMuted),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RoleBadge extends StatelessWidget {
+  final String label;
+  const _RoleBadge({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceAlt,
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Text(
+        label,
+        style: AppTextStyles.labelSmall.copyWith(
+          color: AppColors.textSecondary,
+          fontSize: 10,
+        ),
       ),
     );
   }

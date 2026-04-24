@@ -114,9 +114,11 @@ class TaskCenterProvider extends ChangeNotifier {
 
   // ── Derived views ──────────────────────────────────────────────────────────
 
-  /// Tasks assigned to the current user, sorted by due date.
+  /// Tasks assigned to the current user (any role), sorted by due date.
   List<Task> get myTasks =>
-      _filtered().where((t) => t.assignedTo?.id == _currentUserId).toList()
+      _filtered()
+          .where((t) => t.assignments.any((a) => a.user.id == _currentUserId))
+          .toList()
         ..sort(_byDueDate);
 
   /// All tasks with a past due date and non-terminal status, sorted by due date.

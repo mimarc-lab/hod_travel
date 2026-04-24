@@ -6,7 +6,7 @@ import '../../../core/constants/app_text_styles.dart';
 import '../../../core/utils/responsive.dart';
 import '../../../data/models/task_model.dart';
 import '../../../shared/widgets/status_chip.dart';
-import '../../../shared/widgets/user_avatar.dart';
+import '../../../shared/widgets/stacked_avatars.dart';
 import '../providers/board_provider.dart';
 import 'task_detail/task_detail_panel.dart';
 
@@ -290,24 +290,35 @@ class _TaskRowState extends State<TaskRow> {
                       width: BoardColumns.assignedTo,
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-                        child: task.assignedTo != null
-                            ? Row(
+                        child: task.assignments.isEmpty
+                            ? Text('—',
+                                style: AppTextStyles.tableCell
+                                    .copyWith(color: AppColors.textMuted))
+                            : Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  UserAvatar(user: task.assignedTo!, size: 20),
-                                  const SizedBox(width: 6),
-                                  Flexible(
-                                    child: Text(
-                                      task.assignedTo!.name.split(' ').first,
-                                      style: AppTextStyles.tableCell,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
+                                  StackedAvatars(
+                                    users: task.assignments
+                                        .map((a) => a.user)
+                                        .toList(),
+                                    size: 20,
+                                    maxVisible: 3,
+                                    overlap: 6,
                                   ),
+                                  if (task.assignments.length == 1) ...[
+                                    const SizedBox(width: 6),
+                                    Flexible(
+                                      child: Text(
+                                        task.assignments.first.user.name
+                                            .split(' ')
+                                            .first,
+                                        style: AppTextStyles.tableCell,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
                                 ],
-                              )
-                            : Text('—',
-                                style: AppTextStyles.tableCell
-                                    .copyWith(color: AppColors.textMuted)),
+                              ),
                       ),
                     ),
 

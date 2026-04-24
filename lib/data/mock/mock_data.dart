@@ -1,9 +1,21 @@
 import 'package:flutter/material.dart';
+import '../models/task_assignment_model.dart';
 import '../models/user_model.dart';
 import '../models/trip_model.dart';
 import '../models/task_model.dart';
 import '../models/board_group_model.dart';
 import '../models/task_comment_model.dart';
+
+List<TaskAssignment> _lead(String taskId, AppUser user) => [
+  TaskAssignment(
+    id: '',
+    taskId: taskId,
+    user: user,
+    role: 'lead',
+    isPrimary: true,
+    createdAt: DateTime(2026, 1, 1),
+  ),
+];
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Mock Users
@@ -94,9 +106,9 @@ List<BoardGroup> mockBoardGroupsForTrip(String tripId) {
       name: 'Pre-Planning',
       accentColor: const Color(0xFF6366F1),
       tasks: [
-        Task(id: 'tk1', boardGroupId: 'g1', name: 'Client intake call',   status: TaskStatus.confirmed, assignedTo: mockUsers[0], destination: 'N/A', dueDate: DateTime(2026, 3, 10), priority: TaskPriority.high,   costStatus: TaskCostStatus.pending),
-        Task(id: 'tk2', boardGroupId: 'g1', name: 'Proposal document',    status: TaskStatus.confirmed, assignedTo: mockUsers[0], destination: 'N/A', dueDate: DateTime(2026, 3, 15), priority: TaskPriority.high,   costStatus: TaskCostStatus.pending, clientVisible: true),
-        Task(id: 'tk3', boardGroupId: 'g1', name: 'Passport & visa check',status: TaskStatus.researching, assignedTo: mockUsers[3], destination: 'N/A', dueDate: DateTime(2026, 4, 1),  priority: TaskPriority.medium, costStatus: TaskCostStatus.pending),
+        Task(id: 'tk1', boardGroupId: 'g1', name: 'Client intake call',   status: TaskStatus.confirmed,   assignments: _lead('tk1', mockUsers[0]), destination: 'N/A', dueDate: DateTime(2026, 3, 10), priority: TaskPriority.high,   costStatus: TaskCostStatus.pending),
+        Task(id: 'tk2', boardGroupId: 'g1', name: 'Proposal document',    status: TaskStatus.confirmed,   assignments: _lead('tk2', mockUsers[0]), destination: 'N/A', dueDate: DateTime(2026, 3, 15), priority: TaskPriority.high,   costStatus: TaskCostStatus.pending, clientVisible: true),
+        Task(id: 'tk3', boardGroupId: 'g1', name: 'Passport & visa check',status: TaskStatus.researching, assignments: _lead('tk3', mockUsers[3]), destination: 'N/A', dueDate: DateTime(2026, 4, 1),  priority: TaskPriority.medium, costStatus: TaskCostStatus.pending),
       ],
     ),
     BoardGroup(
@@ -104,9 +116,9 @@ List<BoardGroup> mockBoardGroupsForTrip(String tripId) {
       name: 'Accommodation',
       accentColor: const Color(0xFF0EA5E9),
       tasks: [
-        Task(id: 'tk4', boardGroupId: 'g2', name: 'Villa Rufolo — 3 nights',    status: TaskStatus.researching,   assignedTo: mockUsers[0], destination: 'Positano', travelDate: DateTime(2026, 6, 12), dueDate: DateTime(2026, 4, 20), supplierId: 'sup1', priority: TaskPriority.high, costStatus: TaskCostStatus.quoted, clientVisible: true),
-        Task(id: 'tk5', boardGroupId: 'g2', name: 'Hotel San Domenico',          status: TaskStatus.notStarted, assignedTo: mockUsers[1], destination: 'Taormina',  travelDate: DateTime(2026, 6, 19), dueDate: DateTime(2026, 4, 25), supplierId: 'sup2', priority: TaskPriority.high, costStatus: TaskCostStatus.pending, clientVisible: true),
-        Task(id: 'tk6', boardGroupId: 'g2', name: 'Palermo boutique hotel',      status: TaskStatus.notStarted, assignedTo: mockUsers[1], destination: 'Palermo',   travelDate: DateTime(2026, 6, 16), dueDate: DateTime(2026, 4, 25), priority: TaskPriority.medium, costStatus: TaskCostStatus.pending),
+        Task(id: 'tk4', boardGroupId: 'g2', name: 'Villa Rufolo — 3 nights',    status: TaskStatus.researching, assignments: _lead('tk4', mockUsers[0]), destination: 'Positano', travelDate: DateTime(2026, 6, 12), dueDate: DateTime(2026, 4, 20), supplierId: 'sup1', priority: TaskPriority.high, costStatus: TaskCostStatus.quoted, clientVisible: true),
+        Task(id: 'tk5', boardGroupId: 'g2', name: 'Hotel San Domenico',          status: TaskStatus.notStarted,  assignments: _lead('tk5', mockUsers[1]), destination: 'Taormina',  travelDate: DateTime(2026, 6, 19), dueDate: DateTime(2026, 4, 25), supplierId: 'sup2', priority: TaskPriority.high, costStatus: TaskCostStatus.pending, clientVisible: true),
+        Task(id: 'tk6', boardGroupId: 'g2', name: 'Palermo boutique hotel',      status: TaskStatus.notStarted,  assignments: _lead('tk6', mockUsers[1]), destination: 'Palermo',   travelDate: DateTime(2026, 6, 16), dueDate: DateTime(2026, 4, 25), priority: TaskPriority.medium, costStatus: TaskCostStatus.pending),
       ],
     ),
     BoardGroup(
@@ -114,9 +126,9 @@ List<BoardGroup> mockBoardGroupsForTrip(String tripId) {
       name: 'Experiences',
       accentColor: const Color(0xFF10B981),
       tasks: [
-        Task(id: 'tk7', boardGroupId: 'g3', name: 'Private boat tour — Amalfi coast',  status: TaskStatus.researching,   assignedTo: mockUsers[0], destination: 'Positano', travelDate: DateTime(2026, 6, 13), dueDate: DateTime(2026, 5, 1),  supplierId: 'sup3', priority: TaskPriority.high, costStatus: TaskCostStatus.approved, clientVisible: true),
-        Task(id: 'tk8', boardGroupId: 'g3', name: 'Cooking class — pasta & limoncello', status: TaskStatus.notStarted, assignedTo: mockUsers[2], destination: 'Naples',   travelDate: DateTime(2026, 6, 11), dueDate: DateTime(2026, 5, 5),  supplierId: 'sup4', priority: TaskPriority.low,  costStatus: TaskCostStatus.quoted, clientVisible: true),
-        Task(id: 'tk9', boardGroupId: 'g3', name: 'Etna summit excursion',              status: TaskStatus.awaitingReply, assignedTo: mockUsers[2], destination: 'Taormina', travelDate: DateTime(2026, 6, 21), dueDate: DateTime(2026, 5, 10), supplierId: 'sup5', priority: TaskPriority.medium, costStatus: TaskCostStatus.pending),
+        Task(id: 'tk7', boardGroupId: 'g3', name: 'Private boat tour — Amalfi coast',  status: TaskStatus.researching,   assignments: _lead('tk7', mockUsers[0]), destination: 'Positano', travelDate: DateTime(2026, 6, 13), dueDate: DateTime(2026, 5, 1),  supplierId: 'sup3', priority: TaskPriority.high, costStatus: TaskCostStatus.approved, clientVisible: true),
+        Task(id: 'tk8', boardGroupId: 'g3', name: 'Cooking class — pasta & limoncello', status: TaskStatus.notStarted,   assignments: _lead('tk8', mockUsers[2]), destination: 'Naples',   travelDate: DateTime(2026, 6, 11), dueDate: DateTime(2026, 5, 5),  supplierId: 'sup4', priority: TaskPriority.low,  costStatus: TaskCostStatus.quoted, clientVisible: true),
+        Task(id: 'tk9', boardGroupId: 'g3', name: 'Etna summit excursion',              status: TaskStatus.awaitingReply, assignments: _lead('tk9', mockUsers[2]), destination: 'Taormina', travelDate: DateTime(2026, 6, 21), dueDate: DateTime(2026, 5, 10), supplierId: 'sup5', priority: TaskPriority.medium, costStatus: TaskCostStatus.pending),
       ],
     ),
     BoardGroup(
@@ -124,9 +136,9 @@ List<BoardGroup> mockBoardGroupsForTrip(String tripId) {
       name: 'Logistics',
       accentColor: const Color(0xFFF59E0B),
       tasks: [
-        Task(id: 'tk10', boardGroupId: 'g4', name: 'International flights — LHR to NAP',   status: TaskStatus.awaitingReply, assignedTo: mockUsers[3], destination: 'Naples',   travelDate: DateTime(2026, 6, 10), dueDate: DateTime(2026, 4, 15), priority: TaskPriority.high, costStatus: TaskCostStatus.quoted, clientVisible: true),
-        Task(id: 'tk11', boardGroupId: 'g4', name: 'Private transfer — Naples to Positano', status: TaskStatus.notStarted,  assignedTo: mockUsers[2], destination: 'Positano', travelDate: DateTime(2026, 6, 10), dueDate: DateTime(2026, 5, 15), supplierId: 'sup6', priority: TaskPriority.medium, costStatus: TaskCostStatus.pending),
-        Task(id: 'tk12', boardGroupId: 'g4', name: 'Internal Sicily transfers',             status: TaskStatus.notStarted,  assignedTo: mockUsers[2], destination: 'Sicily',   travelDate: DateTime(2026, 6, 16), dueDate: DateTime(2026, 5, 20), priority: TaskPriority.low,    costStatus: TaskCostStatus.pending),
+        Task(id: 'tk10', boardGroupId: 'g4', name: 'International flights — LHR to NAP',   status: TaskStatus.awaitingReply, assignments: _lead('tk10', mockUsers[3]), destination: 'Naples',   travelDate: DateTime(2026, 6, 10), dueDate: DateTime(2026, 4, 15), priority: TaskPriority.high, costStatus: TaskCostStatus.quoted, clientVisible: true),
+        Task(id: 'tk11', boardGroupId: 'g4', name: 'Private transfer — Naples to Positano', status: TaskStatus.notStarted,  assignments: _lead('tk11', mockUsers[2]), destination: 'Positano', travelDate: DateTime(2026, 6, 10), dueDate: DateTime(2026, 5, 15), supplierId: 'sup6', priority: TaskPriority.medium, costStatus: TaskCostStatus.pending),
+        Task(id: 'tk12', boardGroupId: 'g4', name: 'Internal Sicily transfers',             status: TaskStatus.notStarted,  assignments: _lead('tk12', mockUsers[2]), destination: 'Sicily',   travelDate: DateTime(2026, 6, 16), dueDate: DateTime(2026, 5, 20), priority: TaskPriority.low,    costStatus: TaskCostStatus.pending),
       ],
     ),
     BoardGroup(
@@ -134,8 +146,8 @@ List<BoardGroup> mockBoardGroupsForTrip(String tripId) {
       name: 'Finance',
       accentColor: const Color(0xFFEC4899),
       tasks: [
-        Task(id: 'tk13', boardGroupId: 'g5', name: 'Budget summary sheet',     status: TaskStatus.researching, assignedTo: mockUsers[4], dueDate: DateTime(2026, 4, 10), priority: TaskPriority.high,   costStatus: TaskCostStatus.quoted),
-        Task(id: 'tk14', boardGroupId: 'g5', name: 'Deposit invoice to client',status: TaskStatus.notStarted,  assignedTo: mockUsers[4], dueDate: DateTime(2026, 4, 20), priority: TaskPriority.high,   costStatus: TaskCostStatus.pending),
+        Task(id: 'tk13', boardGroupId: 'g5', name: 'Budget summary sheet',     status: TaskStatus.researching, assignments: _lead('tk13', mockUsers[4]), dueDate: DateTime(2026, 4, 10), priority: TaskPriority.high,   costStatus: TaskCostStatus.quoted),
+        Task(id: 'tk14', boardGroupId: 'g5', name: 'Deposit invoice to client',status: TaskStatus.notStarted,  assignments: _lead('tk14', mockUsers[4]), dueDate: DateTime(2026, 4, 20), priority: TaskPriority.high,   costStatus: TaskCostStatus.pending),
       ],
     ),
     BoardGroup(
@@ -143,8 +155,8 @@ List<BoardGroup> mockBoardGroupsForTrip(String tripId) {
       name: 'Client Delivery',
       accentColor: const Color(0xFF8B5CF6),
       tasks: [
-        Task(id: 'tk15', boardGroupId: 'g6', name: 'Digital itinerary — first draft', status: TaskStatus.notStarted, assignedTo: mockUsers[0], dueDate: DateTime(2026, 5, 1),  priority: TaskPriority.high,   costStatus: TaskCostStatus.pending, clientVisible: true),
-        Task(id: 'tk16', boardGroupId: 'g6', name: 'Client welcome pack',             status: TaskStatus.notStarted, assignedTo: mockUsers[3], dueDate: DateTime(2026, 5, 25), priority: TaskPriority.medium, costStatus: TaskCostStatus.pending, clientVisible: true),
+        Task(id: 'tk15', boardGroupId: 'g6', name: 'Digital itinerary — first draft', status: TaskStatus.notStarted, assignments: _lead('tk15', mockUsers[0]), dueDate: DateTime(2026, 5, 1),  priority: TaskPriority.high,   costStatus: TaskCostStatus.pending, clientVisible: true),
+        Task(id: 'tk16', boardGroupId: 'g6', name: 'Client welcome pack',             status: TaskStatus.notStarted, assignments: _lead('tk16', mockUsers[3]), dueDate: DateTime(2026, 5, 25), priority: TaskPriority.medium, costStatus: TaskCostStatus.pending, clientVisible: true),
       ],
     ),
   ];
@@ -157,7 +169,7 @@ List<BoardGroup> mockBoardGroupsForTrip(String tripId) {
 List<Task> get mockMyTasks {
   return mockBoardGroupsForTrip('t1')
       .expand((g) => g.tasks)
-      .where((t) => t.assignedTo?.id == currentUser.id)
+      .where((t) => t.assignments.any((a) => a.user.id == currentUser.id))
       .toList();
 }
 

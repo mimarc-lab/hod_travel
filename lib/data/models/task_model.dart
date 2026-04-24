@@ -1,4 +1,5 @@
 import 'approval_model.dart';
+import 'task_assignment_model.dart';
 import 'user_model.dart';
 
 // DB values: not_started | researching | awaiting_reply | ready_for_review |
@@ -120,7 +121,7 @@ class Task {
   final TaskStatus status;
   final TaskPriority priority;
   final TaskCostStatus costStatus;
-  final AppUser? assignedTo;
+  final List<TaskAssignment> assignments;
   final String? destination;   // maps to DB column: destination_city
   final DateTime? travelDate;  // also used as scheduled_start_date by backward planner
   final DateTime? dueDate;
@@ -132,6 +133,14 @@ class Task {
   // ── Subtask progress (denormalised from DB trigger) ────────────────────────
   final int subtaskCount;
   final int completedSubtaskCount;
+
+  // ── Derived from assignments ───────────────────────────────────────────────
+  AppUser? get assignedTo {
+    final primaries = assignments.where((a) => a.isPrimary);
+    if (primaries.isNotEmpty) return primaries.first.user;
+    if (assignments.isNotEmpty) return assignments.first.user;
+    return null;
+  }
 
   double get subtaskProgress =>
       subtaskCount == 0 ? 0 : completedSubtaskCount / subtaskCount;
@@ -148,7 +157,7 @@ class Task {
     required this.costStatus,
     this.description,
     this.category,
-    this.assignedTo,
+    this.assignments = const <TaskAssignment>[],
     this.destination,
     this.travelDate,
     this.dueDate,
@@ -169,8 +178,11 @@ class Task {
     TaskStatus? status,
     TaskPriority? priority,
     TaskCostStatus? costStatus,
+    // Backward-compat: set/clear the primary assignee via assignments
     AppUser? assignedTo,
     bool clearAssignedTo = false,
+    // Direct assignments replacement (used by addTaskAssignee / removeTaskAssignee)
+    List<TaskAssignment>? assignments,
     String? destination,
     bool clearDestination = false,
     DateTime? travelDate,
@@ -186,6 +198,31 @@ class Task {
     int? subtaskCount,
     int? completedSubtaskCount,
   }) {
+    // Resolve new assignments list
+    final List<TaskAssignment> newAssignments;
+    if (assignments != null) {
+      newAssignments = assignments;
+    } else if (clearAssignedTo) {
+      newAssignments = this.assignments.where((a) => !a.isPrimary).toList();
+    } else if (assignedTo != null) {
+      final collaborators = this.assignments.where((a) => !a.isPrimary).toList();
+      final primaries = this.assignments.where((a) => a.isPrimary);
+      final existing = primaries.isNotEmpty ? primaries.first : null;
+      newAssignments = [
+        TaskAssignment(
+          id: existing?.id ?? '',
+          taskId: id,
+          user: assignedTo,
+          role: existing?.role ?? 'lead',
+          isPrimary: true,
+          createdAt: existing?.createdAt ?? DateTime.now(),
+        ),
+        ...collaborators,
+      ];
+    } else {
+      newAssignments = this.assignments;
+    }
+
     return Task(
       id:             id,
       tripId:         tripId,
@@ -197,7 +234,7 @@ class Task {
       status:         status         ?? this.status,
       priority:       priority       ?? this.priority,
       costStatus:     costStatus     ?? this.costStatus,
-      assignedTo:     clearAssignedTo    ? null : (assignedTo    ?? this.assignedTo),
+      assignments:    newAssignments,
       destination:    clearDestination   ? null : (destination   ?? this.destination),
       travelDate:     clearTravelDate    ? null : (travelDate    ?? this.travelDate),
       dueDate:        clearDueDate       ? null : (dueDate       ?? this.dueDate),

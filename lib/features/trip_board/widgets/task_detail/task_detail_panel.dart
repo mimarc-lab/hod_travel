@@ -201,6 +201,12 @@ class _TaskDetailContentState extends State<_TaskDetailContent> {
                 const Divider(height: 1, color: AppColors.divider),
                 const SizedBox(height: AppSpacing.base),
 
+                // Assigned team
+                AssignedTeamSection(task: _task, provider: widget.provider),
+                const SizedBox(height: AppSpacing.base),
+                const Divider(height: 1, color: AppColors.divider),
+                const SizedBox(height: AppSpacing.base),
+
                 // Description
                 _DescriptionField(
                   ctrl: _descriptionCtrl,

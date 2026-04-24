@@ -9,6 +9,7 @@ import '../../../data/models/task_comment_model.dart';
 import '../../../data/models/task_model.dart';
 import '../../../data/models/trip_complexity_profile.dart';
 import '../../../data/models/trip_model.dart';
+import '../../../data/models/task_assignment_model.dart';
 import '../../../data/models/user_model.dart';
 import '../../../data/models/workflow_task_schedule_rule.dart';
 import '../../../data/repositories/subtask_repository.dart';
@@ -286,6 +287,43 @@ class BoardProvider extends ChangeNotifier {
       assignedTo: user,
       clearAssignedTo: user == null,
     ));
+  }
+
+  void addTaskAssignee(Task task, AppUser user,
+      {String role = 'collaborator'}) {
+    final alreadyIn = task.assignments.any((a) => a.user.id == user.id);
+    if (alreadyIn) return;
+    final isPrimary = task.assignments.isEmpty;
+    final newAssignment = TaskAssignment(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      taskId: task.id,
+      user: user,
+      role: isPrimary ? 'lead' : role,
+      isPrimary: isPrimary,
+      createdAt: DateTime.now(),
+    );
+    _applyTaskUpdate(task.copyWith(
+      assignments: [...task.assignments, newAssignment],
+    ));
+    _logActivity(task.id, 'Added ${user.name} as ${newAssignment.roleLabel}');
+    _repo
+        ?.addAssignment(task.id, user.id, newAssignment.role, isPrimary)
+        .catchError((_) {
+      _error = 'Could not add assignee.';
+      notifyListeners();
+    });
+  }
+
+  void removeTaskAssignee(Task task, AppUser user) {
+    final updated = task.copyWith(
+      assignments: task.assignments.where((a) => a.user.id != user.id).toList(),
+    );
+    _applyTaskUpdate(updated);
+    _logActivity(task.id, 'Removed ${user.name} from task');
+    _repo?.removeAssignment(task.id, user.id).catchError((_) {
+      _error = 'Could not remove assignee.';
+      notifyListeners();
+    });
   }
 
   // ── Comments ──────────────────────────────────────────────────────────────

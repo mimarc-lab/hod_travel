@@ -2,10 +2,14 @@ import 'dart:async';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/approval_model.dart';
 import '../models/board_group_model.dart';
+import '../models/task_assignment_model.dart';
 import '../models/task_comment_model.dart';
 import '../models/task_model.dart';
 import '../models/user_model.dart';
 import 'profile_repository.dart';
+
+const _kTaskSelect =
+    '*, task_assignments(id, user_id, assignment_role, is_primary, created_at, profiles(id, full_name, email, avatar_url))';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TeamActivityItem — a single entry in the team activity feed
@@ -45,6 +49,13 @@ abstract class TaskRepository {
   /// Fetches all tasks for the team — used by the Global Task Center.
   Future<List<Task>> fetchAllForTeam(String teamId);
 
+  /// Adds an assignee to a task. Passing [isPrimary] = true promotes them to lead.
+  Future<void> addAssignment(
+      String taskId, String userId, String role, bool isPrimary);
+
+  /// Removes an assignee from a task.
+  Future<void> removeAssignment(String taskId, String userId);
+
   /// Realtime stream — emits all tasks for the team whenever any task changes.
   Stream<List<Task>> watchAllForTeam(String teamId);
 
@@ -64,10 +75,56 @@ abstract class TaskRepository {
 // Mappers
 // ─────────────────────────────────────────────────────────────────────────────
 
-Task _taskFromRow(Map<String, dynamic> row, Map<String, AppUser> profiles) {
-  final assigneeId = row['assigned_to'] as String?;
-  return Task(
+TaskAssignment _assignmentFromRow(Map<String, dynamic> row, String taskId) {
+  final profileMap = row['profiles'] as Map<String, dynamic>?;
+  final userId = row['user_id'] as String;
+  final user = profileMap != null
+      ? ProfileRow.fromJson(profileMap).toAppUser()
+      : AppUser(
+          id: userId,
+          name: userId.substring(0, 8),
+          initials: '?',
+          avatarColor: avatarColorFor(userId.codeUnits.fold(0, (a, b) => a + b)),
+          role: '',
+        );
+  return TaskAssignment(
     id: row['id'] as String,
+    taskId: taskId,
+    user: user,
+    role: row['assignment_role'] as String? ?? 'collaborator',
+    isPrimary: row['is_primary'] as bool? ?? false,
+    createdAt: DateTime.parse(row['created_at'] as String),
+  );
+}
+
+Task _taskFromRow(Map<String, dynamic> row, Map<String, AppUser> profiles) {
+  final taskId = row['id'] as String;
+  final assignmentRows = row['task_assignments'] as List?;
+
+  final List<TaskAssignment> assignments;
+  if (assignmentRows != null) {
+    assignments = assignmentRows
+        .map((r) => _assignmentFromRow(r as Map<String, dynamic>, taskId))
+        .toList();
+  } else {
+    // Fallback for paths that didn't embed assignments
+    final assigneeId = row['assigned_to'] as String?;
+    assignments = assigneeId != null && profiles.containsKey(assigneeId)
+        ? [
+            TaskAssignment(
+              id: '',
+              taskId: taskId,
+              user: profiles[assigneeId]!,
+              role: 'lead',
+              isPrimary: true,
+              createdAt: DateTime.now(),
+            )
+          ]
+        : [];
+  }
+
+  return Task(
+    id: taskId,
     tripId: row['trip_id'] as String?,
     teamId: row['team_id'] as String?,
     boardGroupId: row['board_group_id'] as String? ?? '',
@@ -79,7 +136,7 @@ Task _taskFromRow(Map<String, dynamic> row, Map<String, AppUser> profiles) {
     costStatus: TaskCostStatusLabel.fromDb(
       row['cost_status'] as String? ?? 'pending',
     ),
-    assignedTo: assigneeId != null ? profiles[assigneeId] : null,
+    assignments: assignments,
     destination: row['destination_city'] as String?,
     travelDate: row['travel_date'] != null
         ? DateTime.parse(row['travel_date'] as String)
@@ -150,7 +207,7 @@ class SupabaseTaskRepository implements TaskRepository {
 
     final taskRows = await _client
         .from('tasks')
-        .select()
+        .select(_kTaskSelect)
         .eq('trip_id', tripId)
         .order('sort_order');
 
@@ -192,7 +249,7 @@ class SupabaseTaskRepository implements TaskRepository {
           ..._taskToRow(task, tripId: tripId, teamId: teamId),
           'created_by': _client.auth.currentUser?.id,
         })
-        .select()
+        .select(_kTaskSelect)
         .single();
     final profiles = await loadProfilesAsMap(_client);
     return _taskFromRow(row, profiles);
@@ -204,7 +261,7 @@ class SupabaseTaskRepository implements TaskRepository {
         .from('tasks')
         .update(_taskToRow(task))
         .eq('id', task.id)
-        .select()
+        .select(_kTaskSelect)
         .single();
     final profiles = await loadProfilesAsMap(_client);
     return _taskFromRow(row, profiles);
@@ -309,7 +366,7 @@ class SupabaseTaskRepository implements TaskRepository {
   Future<List<Task>> fetchAllForTeam(String teamId) async {
     final taskRows = await _client
         .from('tasks')
-        .select()
+        .select(_kTaskSelect)
         .eq('team_id', teamId)
         .order('due_date', ascending: true, referencedTable: null);
     final profiles = await loadProfilesAsMap(_client);
@@ -356,16 +413,49 @@ class SupabaseTaskRepository implements TaskRepository {
 
   @override
   Future<List<Task>> fetchTasksForUser(String teamId, String userId) async {
+    // Find task IDs where the user appears in task_assignments
+    final assignmentRows = await _client
+        .from('task_assignments')
+        .select('task_id')
+        .eq('user_id', userId);
+    final taskIds = (assignmentRows as List)
+        .map((r) => (r as Map<String, dynamic>)['task_id'] as String)
+        .toList();
+    if (taskIds.isEmpty) return [];
+
     final taskRows = await _client
         .from('tasks')
-        .select()
+        .select(_kTaskSelect)
         .eq('team_id', teamId)
-        .eq('assigned_to', userId)
+        .inFilter('id', taskIds)
         .order('due_date', ascending: true, referencedTable: null);
     final profiles = await loadProfilesAsMap(_client);
     return (taskRows as List)
         .map((r) => _taskFromRow(r as Map<String, dynamic>, profiles))
         .toList();
+  }
+
+  @override
+  Future<void> addAssignment(
+      String taskId, String userId, String role, bool isPrimary) async {
+    await _client.from('task_assignments').upsert(
+      {
+        'task_id': taskId,
+        'user_id': userId,
+        'assignment_role': role,
+        'is_primary': isPrimary,
+      },
+      onConflict: 'task_id,user_id',
+    );
+  }
+
+  @override
+  Future<void> removeAssignment(String taskId, String userId) async {
+    await _client
+        .from('task_assignments')
+        .delete()
+        .eq('task_id', taskId)
+        .eq('user_id', userId);
   }
 
   @override
