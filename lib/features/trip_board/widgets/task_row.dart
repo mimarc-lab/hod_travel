@@ -12,19 +12,18 @@ import 'task_detail/task_detail_panel.dart';
 
 /// Column widths for the board task table.
 abstract class BoardColumns {
-  static const double taskName     = 240.0;
-  static const double status       = 130.0;
-  static const double assignedTo   = 130.0;
-  static const double destination  = 110.0;
-  static const double travelDate   = 100.0;
-  static const double dueDate      = 100.0;
-  static const double supplier     = 140.0;
-  static const double priority     =  90.0;
-  static const double costStatus   = 110.0;
+  static const double taskName      = 240.0;
+  static const double status        = 130.0;
+  static const double assignedTo    = 150.0;
+  static const double travelDate    = 100.0;
+  static const double dueDate       = 100.0;
+  static const double supplier      = 140.0;
+  static const double priority      =  90.0;
+  static const double costStatus    = 110.0;
   static const double clientVisible =  90.0;
 
   static const double totalWidth =
-      taskName + status + assignedTo + destination +
+      taskName + status + assignedTo +
       travelDate + dueDate + supplier + priority +
       costStatus + clientVisible;
 }
@@ -43,8 +42,7 @@ class BoardTableHeader extends StatelessWidget {
           _HeaderCell(label: 'TASK NAME',   width: BoardColumns.taskName),
           _HeaderCell(label: 'STATUS',      width: BoardColumns.status),
           _HeaderCell(label: 'ASSIGNED TO', width: BoardColumns.assignedTo),
-          _HeaderCell(label: 'DESTINATION', width: BoardColumns.destination),
-          _HeaderCell(label: 'START DATE', width: BoardColumns.travelDate),
+          _HeaderCell(label: 'START DATE',  width: BoardColumns.travelDate),
           _HeaderCell(label: 'DUE DATE',    width: BoardColumns.dueDate),
           _HeaderCell(label: 'SUPPLIER',    width: BoardColumns.supplier),
           _HeaderCell(label: 'PRIORITY',    width: BoardColumns.priority),
@@ -322,18 +320,6 @@ class _TaskRowState extends State<TaskRow> {
                       ),
                     ),
 
-                    // Destination
-                    SizedBox(
-                      width: BoardColumns.destination,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-                        child: Text(
-                          task.destination ?? '—',
-                          style: AppTextStyles.tableCell,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ),
 
                     // Travel date
                     SizedBox(
