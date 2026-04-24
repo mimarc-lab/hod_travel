@@ -495,17 +495,7 @@ class _BoardTab extends StatelessWidget {
   final VoidCallback? onRecalculate;
   const _BoardTab({required this.provider, this.onAiAssist, this.onRecalculate});
 
-  static const double _totalWidth =
-      BoardColumns.taskName +
-      BoardColumns.status +
-      BoardColumns.assignedTo +
-      BoardColumns.destination +
-      BoardColumns.travelDate +
-      BoardColumns.dueDate +
-      BoardColumns.supplier +
-      BoardColumns.priority +
-      BoardColumns.costStatus +
-      BoardColumns.clientVisible;
+  static const double _totalWidth = BoardColumns.totalWidth;
 
   @override
   Widget build(BuildContext context) {

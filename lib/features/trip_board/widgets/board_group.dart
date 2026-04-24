@@ -8,17 +8,7 @@ import 'add_task_dialog.dart';
 import 'task_row.dart';
 
 // Total board table width — keeps the group header aligned with the columns.
-const double _kBoardTotalWidth =
-    BoardColumns.taskName +
-    BoardColumns.status +
-    BoardColumns.assignedTo +
-    BoardColumns.destination +
-    BoardColumns.travelDate +
-    BoardColumns.dueDate +
-    BoardColumns.supplier +
-    BoardColumns.priority +
-    BoardColumns.costStatus +
-    BoardColumns.clientVisible;
+const double _kBoardTotalWidth = BoardColumns.totalWidth;
 
 /// Collapsible board group with a colored header and task rows.
 class BoardGroupWidget extends StatefulWidget {
