@@ -2,7 +2,12 @@
 -- 022_trip_components_v2.sql
 -- Enhanced trip_components: universal fields + details_json
 -- Removes flight/train/yacht (folded into transport via details_json)
+-- Safe to re-run: cleans up any partial state from a prior failed attempt
 -- =============================================================================
+
+-- 0. Clean up partial state from a prior failed run
+--    (component_type_enum_v2 may have been created but never used)
+DROP TYPE IF EXISTS component_type_enum_v2;
 
 -- 1. Migrate rows with removed types → transport
 UPDATE trip_components
