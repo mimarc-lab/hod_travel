@@ -190,7 +190,8 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
             'priority':           t.priority,
             'duration':           t.estimatedDurationDays,
             'assignee_id':        t.defaultAssigneeId,
-            'template_task_id':   t.id,   // used to look up per-task subtasks
+            'collaborator_ids':   t.defaultCollaboratorIds,
+            'template_task_id':   t.id,
           }).toList();
         } else {
           tasks = templateTasks(_templateId);
@@ -318,6 +319,8 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
     }
 
     final rows = <Map<String, dynamic>>[];
+    // collaborator_ids parallel to rows (same index)
+    final collaboratorsByRowIndex = <int, List<String>>{};
     int scheduledCount = 0;
 
     for (var i = 0; i < tasks.length; i++) {
@@ -330,6 +333,9 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
 
       final scheduled = scheduleByIndex[i];
       if (scheduled != null) scheduledCount++;
+
+      final collabs = (t['collaborator_ids'] as List?)?.cast<String>().where((id) => id.isNotEmpty).toList() ?? [];
+      if (collabs.isNotEmpty) collaboratorsByRowIndex[rows.length] = collabs;
 
       rows.add({
         'trip_id':           tripId,
@@ -371,6 +377,25 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
       final groupNameById = {
         for (final e in groupIdByName.entries) e.value: e.key,
       };
+
+      // Insert collaborator assignments for tasks that have them
+      if (collaboratorsByRowIndex.isNotEmpty) {
+        final assignmentRows = <Map<String, dynamic>>[];
+        for (final entry in collaboratorsByRowIndex.entries) {
+          final taskId = inserted[entry.key]['id'] as String;
+          for (final userId in entry.value) {
+            assignmentRows.add({
+              'task_id':         taskId,
+              'user_id':         userId,
+              'assignment_role': 'collaborator',
+              'is_primary':      false,
+            });
+          }
+        }
+        if (assignmentRows.isNotEmpty) {
+          await client.from('task_assignments').insert(assignmentRows);
+        }
+      }
 
       // Auto-generate subtasks from templates for each inserted task
       await _generateSubtasks(
