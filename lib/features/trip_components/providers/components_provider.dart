@@ -278,9 +278,6 @@ class ComponentsProvider extends ChangeNotifier {
       case ComponentType.transport:          return CostCategory.transport;
       case ComponentType.experience:         return CostCategory.experience;
       case ComponentType.guide:              return CostCategory.guide;
-      case ComponentType.flight:             return CostCategory.flights;
-      case ComponentType.train:              return CostCategory.transport;
-      case ComponentType.yacht:              return CostCategory.transport;
       case ComponentType.specialArrangement: return CostCategory.other;
       case ComponentType.other:              return CostCategory.other;
     }
@@ -291,9 +288,6 @@ class ComponentsProvider extends ChangeNotifier {
       case ComponentType.accommodation:      return ItemType.hotel;
       case ComponentType.dining:             return ItemType.dining;
       case ComponentType.transport:          return ItemType.transport;
-      case ComponentType.flight:             return ItemType.flight;
-      case ComponentType.train:              return ItemType.transport;
-      case ComponentType.yacht:              return ItemType.transport;
       case ComponentType.guide:              return ItemType.experience;
       case ComponentType.experience:         return ItemType.experience;
       case ComponentType.specialArrangement: return ItemType.experience;

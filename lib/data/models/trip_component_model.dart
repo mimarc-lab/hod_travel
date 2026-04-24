@@ -1,4 +1,25 @@
 import 'package:flutter/material.dart';
+import 'supplier_model.dart';
+
+// ── Field label helpers ───────────────────────────────────────────────────────
+
+class ComponentFieldLabels {
+  final String startDate;
+  final String endDate;
+  final String startTime;
+  final String endTime;
+  final String locationName;
+  final String address;
+
+  const ComponentFieldLabels({
+    required this.startDate,
+    required this.endDate,
+    required this.startTime,
+    required this.endTime,
+    required this.locationName,
+    required this.address,
+  });
+}
 
 // ── ComponentType ─────────────────────────────────────────────────────────────
 
@@ -8,9 +29,6 @@ enum ComponentType {
   dining,
   transport,
   guide,
-  flight,
-  train,
-  yacht,
   specialArrangement,
   other;
 
@@ -21,9 +39,6 @@ enum ComponentType {
       case ComponentType.dining:             return 'dining';
       case ComponentType.transport:          return 'transport';
       case ComponentType.guide:              return 'guide';
-      case ComponentType.flight:             return 'flight';
-      case ComponentType.train:              return 'train';
-      case ComponentType.yacht:              return 'yacht';
       case ComponentType.specialArrangement: return 'special_arrangement';
       case ComponentType.other:              return 'other';
     }
@@ -36,9 +51,6 @@ enum ComponentType {
       case ComponentType.dining:             return 'Dining';
       case ComponentType.transport:          return 'Transport';
       case ComponentType.guide:              return 'Guide';
-      case ComponentType.flight:             return 'Flight';
-      case ComponentType.train:              return 'Train';
-      case ComponentType.yacht:              return 'Yacht';
       case ComponentType.specialArrangement: return 'Special Arrangement';
       case ComponentType.other:              return 'Other';
     }
@@ -51,9 +63,6 @@ enum ComponentType {
       case ComponentType.dining:             return Icons.restaurant_rounded;
       case ComponentType.transport:          return Icons.directions_car_rounded;
       case ComponentType.guide:              return Icons.person_pin_rounded;
-      case ComponentType.flight:             return Icons.flight_rounded;
-      case ComponentType.train:              return Icons.train_rounded;
-      case ComponentType.yacht:              return Icons.sailing_rounded;
       case ComponentType.specialArrangement: return Icons.star_rounded;
       case ComponentType.other:              return Icons.category_rounded;
     }
@@ -61,34 +70,100 @@ enum ComponentType {
 
   Color get color {
     switch (this) {
-      case ComponentType.accommodation:      return const Color(0xFF7C3AED); // violet
-      case ComponentType.experience:         return const Color(0xFF0891B2); // cyan
-      case ComponentType.dining:             return const Color(0xFFEA580C); // orange
-      case ComponentType.transport:          return const Color(0xFF0369A1); // blue
-      case ComponentType.guide:              return const Color(0xFF059669); // green
-      case ComponentType.flight:             return const Color(0xFF2563EB); // blue
-      case ComponentType.train:              return const Color(0xFF7C3AED); // violet
-      case ComponentType.yacht:              return const Color(0xFF0E7490); // teal
-      case ComponentType.specialArrangement: return const Color(0xFFC9A96E); // gold
-      case ComponentType.other:              return const Color(0xFF6B7280); // grey
+      case ComponentType.accommodation:      return const Color(0xFF7C3AED);
+      case ComponentType.experience:         return const Color(0xFF0891B2);
+      case ComponentType.dining:             return const Color(0xFFEA580C);
+      case ComponentType.transport:          return const Color(0xFF0369A1);
+      case ComponentType.guide:              return const Color(0xFF059669);
+      case ComponentType.specialArrangement: return const Color(0xFFC9A96E);
+      case ComponentType.other:              return const Color(0xFF6B7280);
     }
   }
 
   Color get bgColor => color.withAlpha(20);
+
+  ComponentFieldLabels get fieldLabels {
+    switch (this) {
+      case ComponentType.accommodation:
+        return const ComponentFieldLabels(
+          startDate:    'Check-in Date',
+          endDate:      'Check-out Date',
+          startTime:    'Check-in Time',
+          endTime:      'Check-out Time',
+          locationName: 'Property Name',
+          address:      'Property Address',
+        );
+      case ComponentType.dining:
+        return const ComponentFieldLabels(
+          startDate:    'Reservation Date',
+          endDate:      'End Date',
+          startTime:    'Reservation Time',
+          endTime:      'End Time',
+          locationName: 'Restaurant Name',
+          address:      'Restaurant Address',
+        );
+      case ComponentType.transport:
+        return const ComponentFieldLabels(
+          startDate:    'Departure Date',
+          endDate:      'Arrival Date',
+          startTime:    'Departure Time',
+          endTime:      'Arrival Time',
+          locationName: 'Departure Location',
+          address:      'Pickup Address',
+        );
+      case ComponentType.experience:
+        return const ComponentFieldLabels(
+          startDate:    'Activity Date',
+          endDate:      'End Date',
+          startTime:    'Start Time',
+          endTime:      'End Time',
+          locationName: 'Meeting Point',
+          address:      'Address',
+        );
+      case ComponentType.guide:
+        return const ComponentFieldLabels(
+          startDate:    'Service Date',
+          endDate:      'End Date',
+          startTime:    'Start Time',
+          endTime:      'End Time',
+          locationName: 'Meeting Point',
+          address:      'Address',
+        );
+      case ComponentType.specialArrangement:
+      case ComponentType.other:
+        return const ComponentFieldLabels(
+          startDate:    'Start Date',
+          endDate:      'End Date',
+          startTime:    'Start Time',
+          endTime:      'End Time',
+          locationName: 'Location',
+          address:      'Address',
+        );
+    }
+  }
+
+  List<SupplierCategory> get relevantSupplierCategories {
+    switch (this) {
+      case ComponentType.accommodation:      return [SupplierCategory.hotel, SupplierCategory.villa];
+      case ComponentType.dining:             return [SupplierCategory.restaurant];
+      case ComponentType.transport:          return [SupplierCategory.transport];
+      case ComponentType.experience:         return [SupplierCategory.experience];
+      case ComponentType.guide:              return [SupplierCategory.guide];
+      case ComponentType.specialArrangement: return [SupplierCategory.concierge];
+      case ComponentType.other:              return SupplierCategory.values.toList();
+    }
+  }
 }
 
 ComponentType componentTypeFromDb(String v) {
   switch (v) {
-    case 'accommodation':      return ComponentType.accommodation;
-    case 'experience':         return ComponentType.experience;
-    case 'dining':             return ComponentType.dining;
-    case 'transport':          return ComponentType.transport;
-    case 'guide':              return ComponentType.guide;
-    case 'flight':             return ComponentType.flight;
-    case 'train':              return ComponentType.train;
-    case 'yacht':              return ComponentType.yacht;
+    case 'accommodation':       return ComponentType.accommodation;
+    case 'experience':          return ComponentType.experience;
+    case 'dining':              return ComponentType.dining;
+    case 'transport':           return ComponentType.transport;
+    case 'guide':               return ComponentType.guide;
     case 'special_arrangement': return ComponentType.specialArrangement;
-    default:                   return ComponentType.other;
+    default:                    return ComponentType.other;
   }
 }
 
@@ -164,19 +239,55 @@ class TripComponent {
   final ComponentType componentType;
   final ComponentStatus status;
   final String title;
+
+  // Supplier
   final String? supplierId;
   final String? supplierName;
+  final String? supplierContactOverrideName;
+  final String? supplierContactOverridePhone;
+  final String? supplierContactOverrideEmail;
+
+  // Dates & times
   final DateTime? startDate;
   final DateTime? endDate;
   final String? startTime;
   final String? endTime;
+
+  // Location
   final String? locationName;
   final String? address;
+
+  // Booking
+  final String? supplierBookingReference;
+  final String? confirmationNumber;
+  final String? primaryContactName;
+  final String? primaryContactPhone;
+  final String? primaryContactEmail;
+
+  // Commercial
+  final double? netCost;
+  final double? depositPaid;
+  final double? remainingBalance;
+  final DateTime? paymentDueDate;
+  final String? cancellationTerms;
+
+  // Files
+  final String? confirmationFileUrl;
+  final String? invoiceFileUrl;
+  final String? voucherFileUrl;
+
+  // Type-specific details
+  final Map<String, dynamic> detailsJson;
+
+  // Notes
   final String? notesInternal;
   final String? notesClient;
+
+  // Linking
   final String? costItemId;
   final String? itineraryItemId;
   final String? runSheetItemId;
+
   final String? createdBy;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -190,12 +301,29 @@ class TripComponent {
     required this.title,
     this.supplierId,
     this.supplierName,
+    this.supplierContactOverrideName,
+    this.supplierContactOverridePhone,
+    this.supplierContactOverrideEmail,
     this.startDate,
     this.endDate,
     this.startTime,
     this.endTime,
     this.locationName,
     this.address,
+    this.supplierBookingReference,
+    this.confirmationNumber,
+    this.primaryContactName,
+    this.primaryContactPhone,
+    this.primaryContactEmail,
+    this.netCost,
+    this.depositPaid,
+    this.remainingBalance,
+    this.paymentDueDate,
+    this.cancellationTerms,
+    this.confirmationFileUrl,
+    this.invoiceFileUrl,
+    this.voucherFileUrl,
+    this.detailsJson = const {},
     this.notesInternal,
     this.notesClient,
     this.costItemId,
@@ -211,44 +339,86 @@ class TripComponent {
     ComponentStatus? status,
     String? title,
     String? supplierId,
+    bool clearSupplierId = false,
     String? supplierName,
+    bool clearSupplierName = false,
+    String? supplierContactOverrideName,
+    String? supplierContactOverridePhone,
+    String? supplierContactOverrideEmail,
     DateTime? startDate,
+    bool clearStartDate = false,
     DateTime? endDate,
+    bool clearEndDate = false,
     String? startTime,
+    bool clearStartTime = false,
     String? endTime,
+    bool clearEndTime = false,
     String? locationName,
     String? address,
+    String? supplierBookingReference,
+    String? confirmationNumber,
+    String? primaryContactName,
+    String? primaryContactPhone,
+    String? primaryContactEmail,
+    double? netCost,
+    double? depositPaid,
+    double? remainingBalance,
+    DateTime? paymentDueDate,
+    bool clearPaymentDueDate = false,
+    String? cancellationTerms,
+    String? confirmationFileUrl,
+    String? invoiceFileUrl,
+    String? voucherFileUrl,
+    Map<String, dynamic>? detailsJson,
     String? notesInternal,
     String? notesClient,
     String? costItemId,
     String? itineraryItemId,
     String? runSheetItemId,
-  }) => TripComponent(
-    id: id,
-    tripId: tripId,
-    teamId: teamId,
-    componentType: componentType ?? this.componentType,
-    status: status ?? this.status,
-    title: title ?? this.title,
-    supplierId: supplierId ?? this.supplierId,
-    supplierName: supplierName ?? this.supplierName,
-    startDate: startDate ?? this.startDate,
-    endDate: endDate ?? this.endDate,
-    startTime: startTime ?? this.startTime,
-    endTime: endTime ?? this.endTime,
-    locationName: locationName ?? this.locationName,
-    address: address ?? this.address,
-    notesInternal: notesInternal ?? this.notesInternal,
-    notesClient: notesClient ?? this.notesClient,
-    costItemId: costItemId ?? this.costItemId,
-    itineraryItemId: itineraryItemId ?? this.itineraryItemId,
-    runSheetItemId: runSheetItemId ?? this.runSheetItemId,
-    createdBy: createdBy,
-    createdAt: createdAt,
-    updatedAt: DateTime.now(),
-  );
+  }) =>
+      TripComponent(
+        id:            id,
+        tripId:        tripId,
+        teamId:        teamId,
+        componentType: componentType ?? this.componentType,
+        status:        status ?? this.status,
+        title:         title ?? this.title,
+        supplierId:    clearSupplierId   ? null : supplierId   ?? this.supplierId,
+        supplierName:  clearSupplierName ? null : supplierName ?? this.supplierName,
+        supplierContactOverrideName:  supplierContactOverrideName  ?? this.supplierContactOverrideName,
+        supplierContactOverridePhone: supplierContactOverridePhone ?? this.supplierContactOverridePhone,
+        supplierContactOverrideEmail: supplierContactOverrideEmail ?? this.supplierContactOverrideEmail,
+        startDate:     clearStartDate ? null : startDate ?? this.startDate,
+        endDate:       clearEndDate   ? null : endDate   ?? this.endDate,
+        startTime:     clearStartTime ? null : startTime ?? this.startTime,
+        endTime:       clearEndTime   ? null : endTime   ?? this.endTime,
+        locationName:  locationName  ?? this.locationName,
+        address:       address       ?? this.address,
+        supplierBookingReference: supplierBookingReference ?? this.supplierBookingReference,
+        confirmationNumber:       confirmationNumber       ?? this.confirmationNumber,
+        primaryContactName:       primaryContactName       ?? this.primaryContactName,
+        primaryContactPhone:      primaryContactPhone      ?? this.primaryContactPhone,
+        primaryContactEmail:      primaryContactEmail      ?? this.primaryContactEmail,
+        netCost:           netCost           ?? this.netCost,
+        depositPaid:       depositPaid       ?? this.depositPaid,
+        remainingBalance:  remainingBalance  ?? this.remainingBalance,
+        paymentDueDate:    clearPaymentDueDate ? null : paymentDueDate ?? this.paymentDueDate,
+        cancellationTerms: cancellationTerms ?? this.cancellationTerms,
+        confirmationFileUrl: confirmationFileUrl ?? this.confirmationFileUrl,
+        invoiceFileUrl:      invoiceFileUrl      ?? this.invoiceFileUrl,
+        voucherFileUrl:      voucherFileUrl      ?? this.voucherFileUrl,
+        detailsJson:   detailsJson   ?? this.detailsJson,
+        notesInternal: notesInternal ?? this.notesInternal,
+        notesClient:   notesClient   ?? this.notesClient,
+        costItemId:      costItemId      ?? this.costItemId,
+        itineraryItemId: itineraryItemId ?? this.itineraryItemId,
+        runSheetItemId:  runSheetItemId  ?? this.runSheetItemId,
+        createdBy:  createdBy,
+        createdAt:  createdAt,
+        updatedAt:  DateTime.now(),
+      );
 
-  bool get isLinkedToItinerary  => itineraryItemId != null;
-  bool get isLinkedToBudget     => costItemId != null;
-  bool get isLinkedToRunSheet   => runSheetItemId != null;
+  bool get isLinkedToItinerary => itineraryItemId != null;
+  bool get isLinkedToBudget    => costItemId != null;
+  bool get isLinkedToRunSheet  => runSheetItemId != null;
 }

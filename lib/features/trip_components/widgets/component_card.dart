@@ -7,6 +7,8 @@ import '../../../data/models/trip_component_model.dart';
 import '../providers/components_provider.dart';
 import 'component_status_chip.dart';
 
+final _currencyFmt = NumberFormat('#,##0.00');
+
 class ComponentCard extends StatelessWidget {
   final TripComponent component;
   final ComponentsProvider provider;
@@ -134,6 +136,27 @@ class ComponentCard extends StatelessWidget {
                             ),
                         ],
                       ),
+
+                      // Cost + confirmation row
+                      if (component.netCost != null || component.confirmationNumber != null) ...[
+                        const SizedBox(height: AppSpacing.sm),
+                        Wrap(
+                          spacing: AppSpacing.sm,
+                          runSpacing: AppSpacing.xs,
+                          children: [
+                            if (component.netCost != null)
+                              _MetaChip(
+                                icon:  Icons.attach_money_rounded,
+                                label: _currencyFmt.format(component.netCost),
+                              ),
+                            if (component.confirmationNumber != null)
+                              _MetaChip(
+                                icon:  Icons.confirmation_number_outlined,
+                                label: component.confirmationNumber!,
+                              ),
+                          ],
+                        ),
+                      ],
 
                       // Internal notes preview
                       if (component.notesInternal != null && component.notesInternal!.isNotEmpty) ...[
