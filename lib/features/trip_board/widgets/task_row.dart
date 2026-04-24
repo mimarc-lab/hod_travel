@@ -14,7 +14,7 @@ import 'task_detail/task_detail_panel.dart';
 abstract class BoardColumns {
   static const double taskName      = 240.0;
   static const double status        = 130.0;
-  static const double assignedTo    = 150.0;
+  static const double assignedTo    = 240.0;
   static const double travelDate    = 100.0;
   static const double dueDate       = 100.0;
   static const double supplier      = 140.0;
