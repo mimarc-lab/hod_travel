@@ -87,6 +87,24 @@ class ComponentsProvider extends ChangeNotifier {
     );
   }
 
+  Future<void> refresh() async {
+    if (repository == null) return;
+    try {
+      final items = await repository!.fetchForTrip(trip.id);
+      _components = items;
+      _error = null;
+      notifyListeners();
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+    }
+  }
+
+  void clearError() {
+    _error = null;
+    notifyListeners();
+  }
+
   Future<TripComponent?> addComponent(TripComponent component) async {
     if (repository == null || teamId == null) return null;
     try {

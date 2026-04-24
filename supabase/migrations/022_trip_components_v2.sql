@@ -68,3 +68,16 @@ ALTER TABLE trip_components
   ADD COLUMN IF NOT EXISTS invoice_file_url                TEXT,
   ADD COLUMN IF NOT EXISTS voucher_file_url                TEXT,
   ADD COLUMN IF NOT EXISTS details_json                    JSONB NOT NULL DEFAULT '{}';
+
+-- 4. Enable realtime for trip_components (idempotent)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime'
+      AND schemaname = 'public'
+      AND tablename  = 'trip_components'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE trip_components;
+  END IF;
+END $$;

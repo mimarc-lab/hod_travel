@@ -66,7 +66,10 @@ class _TripComponentsScreenState extends State<TripComponentsScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Toolbar
-        _ComponentsToolbar(onAdd: _openAddSheet),
+        _ComponentsToolbar(
+          onAdd:    _openAddSheet,
+          onRefresh: _provider.refresh,
+        ),
 
         // Filter bar
         ComponentFilterBar(provider: _provider),
@@ -78,6 +81,35 @@ class _TripComponentsScreenState extends State<TripComponentsScreen>
           child: ListenableBuilder(
             listenable: _provider,
             builder: (context, _) {
+              // Surface errors (e.g. migration not yet applied)
+              final err = _provider.error;
+              if (err != null) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSpacing.xl),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.error_outline_rounded, size: 36, color: Colors.red),
+                        const SizedBox(height: AppSpacing.sm),
+                        Text('Failed to load components', style: AppTextStyles.heading3),
+                        const SizedBox(height: AppSpacing.xs),
+                        Text(err, style: AppTextStyles.bodySmall, textAlign: TextAlign.center),
+                        const SizedBox(height: AppSpacing.base),
+                        OutlinedButton.icon(
+                          onPressed: () {
+                            _provider.clearError();
+                            _provider.refresh();
+                          },
+                          icon: const Icon(Icons.refresh_rounded, size: 16),
+                          label: const Text('Retry'),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+
               if (_provider.loading) {
                 return const Center(child: CircularProgressIndicator());
               }
@@ -91,14 +123,17 @@ class _TripComponentsScreenState extends State<TripComponentsScreen>
                 );
               }
 
-              return ListView.builder(
-                padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-                itemCount: items.length,
-                itemBuilder: (context, i) => ComponentCard(
-                  key:      ValueKey(items[i].id),
-                  component: items[i],
-                  provider:  _provider,
-                  onEdit:    () => _openEditSheet(items[i]),
+              return RefreshIndicator(
+                onRefresh: _provider.refresh,
+                child: ListView.builder(
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                  itemCount: items.length,
+                  itemBuilder: (context, i) => ComponentCard(
+                    key:      ValueKey(items[i].id),
+                    component: items[i],
+                    provider:  _provider,
+                    onEdit:    () => _openEditSheet(items[i]),
+                  ),
                 ),
               );
             },
@@ -113,7 +148,8 @@ class _TripComponentsScreenState extends State<TripComponentsScreen>
 
 class _ComponentsToolbar extends StatelessWidget {
   final VoidCallback onAdd;
-  const _ComponentsToolbar({required this.onAdd});
+  final Future<void> Function() onRefresh;
+  const _ComponentsToolbar({required this.onAdd, required this.onRefresh});
 
   @override
   Widget build(BuildContext context) {
@@ -140,6 +176,13 @@ class _ComponentsToolbar extends StatelessWidget {
             ],
           ),
           const Spacer(),
+          IconButton(
+            onPressed: onRefresh,
+            icon: const Icon(Icons.refresh_rounded, size: 18),
+            color: AppColors.textSecondary,
+            tooltip: 'Refresh',
+          ),
+          const SizedBox(width: AppSpacing.xs),
           FilledButton.icon(
             onPressed: onAdd,
             icon: const Icon(Icons.add, size: 16),
