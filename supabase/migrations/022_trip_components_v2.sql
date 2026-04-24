@@ -1,43 +1,55 @@
 -- =============================================================================
--- 022_trip_components_v2.sql
+-- 022_trip_components_v2.sql  (idempotent — safe to re-run at any stage)
 -- Enhanced trip_components: universal fields + details_json
 -- Removes flight/train/yacht (folded into transport via details_json)
--- Safe to re-run: cleans up any partial state from a prior failed attempt
 -- =============================================================================
 
--- 0. Clean up partial state from a prior failed run
---    (component_type_enum_v2 may have been created but never used)
-DROP TYPE IF EXISTS component_type_enum_v2;
+-- 1. Migrate rows only if 'flight' is still a valid enum value
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_enum e
+    JOIN pg_type t ON t.oid = e.enumtypid
+    WHERE t.typname = 'component_type_enum' AND e.enumlabel = 'flight'
+  ) THEN
+    UPDATE trip_components
+      SET component_type = 'transport'::text::component_type_enum
+      WHERE component_type::text IN ('flight', 'train', 'yacht');
+  END IF;
+END $$;
 
--- 1. Migrate rows with removed types → transport
-UPDATE trip_components
-  SET component_type = 'transport'::component_type_enum
-  WHERE component_type IN ('flight'::component_type_enum,
-                           'train'::component_type_enum,
-                           'yacht'::component_type_enum);
+-- 2. Swap the enum only if the old 10-value type is still in place
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_enum e
+    JOIN pg_type t ON t.oid = e.enumtypid
+    WHERE t.typname = 'component_type_enum' AND e.enumlabel = 'flight'
+  ) THEN
+    -- Clean up any leftover v2 from a prior failed run
+    DROP TYPE IF EXISTS component_type_enum_v2;
 
--- 2. Replace enum (create new, swap, drop old)
-CREATE TYPE component_type_enum_v2 AS ENUM (
-  'accommodation', 'experience', 'dining', 'transport',
-  'guide', 'special_arrangement', 'other'
-);
+    CREATE TYPE component_type_enum_v2 AS ENUM (
+      'accommodation', 'experience', 'dining', 'transport',
+      'guide', 'special_arrangement', 'other'
+    );
 
--- Drop the column default first so Postgres can re-type it
-ALTER TABLE trip_components
-  ALTER COLUMN component_type DROP DEFAULT;
+    ALTER TABLE trip_components
+      ALTER COLUMN component_type DROP DEFAULT;
 
-ALTER TABLE trip_components
-  ALTER COLUMN component_type TYPE component_type_enum_v2
-  USING component_type::text::component_type_enum_v2;
+    ALTER TABLE trip_components
+      ALTER COLUMN component_type TYPE component_type_enum_v2
+      USING component_type::text::component_type_enum_v2;
 
--- Restore default using the new type
-ALTER TABLE trip_components
-  ALTER COLUMN component_type SET DEFAULT 'other'::component_type_enum_v2;
+    ALTER TABLE trip_components
+      ALTER COLUMN component_type SET DEFAULT 'other'::component_type_enum_v2;
 
-DROP TYPE component_type_enum;
-ALTER TYPE component_type_enum_v2 RENAME TO component_type_enum;
+    DROP TYPE component_type_enum;
+    ALTER TYPE component_type_enum_v2 RENAME TO component_type_enum;
+  END IF;
+END $$;
 
--- 3. Add universal fields
+-- 3. Add universal fields (IF NOT EXISTS makes each line idempotent)
 ALTER TABLE trip_components
   ADD COLUMN IF NOT EXISTS supplier_contact_override_name  TEXT,
   ADD COLUMN IF NOT EXISTS supplier_contact_override_phone TEXT,
