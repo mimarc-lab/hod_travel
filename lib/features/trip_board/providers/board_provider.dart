@@ -381,6 +381,39 @@ class BoardProvider extends ChangeNotifier {
   List<Subtask> subtasksFor(String taskId) =>
       List.unmodifiable(_subtasks[taskId] ?? []);
 
+  /// Instantly patches subtask counts on the task in _groups and _selectedTask
+  /// so the board row progress bar updates without waiting for the realtime roundtrip.
+  void _patchSubtaskCounts(
+    String taskId, {
+    int subtaskDelta = 0,
+    int completedDelta = 0,
+  }) {
+    _groups = [
+      for (final g in _groups)
+        BoardGroup(
+          id: g.id,
+          name: g.name,
+          accentColor: g.accentColor,
+          tasks: [
+            for (final t in g.tasks)
+              if (t.id == taskId)
+                t.copyWith(
+                  subtaskCount: t.subtaskCount + subtaskDelta,
+                  completedSubtaskCount: t.completedSubtaskCount + completedDelta,
+                )
+              else
+                t,
+          ],
+        ),
+    ];
+    if (_selectedTask?.id == taskId) {
+      _selectedTask = _selectedTask!.copyWith(
+        subtaskCount: _selectedTask!.subtaskCount + subtaskDelta,
+        completedSubtaskCount: _selectedTask!.completedSubtaskCount + completedDelta,
+      );
+    }
+  }
+
   void subscribeToSubtasks(String taskId) {
     if (_subtaskSubs.containsKey(taskId) || _subtaskRepo == null) return;
     _subtaskSubs[taskId] = _subtaskRepo.watchSubtasks(taskId).listen((list) {
@@ -406,23 +439,27 @@ class BoardProvider extends ChangeNotifier {
       orderIndex:   order,
       createdAt:    DateTime.now(),
     ));
-    // Show the new subtask immediately without waiting for the realtime chain.
     _subtasks[taskId] = [...subtasksFor(taskId), created];
+    _patchSubtaskCounts(taskId, subtaskDelta: 1);
     subscribeToSubtasks(taskId);
     notifyListeners();
   }
 
   Future<void> toggleSubtask(Subtask subtask) async {
     if (_subtaskRepo == null) return;
-    // Optimistic update
+    final willBeCompleted = !subtask.isCompleted;
     final list = [...subtasksFor(subtask.parentTaskId)];
     final idx  = list.indexWhere((s) => s.id == subtask.id);
     if (idx != -1) {
-      list[idx] = subtask.copyWith(isCompleted: !subtask.isCompleted);
+      list[idx] = subtask.copyWith(isCompleted: willBeCompleted);
       _subtasks[subtask.parentTaskId] = list;
+      _patchSubtaskCounts(
+        subtask.parentTaskId,
+        completedDelta: willBeCompleted ? 1 : -1,
+      );
       notifyListeners();
     }
-    await _subtaskRepo.updateSubtask(subtask.copyWith(isCompleted: !subtask.isCompleted));
+    await _subtaskRepo.updateSubtask(subtask.copyWith(isCompleted: willBeCompleted));
   }
 
   Future<void> updateSubtaskTitle(Subtask subtask, String newTitle) async {
@@ -438,9 +475,15 @@ class BoardProvider extends ChangeNotifier {
 
   Future<void> deleteSubtask(Subtask subtask) async {
     if (_subtaskRepo == null) return;
-    // Optimistic remove
-    final list = subtasksFor(subtask.parentTaskId).where((s) => s.id != subtask.id).toList();
+    final list = subtasksFor(subtask.parentTaskId)
+        .where((s) => s.id != subtask.id)
+        .toList();
     _subtasks[subtask.parentTaskId] = list;
+    _patchSubtaskCounts(
+      subtask.parentTaskId,
+      subtaskDelta: -1,
+      completedDelta: subtask.isCompleted ? -1 : 0,
+    );
     notifyListeners();
     await _subtaskRepo.deleteSubtask(subtask.id);
   }
