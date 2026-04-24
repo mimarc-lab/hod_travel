@@ -24,34 +24,38 @@ class StackedAvatars extends StatelessWidget {
     final visible = users.take(maxVisible).toList();
     final overflowCount = users.length - maxVisible;
     final itemCount = overflowCount > 0 ? visible.length + 1 : visible.length;
-    final totalWidth = size + (itemCount - 1) * (size - overlap);
+    const double border = 1.5;
+    final totalWidth = size + (itemCount - 1) * (size - overlap) + border * 2;
 
     return SizedBox(
       width: totalWidth,
-      height: size,
+      height: size + border * 2,
       child: Stack(
+        clipBehavior: Clip.none,
         children: [
           for (int i = 0; i < visible.length; i++)
             Positioned(
-              left: i * (size - overlap),
+              left: i * (size - overlap) + border,
+              top: border,
               child: Container(
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 1.5),
+                  border: Border.all(color: Colors.white, width: border),
                 ),
                 child: UserAvatar(user: visible[i], size: size),
               ),
             ),
           if (overflowCount > 0)
             Positioned(
-              left: visible.length * (size - overlap),
+              left: visible.length * (size - overlap) + border,
+              top: border,
               child: Container(
                 width: size,
                 height: size,
                 decoration: BoxDecoration(
                   color: const Color(0xFFE5E7EB),
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 1.5),
+                  border: Border.all(color: Colors.white, width: border),
                 ),
                 alignment: Alignment.center,
                 child: Text(
