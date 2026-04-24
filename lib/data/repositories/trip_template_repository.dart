@@ -26,6 +26,7 @@ abstract class TripTemplateRepository {
     required int sortOrder,
     int estimatedDurationDays = 1,
     String? defaultAssigneeId,
+    List<String> defaultCollaboratorIds = const [],
   });
   Future<void> updateTask(TripTemplateTask task);
   Future<void> deleteTask(String taskId);
@@ -51,6 +52,8 @@ class SupabaseTripTemplateRepository implements TripTemplateRepository {
         priority:   r['priority']   as String? ?? 'medium',
         sortOrder:  (r['sort_order'] as num?)?.toInt() ?? 0,
         defaultAssigneeId: r['default_assignee_id'] as String?,
+        defaultCollaboratorIds: (r['default_collaborator_ids'] as List?)
+            ?.map((e) => e as String).toList() ?? const [],
         estimatedDurationDays: (r['estimated_duration_days'] as num?)?.toInt() ?? 1,
         schedulingMode: SchedulingMode.values.firstWhere(
           (m) => m.name == _toCamel(r['scheduling_mode'] as String? ?? ''),
@@ -165,15 +168,17 @@ class SupabaseTripTemplateRepository implements TripTemplateRepository {
     required int sortOrder,
     int estimatedDurationDays = 1,
     String? defaultAssigneeId,
+    List<String> defaultCollaboratorIds = const [],
   }) async {
     final row = await _client.from('trip_template_tasks').insert({
-      'template_id':           templateId,
-      'group_name':            groupName,
-      'title':                 title,
-      'priority':              priority,
-      'sort_order':            sortOrder,
-      'estimated_duration_days': estimatedDurationDays,
-      'default_assignee_id':   defaultAssigneeId,
+      'template_id':              templateId,
+      'group_name':               groupName,
+      'title':                    title,
+      'priority':                 priority,
+      'sort_order':               sortOrder,
+      'estimated_duration_days':  estimatedDurationDays,
+      'default_assignee_id':      defaultAssigneeId,
+      'default_collaborator_ids': defaultCollaboratorIds,
     }).select().single();
     return _taskFromRow(row);
   }
@@ -185,8 +190,9 @@ class SupabaseTripTemplateRepository implements TripTemplateRepository {
       'title':                    task.title,
       'priority':                 task.priority,
       'sort_order':               task.sortOrder,
-      'default_assignee_id':      task.defaultAssigneeId,
-      'estimated_duration_days':  task.estimatedDurationDays,
+      'default_assignee_id':         task.defaultAssigneeId,
+      'default_collaborator_ids':    task.defaultCollaboratorIds,
+      'estimated_duration_days':     task.estimatedDurationDays,
       'scheduling_mode':          _toSnake(task.schedulingMode.name),
       'dependency_task_ids':      task.dependencyTaskIds,
       'buffer_days':              task.bufferDays,

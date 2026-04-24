@@ -20,6 +20,7 @@ import '../../data/repositories/signature_experience_repository.dart';
 import '../../data/repositories/trip_template_repository.dart';
 import '../../data/repositories/client_dossier_repository.dart';
 import '../../data/repositories/ai_memory_repository.dart';
+import '../../data/repositories/trip_component_repository.dart';
 import '../../features/auth/auth_repository.dart';
 import '../../features/security/permission_service.dart';
 import '../../services/audit_log_service.dart';
@@ -59,11 +60,12 @@ class AppRepositories {
   final TeamRepository teams;
 
   // ── Trips & board ─────────────────────────────────────────────────────────
-  final TripRepository     trips;
-  final TaskRepository     tasks;
-  final SubtaskRepository  subtasks;
-  final ItineraryRepository itinerary;
-  final TripTemplateRepository templates;
+  final TripRepository          trips;
+  final TaskRepository          tasks;
+  final SubtaskRepository       subtasks;
+  final ItineraryRepository     itinerary;
+  final TripTemplateRepository  templates;
+  final TripComponentRepository components;
 
   // ── Suppliers ─────────────────────────────────────────────────────────────
   final SupplierRepository suppliers;
@@ -107,6 +109,7 @@ class AppRepositories {
     required this.subtasks,
     required this.itinerary,
     required this.templates,
+    required this.components,
     required this.suppliers,
     required this.enrichments,
     required this.budget,
@@ -142,6 +145,7 @@ class AppRepositories {
       subtasks:     SupabaseSubtaskRepository(client),
       itinerary:    SupabaseItineraryRepository(client),
       templates:    SupabaseTripTemplateRepository(client),
+      components:   SupabaseTripComponentRepository(client),
       suppliers:    SupabaseSupplierRepository(client),
       enrichments:  SupabaseEnrichmentRepository(client),
       budget:               SupabaseBudgetRepository(client),

@@ -18,6 +18,7 @@ import '../../../core/supabase/app_db.dart';
 import '../providers/board_provider.dart';
 import '../../../features/intelligence/widgets/trip_intelligence_panel.dart';
 import '../../../features/itinerary/providers/itinerary_provider.dart';
+import '../../../features/trip_components/screens/trip_components_screen.dart';
 import '../../../features/trips/providers/trip_provider.dart';
 import '../../../features/trips/screens/edit_trip_screen.dart';
 import '../widgets/board_group.dart';
@@ -50,7 +51,7 @@ class _TripBoardScreenState extends State<TripBoardScreen>
   /// Mutable local copy of the trip — updated when the user saves edits.
   late Trip _currentTrip;
 
-  static const _tabs = ['Board', 'Timeline', 'Map', 'Itinerary', 'Budget', 'Intelligence', 'Client View'];
+  static const _tabs = ['Board', 'Timeline', 'Map', 'Itinerary', 'Components', 'Budget', 'Intelligence', 'Client View'];
 
   @override
   void initState() {
@@ -242,12 +243,13 @@ class _TripBoardScreenState extends State<TripBoardScreen>
                       _BoardTab(
                         provider: _provider,
                         onAiAssist: () =>
-                            _tabController.animateTo(5), // Intelligence tab
+                            _tabController.animateTo(6), // Intelligence tab
                         onRecalculate: () => _onRecalculate(context),
                       ),
                       TimelineScreen(trip: widget.trip, provider: _provider), // Timeline
                       TripMapScreen(trip: widget.trip, provider: _itineraryProvider), // Map
                       ItineraryScreen(trip: widget.trip, provider: _itineraryProvider),
+                      TripComponentsScreen(trip: widget.trip),
                       TripBudgetScreen(trip: widget.trip),
                       TripIntelligencePanel(
                         trip: widget.trip,

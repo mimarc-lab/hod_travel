@@ -459,13 +459,14 @@ class _TemplateEditorScreenState extends State<TemplateEditorScreen> {
     setState(() => _saving = true);
     final groupTasks = _template.tasksForGroup(groupName);
     await _repo!.addTask(
-      templateId:           _template.id,
-      groupName:            groupName,
-      title:                result.title,
-      priority:             result.priority,
-      sortOrder:            groupTasks.length,
-      estimatedDurationDays: result.duration,
-      defaultAssigneeId:    result.assigneeId,
+      templateId:              _template.id,
+      groupName:               groupName,
+      title:                   result.title,
+      priority:                result.priority,
+      sortOrder:               groupTasks.length,
+      estimatedDurationDays:   result.duration,
+      defaultAssigneeId:       result.assigneeId,
+      defaultCollaboratorIds:  result.collaboratorIds,
     );
     await _reload();
     if (mounted) setState(() => _saving = false);
@@ -475,21 +476,23 @@ class _TemplateEditorScreenState extends State<TemplateEditorScreen> {
   Future<void> _editTask(TripTemplateTask task) async {
     final result = await _showTaskDialog(
       context,
-      groupName:          task.groupName,
-      existingTitle:      task.title,
-      existingPriority:   task.priority,
-      existingDuration:   task.estimatedDurationDays,
-      existingAssigneeId: task.defaultAssigneeId,
-      members:            _members,
+      groupName:                  task.groupName,
+      existingTitle:              task.title,
+      existingPriority:           task.priority,
+      existingDuration:           task.estimatedDurationDays,
+      existingAssigneeId:         task.defaultAssigneeId,
+      existingCollaboratorIds:    task.defaultCollaboratorIds,
+      members:                    _members,
     );
     if (result == null) return;
     try {
       await _repo!.updateTask(task.copyWith(
-        title:                result.title,
-        priority:             result.priority,
-        estimatedDurationDays: result.duration,
-        defaultAssigneeId:    result.assigneeId,
-        clearAssignee:        result.assigneeId == null,
+        title:                  result.title,
+        priority:               result.priority,
+        estimatedDurationDays:  result.duration,
+        defaultAssigneeId:      result.assigneeId,
+        clearAssignee:          result.assigneeId == null,
+        defaultCollaboratorIds: result.collaboratorIds,
       ));
     } catch (e) {
       if (mounted) {
@@ -709,6 +712,9 @@ class _TaskRowState extends State<_TaskRow> {
     final assignee = task.defaultAssigneeId == null
         ? null
         : members.where((m) => m.id == task.defaultAssigneeId).firstOrNull;
+    final collaborators = members
+        .where((m) => task.defaultCollaboratorIds.contains(m.id))
+        .toList();
     final subtasks = widget.subtaskTemplates;
 
     return Column(
@@ -739,20 +745,18 @@ class _TaskRowState extends State<_TaskRow> {
                         overflow: TextOverflow.ellipsis),
                   ),
                   const SizedBox(width: AppSpacing.sm),
+                  // Lead avatar
                   if (assignee != null) ...[
-                    Container(
-                      width: 20, height: 20,
-                      decoration: BoxDecoration(
-                        color: assignee.avatarColor,
-                        shape: BoxShape.circle,
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(assignee.initials,
-                          style: AppTextStyles.labelSmall
-                              .copyWith(color: Colors.white, fontSize: 9)),
-                    ),
-                    const SizedBox(width: AppSpacing.xs),
+                    _MiniAvatar(user: assignee, isLead: true),
+                    const SizedBox(width: 2),
                   ],
+                  // Collaborator avatars
+                  ...collaborators.map((c) => Padding(
+                    padding: const EdgeInsets.only(right: 2),
+                    child: _MiniAvatar(user: c, isLead: false),
+                  )),
+                  if (assignee != null || collaborators.isNotEmpty)
+                    const SizedBox(width: AppSpacing.xs),
                   Text(
                     task.estimatedDurationDays == 1
                         ? '1d'
@@ -867,6 +871,38 @@ class _TaskRowState extends State<_TaskRow> {
   }
 }
 
+// ── Mini avatar ───────────────────────────────────────────────────────────────
+
+class _MiniAvatar extends StatelessWidget {
+  final AppUser user;
+  final bool isLead;
+  const _MiniAvatar({required this.user, required this.isLead});
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: '${user.name}${isLead ? ' (Lead)' : ' (Collaborator)'}',
+      child: Container(
+        width: 20,
+        height: 20,
+        decoration: BoxDecoration(
+          color: user.avatarColor,
+          shape: BoxShape.circle,
+          border: isLead
+              ? Border.all(color: AppColors.accent, width: 1.5)
+              : null,
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          user.initials,
+          style: AppTextStyles.labelSmall
+              .copyWith(color: Colors.white, fontSize: 9),
+        ),
+      ),
+    );
+  }
+}
+
 // ── Subtask template row ──────────────────────────────────────────────────────
 
 class _SubtaskTemplateRow extends StatelessWidget {
@@ -949,7 +985,7 @@ Future<String?> _showSubtaskTemplateDialog(
 
 // ── Task result record ────────────────────────────────────────────────────────
 
-typedef _TaskDialogResult = ({String title, String priority, int duration, String? assigneeId});
+typedef _TaskDialogResult = ({String title, String priority, int duration, String? assigneeId, List<String> collaboratorIds});
 
 // ── Task dialog ───────────────────────────────────────────────────────────────
 
@@ -961,101 +997,192 @@ Future<_TaskDialogResult?> _showTaskDialog(
   String? existingPriority,
   int existingDuration = 1,
   String? existingAssigneeId,
+  List<String> existingCollaboratorIds = const [],
 }) {
-  final titleCtrl = TextEditingController(text: existingTitle ?? '');
-  String priority    = existingPriority ?? 'medium';
-  int    duration    = existingDuration;
-  String? assigneeId = existingAssigneeId;
+  final titleCtrl      = TextEditingController(text: existingTitle ?? '');
+  String   priority      = existingPriority ?? 'medium';
+  int      duration      = existingDuration;
+  String?  assigneeId    = existingAssigneeId;
+  final collaboratorIds  = Set<String>.from(existingCollaboratorIds);
 
   return showDialog<_TaskDialogResult>(
     context: context,
     builder: (ctx) => StatefulBuilder(
-      builder: (ctx, setDlgState) => AlertDialog(
-        title: Text(existingTitle == null
-            ? 'Add Task to $groupName'
-            : 'Edit Task'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TextField(
-              controller: titleCtrl,
-              autofocus: true,
-              textCapitalization: TextCapitalization.sentences,
-              decoration: const InputDecoration(
-                labelText: 'Task title',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: AppSpacing.base),
-            DropdownButtonFormField<String>(
-              key: ValueKey(priority),
-              initialValue: priority,
-              decoration: const InputDecoration(
-                labelText: 'Priority',
-                border: OutlineInputBorder(),
-              ),
-              items: ['high', 'medium', 'low']
-                  .map((p) => DropdownMenuItem(
-                        value: p,
-                        child: Text(p[0].toUpperCase() + p.substring(1)),
-                      ))
-                  .toList(),
-              onChanged: (v) { if (v != null) setDlgState(() => priority = v); },
-            ),
-            const SizedBox(height: AppSpacing.base),
-            DropdownButtonFormField<int>(
-              key: ValueKey(duration),
-              initialValue: duration,
-              decoration: const InputDecoration(
-                labelText: 'Duration (days)',
-                border: OutlineInputBorder(),
-              ),
-              items: [1, 2, 3, 4, 5, 7, 10, 14]
-                  .map((d) => DropdownMenuItem(
-                        value: d,
-                        child: Text(d == 1 ? '1 day' : '$d days'),
-                      ))
-                  .toList(),
-              onChanged: (v) { if (v != null) setDlgState(() => duration = v); },
-            ),
-            const SizedBox(height: AppSpacing.base),
-            DropdownButtonFormField<String?>(
-                key: ValueKey(assigneeId),
-                initialValue: assigneeId,
-                decoration: const InputDecoration(
-                  labelText: 'Default assignee',
-                  border: OutlineInputBorder(),
+      builder: (ctx, setDlgState) {
+        // Members available as collaborators (anyone except the current lead)
+        final collaboratorCandidates =
+            members.where((m) => m.id != assigneeId).toList();
+
+        return AlertDialog(
+          title: Text(existingTitle == null
+              ? 'Add Task to $groupName'
+              : 'Edit Task'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  controller: titleCtrl,
+                  autofocus: true,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: const InputDecoration(
+                    labelText: 'Task title',
+                    border: OutlineInputBorder(),
+                  ),
                 ),
-                items: [
-                  const DropdownMenuItem(value: null, child: Text('None')),
-                  ...members.map((m) => DropdownMenuItem(
-                        value: m.id,
-                        child: Text(m.name),
-                      )),
-                ],
-                onChanged: (v) => setDlgState(() => assigneeId = v),
-              ),
+                const SizedBox(height: AppSpacing.base),
+                DropdownButtonFormField<String>(
+                  key: ValueKey(priority),
+                  initialValue: priority,
+                  decoration: const InputDecoration(
+                    labelText: 'Priority',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: ['high', 'medium', 'low']
+                      .map((p) => DropdownMenuItem(
+                            value: p,
+                            child: Text(p[0].toUpperCase() + p.substring(1)),
+                          ))
+                      .toList(),
+                  onChanged: (v) { if (v != null) setDlgState(() => priority = v); },
+                ),
+                const SizedBox(height: AppSpacing.base),
+                DropdownButtonFormField<int>(
+                  key: ValueKey(duration),
+                  initialValue: duration,
+                  decoration: const InputDecoration(
+                    labelText: 'Duration (days)',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: [1, 2, 3, 4, 5, 7, 10, 14]
+                      .map((d) => DropdownMenuItem(
+                            value: d,
+                            child: Text(d == 1 ? '1 day' : '$d days'),
+                          ))
+                      .toList(),
+                  onChanged: (v) { if (v != null) setDlgState(() => duration = v); },
+                ),
+                const SizedBox(height: AppSpacing.base),
+
+                // ── Lead assignee ────────────────────────────────────────────
+                DropdownButtonFormField<String?>(
+                  key: ValueKey(assigneeId),
+                  initialValue: assigneeId,
+                  decoration: const InputDecoration(
+                    labelText: 'Lead assignee',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: [
+                    const DropdownMenuItem(value: null, child: Text('None')),
+                    ...members.map((m) => DropdownMenuItem(
+                          value: m.id,
+                          child: Text(m.name),
+                        )),
+                  ],
+                  onChanged: (v) => setDlgState(() {
+                    // Remove new lead from collaborators if they were there
+                    if (v != null) collaboratorIds.remove(v);
+                    assigneeId = v;
+                  }),
+                ),
+                const SizedBox(height: AppSpacing.base),
+
+                // ── Collaborators ────────────────────────────────────────────
+                Text(
+                  'COLLABORATORS',
+                  style: AppTextStyles.overline,
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                if (collaboratorCandidates.isEmpty)
+                  Text(
+                    'No other team members available.',
+                    style: AppTextStyles.labelSmall
+                        .copyWith(color: AppColors.textMuted),
+                  )
+                else
+                  ...collaboratorCandidates.map((m) {
+                    final selected = collaboratorIds.contains(m.id);
+                    return InkWell(
+                      onTap: () => setDlgState(() {
+                        if (selected) {
+                          collaboratorIds.remove(m.id);
+                        } else {
+                          collaboratorIds.add(m.id);
+                        }
+                      }),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Row(
+                          children: [
+                            Checkbox(
+                              value: selected,
+                              onChanged: (_) => setDlgState(() {
+                                if (selected) {
+                                  collaboratorIds.remove(m.id);
+                                } else {
+                                  collaboratorIds.add(m.id);
+                                }
+                              }),
+                              activeColor: AppColors.accent,
+                              materialTapTargetSize:
+                                  MaterialTapTargetSize.shrinkWrap,
+                              visualDensity: VisualDensity.compact,
+                            ),
+                            const SizedBox(width: 6),
+                            Container(
+                              width: 22,
+                              height: 22,
+                              decoration: BoxDecoration(
+                                color: m.avatarColor,
+                                shape: BoxShape.circle,
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                m.initials,
+                                style: AppTextStyles.labelSmall.copyWith(
+                                  color: Colors.white,
+                                  fontSize: 9,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(m.name,
+                                  style: AppTextStyles.bodySmall
+                                      .copyWith(color: AppColors.textPrimary)),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(backgroundColor: AppColors.accent),
+              onPressed: () {
+                final title = titleCtrl.text.trim();
+                if (title.isEmpty) return;
+                Navigator.of(ctx).pop((
+                  title:           title,
+                  priority:        priority,
+                  duration:        duration,
+                  assigneeId:      assigneeId,
+                  collaboratorIds: collaboratorIds.toList(),
+                ));
+              },
+              child: Text(existingTitle == null ? 'Add' : 'Save'),
+            ),
           ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.accent),
-            onPressed: () {
-              final title = titleCtrl.text.trim();
-              if (title.isEmpty) return;
-              Navigator.of(ctx).pop(
-                (title: title, priority: priority, duration: duration, assigneeId: assigneeId),
-              );
-            },
-            child: Text(existingTitle == null ? 'Add' : 'Save'),
-          ),
-        ],
-      ),
+        );
+      },
     ),
   );
 }

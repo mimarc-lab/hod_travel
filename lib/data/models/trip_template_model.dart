@@ -12,6 +12,7 @@ class TripTemplateTask {
   final String priority;
   final int    sortOrder;
   final String? defaultAssigneeId;
+  final List<String>   defaultCollaboratorIds;
 
   // ── Scheduling metadata ───────────────────────────────────────────────────
   final int            estimatedDurationDays;
@@ -29,6 +30,7 @@ class TripTemplateTask {
     required this.priority,
     required this.sortOrder,
     this.defaultAssigneeId,
+    this.defaultCollaboratorIds = const [],
     this.estimatedDurationDays  = 2,
     this.schedulingMode         = SchedulingMode.backwardFromDeadline,
     this.dependencyTaskIds      = const [],
@@ -44,6 +46,7 @@ class TripTemplateTask {
     int?           sortOrder,
     String?        defaultAssigneeId,
     bool           clearAssignee = false,
+    List<String>?  defaultCollaboratorIds,
     int?           estimatedDurationDays,
     SchedulingMode? schedulingMode,
     List<String>?  dependencyTaskIds,
@@ -57,6 +60,7 @@ class TripTemplateTask {
         priority:              priority              ?? this.priority,
         sortOrder:             sortOrder             ?? this.sortOrder,
         defaultAssigneeId:     clearAssignee ? null : (defaultAssigneeId ?? this.defaultAssigneeId),
+        defaultCollaboratorIds: defaultCollaboratorIds ?? this.defaultCollaboratorIds,
         estimatedDurationDays: estimatedDurationDays ?? this.estimatedDurationDays,
         schedulingMode:        schedulingMode        ?? this.schedulingMode,
         dependencyTaskIds:     dependencyTaskIds     ?? this.dependencyTaskIds,
