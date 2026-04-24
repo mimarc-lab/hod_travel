@@ -1,8 +1,14 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import '../../../core/supabase/app_db.dart';
+import '../../../data/models/approval_model.dart';
+import '../../../data/models/cost_item_model.dart';
+import '../../../data/models/itinerary_models.dart';
+import '../../../data/models/run_sheet_item.dart';
 import '../../../data/models/trip_component_model.dart';
 import '../../../data/models/trip_model.dart';
 import '../../../data/repositories/trip_component_repository.dart';
+import '../widgets/component_linking_dialog.dart';
 
 class ComponentsProvider extends ChangeNotifier {
   final Trip trip;
@@ -129,6 +135,180 @@ class ComponentsProvider extends ChangeNotifier {
       _error = e.toString();
       notifyListeners();
     }
+  }
+
+  // ── Linking ────────────────────────────────────────────────────────────────
+
+  /// Creates entries in Budget / Itinerary / Run Sheet based on [choice] and
+  /// back-patches the component's link IDs.
+  Future<void> linkComponent(TripComponent component, LinkingChoice choice) async {
+    final repos = AppRepositories.instance;
+    if (repos == null || teamId == null) return;
+
+    String? newCostItemId;
+    String? newItineraryItemId;
+    String? newRunSheetItemId;
+    String? dayId;
+
+    // 1. Budget ──────────────────────────────────────────────────────────────
+    if (choice.linkBudget) {
+      try {
+        final item = await repos.budget.create(
+          CostItem(
+            id:            '',
+            tripId:        component.tripId,
+            itemName:      component.title,
+            category:      _toCostCategory(component.componentType),
+            city:          component.locationName ?? '',
+            date:          component.startDate,
+            currency:      'USD',
+            netCost:       0,
+            markupType:    MarkupType.percentage,
+            markupValue:   0,
+            sellPrice:     0,
+            paymentStatus: PaymentStatus.pending,
+            approvalStatus: ApprovalStatus.draft,
+            supplierId:    component.supplierId,
+            notes:         component.notesInternal,
+          ),
+          teamId!,
+        );
+        newCostItemId = item.id;
+      } catch (e) {
+        debugPrint('[linkComponent] budget: $e');
+      }
+    }
+
+    // 2. Find / create trip day (needed for itinerary + run sheet) ────────────
+    if (choice.linkItinerary || choice.linkRunSheet) {
+      try {
+        final days = await repos.itinerary.fetchDaysForTrip(component.tripId);
+        TripDay? day;
+
+        if (component.startDate != null) {
+          final d = component.startDate!;
+          for (final td in days) {
+            if (td.date != null &&
+                td.date!.year  == d.year &&
+                td.date!.month == d.month &&
+                td.date!.day   == d.day) {
+              day = td;
+              break;
+            }
+          }
+          day ??= await repos.itinerary.createDay(
+            TripDay(
+              id:        '',
+              tripId:    component.tripId,
+              dayNumber: days.length + 1,
+              date:      component.startDate,
+              city:      component.locationName ?? '',
+            ),
+            teamId!,
+          );
+        } else if (days.isNotEmpty) {
+          day = days.first;
+        }
+
+        dayId = day?.id;
+
+        // 3. Itinerary item ───────────────────────────────────────────────────
+        if (choice.linkItinerary && dayId != null && dayId.isNotEmpty) {
+          final itinItem = await repos.itinerary.createItem(
+            ItineraryItem(
+              id:             '',
+              tripDayId:      dayId,
+              type:           _toItemType(component.componentType),
+              title:          component.title,
+              startTime:      _parseTimeStr(component.startTime),
+              endTime:        _parseTimeStr(component.endTime),
+              timeBlock:      TimeBlock.morning,
+              location:       component.locationName,
+              supplierId:     component.supplierId,
+              status:         ItemStatus.confirmed,
+              approvalStatus: ApprovalStatus.approved,
+              notes:          component.notesClient,
+            ),
+            teamId!,
+          );
+          newItineraryItemId = itinItem.id;
+        }
+      } catch (e) {
+        debugPrint('[linkComponent] itinerary: $e');
+      }
+    }
+
+    // 4. Run Sheet ────────────────────────────────────────────────────────────
+    if (choice.linkRunSheet && dayId != null && dayId.isNotEmpty) {
+      try {
+        newRunSheetItemId = await repos.runSheets.insert(
+          RunSheetRow(
+            id:              '',
+            tripId:          component.tripId,
+            dayId:           dayId,
+            itineraryItemId: newItineraryItemId,
+            opsNotes:        component.notesInternal,
+            sortOrder:       0,
+          ),
+          teamId!,
+        );
+      } catch (e) {
+        debugPrint('[linkComponent] run sheet: $e');
+      }
+    }
+
+    // 5. Back-patch linked IDs onto the component ─────────────────────────────
+    if (newCostItemId != null ||
+        newItineraryItemId != null ||
+        newRunSheetItemId != null) {
+      await updateComponent(component.copyWith(
+        costItemId:      newCostItemId      ?? component.costItemId,
+        itineraryItemId: newItineraryItemId ?? component.itineraryItemId,
+        runSheetItemId:  newRunSheetItemId  ?? component.runSheetItemId,
+      ));
+    }
+  }
+
+  // ── Type mappers ───────────────────────────────────────────────────────────
+
+  static CostCategory _toCostCategory(ComponentType t) {
+    switch (t) {
+      case ComponentType.accommodation:      return CostCategory.accommodation;
+      case ComponentType.dining:             return CostCategory.dining;
+      case ComponentType.transport:          return CostCategory.transport;
+      case ComponentType.experience:         return CostCategory.experience;
+      case ComponentType.guide:              return CostCategory.guide;
+      case ComponentType.flight:             return CostCategory.flights;
+      case ComponentType.train:              return CostCategory.transport;
+      case ComponentType.yacht:              return CostCategory.transport;
+      case ComponentType.specialArrangement: return CostCategory.other;
+      case ComponentType.other:              return CostCategory.other;
+    }
+  }
+
+  static ItemType _toItemType(ComponentType t) {
+    switch (t) {
+      case ComponentType.accommodation:      return ItemType.hotel;
+      case ComponentType.dining:             return ItemType.dining;
+      case ComponentType.transport:          return ItemType.transport;
+      case ComponentType.flight:             return ItemType.flight;
+      case ComponentType.train:              return ItemType.transport;
+      case ComponentType.yacht:              return ItemType.transport;
+      case ComponentType.guide:              return ItemType.experience;
+      case ComponentType.experience:         return ItemType.experience;
+      case ComponentType.specialArrangement: return ItemType.experience;
+      case ComponentType.other:              return ItemType.note;
+    }
+  }
+
+  static TimeOfDay? _parseTimeStr(String? t) {
+    if (t == null) return null;
+    final parts = t.split(':');
+    if (parts.length < 2) return null;
+    return TimeOfDay(
+      hour:   int.tryParse(parts[0]) ?? 0,
+      minute: int.tryParse(parts[1]) ?? 0,
+    );
   }
 
   @override

@@ -143,8 +143,10 @@ class _ComponentFormSheetState extends State<_ComponentFormSheet> {
 
     // Show linking dialog while still in context, then close the sheet
     if (saved != null && needsLinkingPrompt) {
-      await showComponentLinkingDialog(context, component: saved!);
-      // Linking dialog result is informational only — actual linking not yet automated
+      final choice = await showComponentLinkingDialog(context, component: saved);
+      if (choice != null && choice.anySelected) {
+        await provider.linkComponent(saved, choice);
+      }
     }
 
     if (mounted) Navigator.of(context).pop();
@@ -250,7 +252,7 @@ class _ComponentFormSheetState extends State<_ComponentFormSheet> {
                         child: _DateField(
                           label:    'Start Date',
                           value:    _startDate,
-                          onPicked: (d) => setState(() { _startDate = d; if (_endDate == null) _endDate = d; }),
+                          onPicked: (d) => setState(() { _startDate = d; _endDate ??= d; }),
                         ),
                       ),
                       const SizedBox(width: AppSpacing.sm),
