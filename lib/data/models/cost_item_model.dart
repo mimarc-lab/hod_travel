@@ -30,12 +30,14 @@ class CostItem {
   final String? taskId;
   final String? itineraryItemId;
   final String? supplierId;
+  final String? supplierName;
   final String itemName;
   final CostCategory category;
   final String city;
   final DateTime? date;
   final String currency;
   final double netCost;
+  final double depositPaid;
   final MarkupType markupType;
   final double markupValue; // percentage (e.g. 15.0) or fixed amount
   final double sellPrice;
@@ -50,12 +52,14 @@ class CostItem {
     this.taskId,
     this.itineraryItemId,
     this.supplierId,
+    this.supplierName,
     required this.itemName,
     required this.category,
     required this.city,
     this.date,
     required this.currency,
     required this.netCost,
+    this.depositPaid = 0,
     required this.markupType,
     required this.markupValue,
     required this.sellPrice,
@@ -76,6 +80,7 @@ class CostItem {
   }
 
   double get margin => sellPrice - netCost;
+  double get remainingBalance => netCost - depositPaid;
 
   CostItem copyWith({
     String? tripId,
@@ -85,6 +90,8 @@ class CostItem {
     bool clearItineraryItemId = false,
     String? supplierId,
     bool clearSupplierId = false,
+    String? supplierName,
+    bool clearSupplierName = false,
     String? itemName,
     CostCategory? category,
     String? city,
@@ -92,6 +99,7 @@ class CostItem {
     bool clearDate = false,
     String? currency,
     double? netCost,
+    double? depositPaid,
     MarkupType? markupType,
     double? markupValue,
     double? sellPrice,
@@ -110,12 +118,14 @@ class CostItem {
           ? null
           : (itineraryItemId ?? this.itineraryItemId),
       supplierId: clearSupplierId ? null : (supplierId ?? this.supplierId),
+      supplierName: clearSupplierName ? null : (supplierName ?? this.supplierName),
       itemName: itemName ?? this.itemName,
       category: category ?? this.category,
       city: city ?? this.city,
       date: clearDate ? null : (date ?? this.date),
       currency: currency ?? this.currency,
       netCost: netCost ?? this.netCost,
+      depositPaid: depositPaid ?? this.depositPaid,
       markupType: markupType ?? this.markupType,
       markupValue: markupValue ?? this.markupValue,
       sellPrice: sellPrice ?? this.sellPrice,
@@ -138,6 +148,8 @@ class BudgetSummary {
   final double totalSellPrice;
   final double totalMargin;
   final double outstandingAmount; // sell price of unpaid items
+  final double totalDepositPaid;
+  final double totalRemainingBalance;
   final int itemCount;
 
   const BudgetSummary({
@@ -145,34 +157,41 @@ class BudgetSummary {
     required this.totalSellPrice,
     required this.totalMargin,
     required this.outstandingAmount,
+    required this.totalDepositPaid,
+    required this.totalRemainingBalance,
     required this.itemCount,
   });
 
   static BudgetSummary fromItems(List<CostItem> items) {
-    double net = 0, sell = 0, outstanding = 0;
+    double net = 0, sell = 0, outstanding = 0, deposit = 0;
     for (final item in items) {
-      net  += item.netCost;
-      sell += item.sellPrice;
+      net     += item.netCost;
+      sell    += item.sellPrice;
+      deposit += item.depositPaid;
       if (item.paymentStatus != PaymentStatus.paid &&
           item.paymentStatus != PaymentStatus.cancelled) {
         outstanding += item.sellPrice;
       }
     }
     return BudgetSummary(
-      totalNetCost: net,
-      totalSellPrice: sell,
-      totalMargin: sell - net,
-      outstandingAmount: outstanding,
+      totalNetCost:         net,
+      totalSellPrice:       sell,
+      totalMargin:          sell - net,
+      outstandingAmount:    outstanding,
+      totalDepositPaid:     deposit,
+      totalRemainingBalance: net - deposit,
       itemCount: items.length,
     );
   }
 
   static const BudgetSummary empty = BudgetSummary(
-    totalNetCost: 0,
-    totalSellPrice: 0,
-    totalMargin: 0,
-    outstandingAmount: 0,
-    itemCount: 0,
+    totalNetCost:          0,
+    totalSellPrice:        0,
+    totalMargin:           0,
+    outstandingAmount:     0,
+    totalDepositPaid:      0,
+    totalRemainingBalance: 0,
+    itemCount:             0,
   );
 }
 

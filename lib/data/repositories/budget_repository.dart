@@ -25,52 +25,58 @@ abstract class BudgetRepository {
 // Mappers
 // ─────────────────────────────────────────────────────────────────────────────
 
-CostItem _fromRow(Map<String, dynamic> r) => CostItem(
-  id: r['id'] as String,
-  tripId: r['trip_id'] as String,
-  taskId: r['task_id'] as String?,
-  itineraryItemId: r['itinerary_item_id'] as String?,
-  supplierId: r['supplier_id'] as String?,
-  itemName: r['item_name'] as String,
-  category: costCategoryFromDb(r['category'] as String? ?? 'other'),
-  city: r['city'] as String? ?? '',
-  date: r['service_date'] != null
-      ? DateTime.parse(r['service_date'] as String)
-      : null,
-  currency: r['currency'] as String? ?? 'USD',
-  netCost: (r['net_cost'] as num? ?? 0).toDouble(),
-  markupType: r['markup_type'] == 'fixed'
-      ? MarkupType.fixed
-      : MarkupType.percentage,
-  markupValue: (r['markup_value'] as num? ?? 0).toDouble(),
-  sellPrice: (r['sell_price'] as num? ?? 0).toDouble(),
-  paymentStatus: paymentStatusFromDb(r['payment_status'] as String? ?? 'pending'),
-  approvalStatus: approvalStatusFromDb(r['approval_status'] as String? ?? 'draft'),
-  paymentDueDate: r['payment_due_date'] != null
-      ? DateTime.parse(r['payment_due_date'] as String)
-      : null,
-  notes: r['notes'] as String?,
-);
+CostItem _fromRow(Map<String, dynamic> r) {
+  final supplierMap = r['suppliers'] as Map<String, dynamic>?;
+  return CostItem(
+    id:             r['id'] as String,
+    tripId:         r['trip_id'] as String,
+    taskId:         r['task_id'] as String?,
+    itineraryItemId: r['itinerary_item_id'] as String?,
+    supplierId:     r['supplier_id'] as String?,
+    supplierName:   supplierMap?['name'] as String?,
+    itemName:       r['item_name'] as String,
+    category:       costCategoryFromDb(r['category'] as String? ?? 'other'),
+    city:           r['city'] as String? ?? '',
+    date: r['service_date'] != null
+        ? DateTime.parse(r['service_date'] as String)
+        : null,
+    currency:       r['currency'] as String? ?? 'USD',
+    netCost:        (r['net_cost'] as num? ?? 0).toDouble(),
+    depositPaid:    (r['deposit_paid'] as num? ?? 0).toDouble(),
+    markupType:     r['markup_type'] == 'fixed'
+        ? MarkupType.fixed
+        : MarkupType.percentage,
+    markupValue:    (r['markup_value'] as num? ?? 0).toDouble(),
+    sellPrice:      (r['sell_price'] as num? ?? 0).toDouble(),
+    paymentStatus:  paymentStatusFromDb(r['payment_status'] as String? ?? 'pending'),
+    approvalStatus: approvalStatusFromDb(r['approval_status'] as String? ?? 'draft'),
+    paymentDueDate: r['payment_due_date'] != null
+        ? DateTime.parse(r['payment_due_date'] as String)
+        : null,
+    notes: r['notes'] as String?,
+  );
+}
 
 Map<String, dynamic> _toRow(CostItem i, {String? teamId}) => {
-  'team_id': ?teamId,
-  'trip_id': i.tripId,
-  'task_id': i.taskId,
+  'team_id':           ?teamId,
+  'trip_id':           i.tripId,
+  'task_id':           i.taskId,
   'itinerary_item_id': i.itineraryItemId,
-  'supplier_id': i.supplierId,
-  'item_name': i.itemName,
-  'category': i.category.dbValue,
-  'city': i.city,
-  'service_date': i.date?.toIso8601String().substring(0, 10),
-  'currency': i.currency,
-  'net_cost': i.netCost,
-  'markup_type': i.markupType == MarkupType.fixed ? 'fixed' : 'percentage',
-  'markup_value': i.markupValue,
-  'sell_price': i.sellPrice,
-  'payment_status': i.paymentStatus.dbValue,
-  'approval_status': i.approvalStatus.dbValue,
-  'payment_due_date': i.paymentDueDate?.toIso8601String().substring(0, 10),
-  'notes': i.notes,
+  'supplier_id':       i.supplierId,
+  'item_name':         i.itemName,
+  'category':          i.category.dbValue,
+  'city':              i.city,
+  'service_date':      i.date?.toIso8601String().substring(0, 10),
+  'currency':          i.currency,
+  'net_cost':          i.netCost,
+  'deposit_paid':      i.depositPaid,
+  'markup_type':       i.markupType == MarkupType.fixed ? 'fixed' : 'percentage',
+  'markup_value':      i.markupValue,
+  'sell_price':        i.sellPrice,
+  'payment_status':    i.paymentStatus.dbValue,
+  'approval_status':   i.approvalStatus.dbValue,
+  'payment_due_date':  i.paymentDueDate?.toIso8601String().substring(0, 10),
+  'notes':             i.notes,
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -81,11 +87,13 @@ class SupabaseBudgetRepository implements BudgetRepository {
   final SupabaseClient _client;
   SupabaseBudgetRepository(this._client);
 
+  static const _kSelect = '*, suppliers(id, name)';
+
   @override
   Future<List<CostItem>> fetchForTrip(String tripId) async {
     final rows = await _client
         .from('cost_items')
-        .select()
+        .select(_kSelect)
         .eq('trip_id', tripId)
         .order('created_at');
     return (rows as List)
@@ -97,7 +105,7 @@ class SupabaseBudgetRepository implements BudgetRepository {
   Future<List<CostItem>> fetchAll(String teamId) async {
     final rows = await _client
         .from('cost_items')
-        .select()
+        .select(_kSelect)
         .eq('team_id', teamId)
         .order('created_at', ascending: false);
     return (rows as List)
@@ -113,7 +121,7 @@ class SupabaseBudgetRepository implements BudgetRepository {
           ..._toRow(item, teamId: teamId),
           'created_by': _client.auth.currentUser?.id,
         })
-        .select()
+        .select(_kSelect)
         .single();
     return _fromRow(row);
   }
@@ -124,7 +132,7 @@ class SupabaseBudgetRepository implements BudgetRepository {
         .from('cost_items')
         .update(_toRow(item))
         .eq('id', item.id)
-        .select()
+        .select(_kSelect)
         .single();
     return _fromRow(row);
   }

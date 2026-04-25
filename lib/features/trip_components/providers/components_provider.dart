@@ -182,6 +182,7 @@ class ComponentsProvider extends ChangeNotifier {
             date:           component.startDate,
             currency:       'USD',
             netCost:        net,
+            depositPaid:    component.depositPaid ?? 0,
             markupType:     MarkupType.percentage,
             markupValue:    0,
             sellPrice:      net,

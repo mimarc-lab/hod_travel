@@ -120,32 +120,17 @@ class _TripBudgetScreenState extends State<TripBudgetScreen>
                       emptyDescription:
                           'Add your first cost item to start costing this trip.',
                     )
-                  : Column(
-                      children: [
-                        if (Responsive.showSidebar(context))
-                          const BudgetTableHeader(),
-                        Expanded(
-                          child: ListView.builder(
-                            padding: Responsive.isMobile(context)
-                                ? const EdgeInsets.symmetric(
-                                    vertical: AppSpacing.sm)
-                                : EdgeInsets.zero,
-                            itemCount: items.length,
-                            itemBuilder: (context, i) => CostItemRow(
-                              item: items[i],
-                              onTap: () => showCostItemEditor(
-                                context,
-                                provider: _provider,
-                                existing: items[i],
-                                trips: [widget.trip],
-                                suppliers: _suppliers,
-                              ),
-                              onDelete: () =>
-                                  _provider.deleteItem(items[i].id),
-                            ),
-                          ),
-                        ),
-                      ],
+                  : _BudgetTable(
+                      items: items,
+                      isMobile: isMobile,
+                      onTap: (item) => showCostItemEditor(
+                        context,
+                        provider: _provider,
+                        existing: item,
+                        trips: [widget.trip],
+                        suppliers: _suppliers,
+                      ),
+                      onDelete: (item) => _provider.deleteItem(item.id),
                     ),
             ),
           ],
@@ -153,6 +138,83 @@ class _TripBudgetScreenState extends State<TripBudgetScreen>
       },
     );
   }
+}
+
+// ── Budget table with horizontal scroll ──────────────────────────────────────
+
+class _BudgetTable extends StatelessWidget {
+  final List<CostItem> items;
+  final bool isMobile;
+  final void Function(CostItem) onTap;
+  final void Function(CostItem) onDelete;
+
+  const _BudgetTable({
+    required this.items,
+    required this.isMobile,
+    required this.onTap,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (isMobile) {
+      return ListView.builder(
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+        itemCount: items.length,
+        itemBuilder: (context, i) => CostItemRow(
+          item:     items[i],
+          onTap:    () => onTap(items[i]),
+          onDelete: () => onDelete(items[i]),
+        ),
+      );
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final tableWidth = BudgetColumns.totalWidth > constraints.maxWidth
+            ? BudgetColumns.totalWidth
+            : constraints.maxWidth;
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: SizedBox(
+            width: tableWidth,
+            child: CustomScrollView(
+              slivers: [
+                SliverPersistentHeader(
+                  pinned: true,
+                  delegate: _TableHeaderDelegate(),
+                ),
+                SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, i) => CostItemRow(
+                      item:     items[i],
+                      onTap:    () => onTap(items[i]),
+                      onDelete: () => onDelete(items[i]),
+                    ),
+                    childCount: items.length,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _TableHeaderDelegate extends SliverPersistentHeaderDelegate {
+  @override
+  double get minExtent => 36;
+  @override
+  double get maxExtent => 36;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) =>
+      const BudgetTableHeader();
+
+  @override
+  bool shouldRebuild(covariant _TableHeaderDelegate oldDelegate) => false;
 }
 
 // ── Trip budget header ────────────────────────────────────────────────────────
@@ -225,6 +287,22 @@ class _TripBudgetHeader extends StatelessWidget {
             amount: summary.outstandingAmount,
             currency: currency,
             subLabel: '${summary.itemCount} items',
+          )),
+          const _StatDivider(),
+          Expanded(child: _CompactStat(
+            label: 'Deposit Paid',
+            icon: Icons.check_circle_outline_rounded,
+            iconColor: const Color(0xFF5A9E6F),
+            amount: summary.totalDepositPaid,
+            currency: currency,
+          )),
+          const _StatDivider(),
+          Expanded(child: _CompactStat(
+            label: 'Remaining Bal.',
+            icon: Icons.account_balance_outlined,
+            iconColor: const Color(0xFF7C6FAB),
+            amount: summary.totalRemainingBalance,
+            currency: currency,
           )),
           const SizedBox(width: AppSpacing.base),
           BudgetAddButton(onTap: onAdd),

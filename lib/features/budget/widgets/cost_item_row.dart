@@ -10,13 +10,22 @@ import 'cost_status_chip.dart';
 
 /// Column widths for the desktop budget table.
 abstract class BudgetColumns {
-  static const double name       = 240.0;
-  static const double category   = 130.0;
-  static const double city       = 110.0;
-  static const double net        = 110.0;
-  static const double sell       = 110.0;
-  static const double status     = 110.0;
-  static const double dueDate    = 100.0;
+  static const double name       = 200.0;
+  static const double supplier   = 160.0;
+  static const double category   = 120.0;
+  static const double city       =  90.0;
+  static const double net        = 100.0;
+  static const double deposit    = 110.0;
+  static const double remaining  = 120.0;
+  static const double sell       = 100.0;
+  static const double status     = 100.0;
+  static const double dueDate    =  90.0;
+  static const double actions    =  32.0;
+
+  static const double totalWidth =
+      name + supplier + category + city + net + deposit + remaining +
+      sell + status + dueDate + actions +
+      AppSpacing.pagePaddingH * 2;
 }
 
 /// Header row for desktop budget table.
@@ -31,14 +40,17 @@ class BudgetTableHeader extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.pagePaddingH),
       child: Row(
         children: [
-          _H('ITEM NAME',     BudgetColumns.name),
-          _H('CATEGORY',      BudgetColumns.category),
-          _H('CITY',          BudgetColumns.city),
-          _H('NET COST',      BudgetColumns.net),
-          _H('SELL PRICE',    BudgetColumns.sell),
-          _H('PAYMENT',       BudgetColumns.status),
-          _H('DUE DATE',      BudgetColumns.dueDate),
-          const SizedBox(width: 32), // actions column
+          _H('ITEM NAME',       BudgetColumns.name),
+          _H('SUPPLIER',        BudgetColumns.supplier),
+          _H('CATEGORY',        BudgetColumns.category),
+          _H('CITY',            BudgetColumns.city),
+          _H('NET COST',        BudgetColumns.net),
+          _H('DEPOSIT PAID',    BudgetColumns.deposit),
+          _H('REMAINING BAL.',  BudgetColumns.remaining),
+          _H('SELL PRICE',      BudgetColumns.sell),
+          _H('PAYMENT',         BudgetColumns.status),
+          _H('DUE DATE',        BudgetColumns.dueDate),
+          const SizedBox(width: BudgetColumns.actions),
         ],
       ),
     );
@@ -127,6 +139,14 @@ class _DesktopRow extends StatelessWidget {
                 ),
               ),
 
+                  // Supplier
+              SizedBox(
+                width: BudgetColumns.supplier,
+                child: Text(item.supplierName ?? '—',
+                    style: AppTextStyles.tableCell,
+                    overflow: TextOverflow.ellipsis),
+              ),
+
               // Category
               SizedBox(
                 width: BudgetColumns.category,
@@ -147,6 +167,29 @@ class _DesktopRow extends StatelessWidget {
                 child: CurrencyAmount(
                     amount: item.netCost, currency: item.currency,
                     style: AppTextStyles.tableCell),
+              ),
+
+              // Deposit paid
+              SizedBox(
+                width: BudgetColumns.deposit,
+                child: CurrencyAmount(
+                    amount: item.depositPaid, currency: item.currency,
+                    style: AppTextStyles.tableCell.copyWith(
+                        color: item.depositPaid > 0
+                            ? const Color(0xFF5A9E6F)
+                            : AppColors.textMuted)),
+              ),
+
+              // Remaining balance
+              SizedBox(
+                width: BudgetColumns.remaining,
+                child: CurrencyAmount(
+                    amount: item.remainingBalance, currency: item.currency,
+                    style: AppTextStyles.tableCell.copyWith(
+                        fontWeight: FontWeight.w500,
+                        color: item.remainingBalance > 0
+                            ? const Color(0xFFD4845A)
+                            : const Color(0xFF5A9E6F))),
               ),
 
               // Sell price
@@ -175,7 +218,7 @@ class _DesktopRow extends StatelessWidget {
 
               // Delete action
               SizedBox(
-                width: 32,
+                width: BudgetColumns.actions,
                 child: GestureDetector(
                   onTap: onDelete,
                   child: const Icon(Icons.close_rounded,
@@ -266,25 +309,37 @@ class _MobileCard extends StatelessWidget {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        Text('Deposit', style: AppTextStyles.labelSmall
+                            .copyWith(color: AppColors.textMuted)),
+                        CurrencyAmount(
+                            amount: item.depositPaid, currency: item.currency,
+                            style: AppTextStyles.tableCell.copyWith(
+                                color: const Color(0xFF5A9E6F))),
+                      ],
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Remaining', style: AppTextStyles.labelSmall
+                            .copyWith(color: AppColors.textMuted)),
+                        CurrencyAmount(
+                            amount: item.remainingBalance, currency: item.currency,
+                            style: AppTextStyles.tableCell.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: item.remainingBalance > 0
+                                    ? const Color(0xFFD4845A)
+                                    : const Color(0xFF5A9E6F))),
+                      ],
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                         Text('Sell', style: AppTextStyles.labelSmall
                             .copyWith(color: AppColors.textMuted)),
                         CurrencyAmount(
                             amount: item.sellPrice, currency: item.currency,
                             style: AppTextStyles.tableCell
                                 .copyWith(fontWeight: FontWeight.w600)),
-                      ],
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Margin', style: AppTextStyles.labelSmall
-                            .copyWith(color: AppColors.textMuted)),
-                        CurrencyAmount(
-                            amount: item.margin, currency: item.currency,
-                            style: AppTextStyles.tableCell.copyWith(
-                                color: item.margin >= 0
-                                    ? const Color(0xFF5A9E6F)
-                                    : const Color(0xFFD4845A))),
                       ],
                     ),
                   ],
