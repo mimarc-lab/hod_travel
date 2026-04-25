@@ -3,12 +3,14 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/supabase/app_db.dart';
+import '../../../core/utils/responsive.dart';
 import '../../../data/models/trip_component_model.dart';
 import '../../../data/models/trip_model.dart';
 import '../providers/components_provider.dart';
 import '../widgets/component_card.dart';
 import '../widgets/component_filter_bar.dart';
 import '../widgets/component_form_sheet.dart';
+import '../widgets/component_table_row.dart';
 
 class TripComponentsScreen extends StatefulWidget {
   final Trip trip;
@@ -125,15 +127,11 @@ class _TripComponentsScreenState extends State<TripComponentsScreen>
 
               return RefreshIndicator(
                 onRefresh: _provider.refresh,
-                child: ListView.builder(
-                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-                  itemCount: items.length,
-                  itemBuilder: (context, i) => ComponentCard(
-                    key:      ValueKey(items[i].id),
-                    component: items[i],
-                    provider:  _provider,
-                    onEdit:    () => _openEditSheet(items[i]),
-                  ),
+                child: _ComponentTable(
+                  items:     items,
+                  isMobile:  Responsive.isMobile(context),
+                  provider:  _provider,
+                  onEdit:    _openEditSheet,
                 ),
               );
             },
@@ -197,6 +195,86 @@ class _ComponentsToolbar extends StatelessWidget {
       ),
     );
   }
+}
+
+// ── Component table (desktop) / card list (mobile) ───────────────────────────
+
+class _ComponentTable extends StatelessWidget {
+  final List<TripComponent> items;
+  final bool isMobile;
+  final ComponentsProvider provider;
+  final void Function(TripComponent) onEdit;
+
+  const _ComponentTable({
+    required this.items,
+    required this.isMobile,
+    required this.provider,
+    required this.onEdit,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (isMobile) {
+      return ListView.builder(
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+        itemCount: items.length,
+        itemBuilder: (context, i) => ComponentCard(
+          key:       ValueKey(items[i].id),
+          component: items[i],
+          provider:  provider,
+          onEdit:    () => onEdit(items[i]),
+        ),
+      );
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final tableWidth = ComponentColumns.totalWidth > constraints.maxWidth
+            ? ComponentColumns.totalWidth
+            : constraints.maxWidth;
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: SizedBox(
+            width: tableWidth,
+            child: CustomScrollView(
+              slivers: [
+                SliverPersistentHeader(
+                  pinned: true,
+                  delegate: _ComponentHeaderDelegate(),
+                ),
+                SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, i) => ComponentTableRow(
+                      key:       ValueKey(items[i].id),
+                      component: items[i],
+                      provider:  provider,
+                      onTap:     () => onEdit(items[i]),
+                      onEdit:    () => onEdit(items[i]),
+                    ),
+                    childCount: items.length,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _ComponentHeaderDelegate extends SliverPersistentHeaderDelegate {
+  @override
+  double get minExtent => 36;
+  @override
+  double get maxExtent => 36;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) =>
+      const ComponentTableHeader();
+
+  @override
+  bool shouldRebuild(covariant _ComponentHeaderDelegate oldDelegate) => false;
 }
 
 // ── Empty state ───────────────────────────────────────────────────────────────
