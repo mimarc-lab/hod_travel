@@ -99,6 +99,7 @@ class _CostItemEditorFormState extends State<_CostItemEditorForm> {
   late CostCategory _category;
   late MarkupType _markupType;
   late PaymentStatus _paymentStatus;
+  Supplier? _selectedSupplier;
   DateTime? _date;
   DateTime? _paymentDueDate;
 
@@ -108,6 +109,7 @@ class _CostItemEditorFormState extends State<_CostItemEditorForm> {
   late final TextEditingController _netCtrl;
   late final TextEditingController _markupCtrl;
   late final TextEditingController _sellCtrl;
+  late final TextEditingController _depositCtrl;
   late final TextEditingController _notesCtrl;
   late final FocusNode _nameFocus;
   bool _nameFocused = false;
@@ -117,6 +119,13 @@ class _CostItemEditorFormState extends State<_CostItemEditorForm> {
     final net    = double.tryParse(_netCtrl.text) ?? 0;
     final markup = double.tryParse(_markupCtrl.text) ?? 0;
     return CostItem.deriveSellPrice(net, _markupType, markup);
+  }
+
+  // Remaining balance = net cost − deposit paid
+  double get _remainingBalance {
+    final net     = double.tryParse(_netCtrl.text) ?? 0;
+    final deposit = double.tryParse(_depositCtrl.text) ?? 0;
+    return net - deposit;
   }
 
   bool get _isEditing => widget.existing != null;
@@ -160,6 +169,12 @@ class _CostItemEditorFormState extends State<_CostItemEditorForm> {
     _paymentStatus = widget.existing?.paymentStatus ?? PaymentStatus.pending;
     _date          = widget.existing?.date;
     _paymentDueDate = widget.existing?.paymentDueDate;
+    final existingSupplierId = widget.existing?.supplierId;
+    if (existingSupplierId != null) {
+      _selectedSupplier = widget.suppliers
+          .where((s) => s.id == existingSupplierId)
+          .firstOrNull;
+    }
 
     _nameCtrl     = TextEditingController(text: widget.existing?.itemName ?? '');
     _cityCtrl     = TextEditingController(text: widget.existing?.city ?? '');
@@ -177,6 +192,10 @@ class _CostItemEditorFormState extends State<_CostItemEditorForm> {
         text: widget.existing != null
             ? widget.existing!.sellPrice.toStringAsFixed(2)
             : '');
+    _depositCtrl  = TextEditingController(
+        text: widget.existing != null && widget.existing!.depositPaid > 0
+            ? widget.existing!.depositPaid.toStringAsFixed(2)
+            : '');
     _notesCtrl    = TextEditingController(text: widget.existing?.notes ?? '');
 
     _nameFocus = FocusNode();
@@ -185,6 +204,9 @@ class _CostItemEditorFormState extends State<_CostItemEditorForm> {
     // When net/markup changes, re-derive sell price
     _netCtrl.addListener(_refreshSell);
     _markupCtrl.addListener(_refreshSell);
+    // When deposit or net changes, rebuild to refresh remaining balance display
+    _depositCtrl.addListener(() => setState(() {}));
+    _netCtrl.addListener(() => setState(() {}));
     // When name changes, refresh suggestions
     _nameCtrl.addListener(() => setState(() {}));
   }
@@ -212,7 +234,7 @@ class _CostItemEditorFormState extends State<_CostItemEditorForm> {
   @override
   void dispose() {
     for (final c in [_nameCtrl, _cityCtrl, _currencyCtrl,
-                     _netCtrl, _markupCtrl, _sellCtrl, _notesCtrl]) {
+                     _netCtrl, _markupCtrl, _sellCtrl, _depositCtrl, _notesCtrl]) {
       c.dispose();
     }
     _nameFocus.dispose();
@@ -225,44 +247,50 @@ class _CostItemEditorFormState extends State<_CostItemEditorForm> {
     final city = _cityCtrl.text.trim();
     if (city.isEmpty) return;
 
-    final net    = double.tryParse(_netCtrl.text) ?? 0;
-    final markup = double.tryParse(_markupCtrl.text) ?? 0;
-    final sell   = double.tryParse(_sellCtrl.text) ?? _derivedSell;
-    final cur    = _currencyCtrl.text.trim().isEmpty ? 'USD' : _currencyCtrl.text.trim();
+    final net     = double.tryParse(_netCtrl.text) ?? 0;
+    final markup  = double.tryParse(_markupCtrl.text) ?? 0;
+    final sell    = double.tryParse(_sellCtrl.text) ?? _derivedSell;
+    final deposit = double.tryParse(_depositCtrl.text) ?? 0;
+    final cur     = _currencyCtrl.text.trim().isEmpty ? 'USD' : _currencyCtrl.text.trim();
 
     if (_isEditing) {
       widget.provider.updateItem(widget.existing!.copyWith(
-        tripId: _tripId,
-        itemName: name,
-        category: _category,
-        city: city,
-        currency: cur,
-        netCost: net,
-        markupType: _markupType,
+        tripId:      _tripId,
+        supplierId:  _selectedSupplier?.id,
+        clearSupplierId: _selectedSupplier == null,
+        itemName:    name,
+        category:    _category,
+        city:        city,
+        currency:    cur,
+        netCost:     net,
+        depositPaid: deposit,
+        markupType:  _markupType,
         markupValue: markup,
-        sellPrice: sell,
-        paymentStatus: _paymentStatus,
-        date: _date,
-        clearDate: _date == null,
+        sellPrice:   sell,
+        paymentStatus:  _paymentStatus,
+        date:           _date,
+        clearDate:      _date == null,
         paymentDueDate: _paymentDueDate,
         clearPaymentDueDate: _paymentDueDate == null,
-        notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
+        notes:     _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
         clearNotes: _notesCtrl.text.trim().isEmpty,
       ));
     } else {
       widget.provider.addItem(CostItem(
-        id: '',
-        tripId: _tripId,
-        itemName: name,
-        category: _category,
-        city: city,
-        currency: cur,
-        netCost: net,
-        markupType: _markupType,
+        id:          '',
+        tripId:      _tripId,
+        supplierId:  _selectedSupplier?.id,
+        itemName:    name,
+        category:    _category,
+        city:        city,
+        currency:    cur,
+        netCost:     net,
+        depositPaid: deposit,
+        markupType:  _markupType,
         markupValue: markup,
-        sellPrice: sell,
-        paymentStatus: _paymentStatus,
-        date: _date,
+        sellPrice:   sell,
+        paymentStatus:  _paymentStatus,
+        date:           _date,
         paymentDueDate: _paymentDueDate,
         notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
       ));
@@ -306,6 +334,18 @@ class _CostItemEditorFormState extends State<_CostItemEditorForm> {
                           },
                         ),
                     ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.base),
+
+                // Supplier
+                _Field(
+                  label: 'SUPPLIER',
+                  child: _SupplierPickerField(
+                    selected:  _selectedSupplier,
+                    suppliers: widget.suppliers,
+                    category:  _category,
+                    onChanged: (s) => setState(() => _selectedSupplier = s),
                   ),
                 ),
                 const SizedBox(height: AppSpacing.base),
@@ -409,6 +449,26 @@ class _CostItemEditorFormState extends State<_CostItemEditorForm> {
                         .copyWith(color: AppColors.textMuted),
                   ),
                 ),
+                const SizedBox(height: AppSpacing.base),
+
+                // Deposit paid + remaining balance
+                Row(children: [
+                  Expanded(child: _Field(
+                    label: 'DEPOSIT PAID',
+                    child: _text(_depositCtrl, '0.00',
+                        keyboardType: TextInputType.number),
+                  )),
+                  const SizedBox(width: AppSpacing.base),
+                  Expanded(child: _Field(
+                    label: 'REMAINING BALANCE',
+                    child: _ReadOnlyAmount(
+                      amount:   _remainingBalance,
+                      currency: _currencyCtrl.text.trim().isEmpty
+                          ? 'USD'
+                          : _currencyCtrl.text.trim(),
+                    ),
+                  )),
+                ]),
                 const SizedBox(height: AppSpacing.base),
 
                 // Payment status
@@ -756,6 +816,340 @@ class _StyledDropdown<T> extends StatelessWidget {
                   ))
               .toList(),
         ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Supplier picker
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _SupplierPickerField extends StatelessWidget {
+  final Supplier? selected;
+  final List<Supplier> suppliers;
+  final CostCategory category;
+  final ValueChanged<Supplier?> onChanged;
+
+  const _SupplierPickerField({
+    required this.selected,
+    required this.suppliers,
+    required this.category,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () async {
+        final result = await showModalBottomSheet<Supplier?>(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: AppColors.surface,
+          shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+          builder: (_) => _SupplierSearchSheet(
+            suppliers: suppliers,
+            category:  category,
+            selected:  selected,
+          ),
+        );
+        // result == null means the sheet was dismissed without a selection.
+        // result == Supplier means a supplier was picked.
+        // The sheet returns a sentinel _kClearSupplier to signal "clear".
+        if (result == _kClearSupplier) {
+          onChanged(null);
+        } else if (result != null) {
+          onChanged(result);
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.sm, vertical: 10),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceAlt,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(
+          children: [
+            if (selected != null) ...[
+              Container(
+                width: 20,
+                height: 20,
+                decoration: BoxDecoration(
+                  color: selected!.category.color.withAlpha(25),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Icon(selected!.category.icon,
+                    size: 11, color: selected!.category.color),
+              ),
+              const SizedBox(width: AppSpacing.xs),
+            ],
+            Expanded(
+              child: Text(
+                selected?.name ?? 'Select supplier (optional)',
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: selected != null
+                      ? AppColors.textPrimary
+                      : AppColors.textMuted,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (selected != null)
+              GestureDetector(
+                onTap: () => onChanged(null),
+                child: const Icon(Icons.close_rounded,
+                    size: 14, color: AppColors.textMuted),
+              )
+            else
+              const Icon(Icons.search_rounded,
+                  size: 14, color: AppColors.textMuted),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Sentinel object used to signal "clear selection" from the search sheet.
+final _kClearSupplier = Supplier(
+  id: '__clear__', name: '', category: SupplierCategory.other,
+  city: '', country: '',
+);
+
+class _SupplierSearchSheet extends StatefulWidget {
+  final List<Supplier> suppliers;
+  final CostCategory category;
+  final Supplier? selected;
+
+  const _SupplierSearchSheet({
+    required this.suppliers,
+    required this.category,
+    required this.selected,
+  });
+
+  @override
+  State<_SupplierSearchSheet> createState() => _SupplierSearchSheetState();
+}
+
+class _SupplierSearchSheetState extends State<_SupplierSearchSheet> {
+  late final TextEditingController _searchCtrl;
+  late List<Supplier> _filtered;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchCtrl = TextEditingController();
+    _filtered   = _buildFiltered('');
+    _searchCtrl.addListener(() {
+      setState(() => _filtered = _buildFiltered(_searchCtrl.text));
+    });
+  }
+
+  List<Supplier> _buildFiltered(String query) {
+    final q = query.toLowerCase().trim();
+    return widget.suppliers
+        .where((s) => q.isEmpty ||
+            s.name.toLowerCase().contains(q) ||
+            s.city.toLowerCase().contains(q))
+        .toList()
+      ..sort((a, b) {
+        // Preferred first, then alphabetical
+        if (a.preferred != b.preferred) return a.preferred ? -1 : 1;
+        return a.name.compareTo(b.name);
+      });
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+          bottom: MediaQuery.viewInsetsOf(context).bottom),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Handle
+          const SizedBox(height: AppSpacing.sm),
+          Container(
+            width: 36, height: 4,
+            decoration: BoxDecoration(
+              color: AppColors.border,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+
+          // Header
+          Padding(
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.base, vertical: AppSpacing.xs),
+            child: Row(
+              children: [
+                Text('Select Supplier', style: AppTextStyles.heading3),
+                const Spacer(),
+                if (widget.selected != null)
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, _kClearSupplier),
+                    child: const Text('Clear'),
+                  ),
+              ],
+            ),
+          ),
+
+          // Search
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
+            child: TextField(
+              controller: _searchCtrl,
+              autofocus: true,
+              style: AppTextStyles.bodySmall.copyWith(color: AppColors.textPrimary),
+              decoration: InputDecoration(
+                hintText:    'Search suppliers…',
+                hintStyle:   AppTextStyles.bodySmall,
+                prefixIcon:  const Icon(Icons.search_rounded,
+                    size: 16, color: AppColors.textMuted),
+                filled:      true,
+                fillColor:   AppColors.surfaceAlt,
+                isDense:     true,
+                contentPadding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm, vertical: AppSpacing.sm),
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: AppColors.border)),
+                enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: AppColors.border)),
+                focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(
+                        color: AppColors.accent, width: 1.5)),
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+
+          // List
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 320),
+            child: _filtered.isEmpty
+                ? Padding(
+                    padding: const EdgeInsets.all(AppSpacing.xl),
+                    child: Text('No suppliers found',
+                        style: AppTextStyles.bodySmall
+                            .copyWith(color: AppColors.textMuted)),
+                  )
+                : ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: _filtered.length,
+                    itemBuilder: (ctx, i) {
+                      final s        = _filtered[i];
+                      final isSelected = s.id == widget.selected?.id;
+                      return InkWell(
+                        onTap: () => Navigator.pop(context, s),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.base,
+                              vertical: AppSpacing.sm),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? AppColors.accentFaint
+                                : Colors.transparent,
+                            border: const Border(
+                                bottom: BorderSide(color: AppColors.divider)),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 28, height: 28,
+                                decoration: BoxDecoration(
+                                  color: s.category.color.withAlpha(25),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Icon(s.category.icon,
+                                    size: 14, color: s.category.color),
+                              ),
+                              const SizedBox(width: AppSpacing.sm),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(s.name,
+                                        style: AppTextStyles.bodySmall.copyWith(
+                                          color: AppColors.textPrimary,
+                                          fontWeight: isSelected
+                                              ? FontWeight.w600
+                                              : FontWeight.w400,
+                                        )),
+                                    if (s.city.isNotEmpty)
+                                      Text(s.city,
+                                          style: AppTextStyles.labelSmall
+                                              .copyWith(
+                                                  color: AppColors.textMuted)),
+                                  ],
+                                ),
+                              ),
+                              if (s.preferred)
+                                const Icon(Icons.star_rounded,
+                                    size: 13, color: Color(0xFFC9A96E)),
+                              if (isSelected)
+                                const Icon(Icons.check_rounded,
+                                    size: 14, color: AppColors.accent),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+          const SizedBox(height: AppSpacing.base),
+        ],
+      ),
+    );
+  }
+}
+
+class _ReadOnlyAmount extends StatelessWidget {
+  final double amount;
+  final String currency;
+  const _ReadOnlyAmount({required this.amount, required this.currency});
+
+  @override
+  Widget build(BuildContext context) {
+    final isOwed  = amount > 0.005;
+    final color   = isOwed ? const Color(0xFFD4845A) : const Color(0xFF5A9E6F);
+    final display = NumberFormat('#,##0.00').format(amount.abs());
+    return Container(
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.sm, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceAlt,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              '$currency $display',
+              style: AppTextStyles.bodySmall.copyWith(
+                color: color,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          Text(
+            isOwed ? 'owed' : 'settled',
+            style: AppTextStyles.labelSmall.copyWith(color: color),
+          ),
+        ],
       ),
     );
   }
