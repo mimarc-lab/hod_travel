@@ -325,9 +325,16 @@ class _ComponentFormSheetState extends State<_ComponentFormSheet> {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     setState(() => _saving = true);
 
-    final prevStatus      = widget.existing?.status;
-    final statusChanged   = prevStatus != _status;
-    final needsLinking    = statusChanged && _status.requiresLinkingPrompt;
+    final prevStatus    = widget.existing?.status;
+    final statusChanged = prevStatus != _status;
+    // Only prompt for linking when no links exist yet — prevents duplicate
+    // budget/itinerary records when editing an already-linked component.
+    final alreadyLinked = widget.existing?.costItemId != null ||
+                          widget.existing?.itineraryItemId != null ||
+                          widget.existing?.runSheetItemId  != null;
+    final needsLinking  = !alreadyLinked &&
+                          statusChanged &&
+                          _status.requiresLinkingPrompt;
 
     final component = TripComponent(
       id:            widget.existing?.id ?? '',
