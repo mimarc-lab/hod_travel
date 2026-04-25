@@ -73,24 +73,26 @@ ItineraryItem _itemFromRow(Map<String, dynamic> r) {
     );
   }
 
+  final supplierMap = r['suppliers'] as Map<String, dynamic>?;
   return ItineraryItem(
-    id: r['id'] as String,
-    tripDayId: r['trip_day_id'] as String,
-    teamId: r['team_id'] as String?,
-    type: ItemTypeLabel.fromDb(r['type'] as String? ?? 'note'),
-    title: r['title'] as String,
-    description: r['description'] as String?,
-    startTime: parseTime(r['start_time']),
-    endTime: parseTime(r['end_time']),
-    timeBlock: TimeBlockLabel.fromDb(r['time_block'] as String? ?? 'morning'),
-    location: r['location'] as String?,
-    supplierId: r['supplier_id'] as String?,
-    status: ItemStatusLabel.fromDb(r['status'] as String? ?? 'draft'),
+    id:           r['id'] as String,
+    tripDayId:    r['trip_day_id'] as String,
+    teamId:       r['team_id'] as String?,
+    type:         ItemTypeLabel.fromDb(r['type'] as String? ?? 'note'),
+    title:        r['title'] as String,
+    description:  r['description'] as String?,
+    startTime:    parseTime(r['start_time']),
+    endTime:      parseTime(r['end_time']),
+    timeBlock:    TimeBlockLabel.fromDb(r['time_block'] as String? ?? 'morning'),
+    location:     r['location'] as String?,
+    supplierId:   r['supplier_id'] as String?,
+    supplierName: supplierMap?['name'] as String?,
+    status:       ItemStatusLabel.fromDb(r['status'] as String? ?? 'draft'),
     approvalStatus: approvalStatusFromDb(r['approval_status'] as String? ?? 'draft'),
     linkedTaskId: r['linked_task_id'] as String?,
-    notes: r['notes'] as String?,
-    latitude:  (r['latitude']  as num?)?.toDouble(),
-    longitude: (r['longitude'] as num?)?.toDouble(),
+    notes:        r['notes'] as String?,
+    latitude:     (r['latitude']  as num?)?.toDouble(),
+    longitude:    (r['longitude'] as num?)?.toDouble(),
   );
 }
 
@@ -152,7 +154,7 @@ class SupabaseItineraryRepository implements ItineraryRepository {
     final dayIds = days.map((d) => d.id).toList();
     final rows = await _client
         .from('itinerary_items')
-        .select()
+        .select('*, suppliers(id, name)')
         .inFilter('trip_day_id', dayIds)
         .order('sort_order');
 
@@ -185,6 +187,8 @@ class SupabaseItineraryRepository implements ItineraryRepository {
     return _dayFromRow(row);
   }
 
+  static const _kItemSelect = '*, suppliers(id, name)';
+
   @override
   Future<ItineraryItem> createItem(ItineraryItem item, String teamId) async {
     final row = await _client
@@ -193,7 +197,7 @@ class SupabaseItineraryRepository implements ItineraryRepository {
           ..._itemToRow(item, teamId: teamId),
           'created_by': _client.auth.currentUser?.id,
         })
-        .select()
+        .select(_kItemSelect)
         .single();
     return _itemFromRow(row);
   }
@@ -204,7 +208,7 @@ class SupabaseItineraryRepository implements ItineraryRepository {
         .from('itinerary_items')
         .update(_itemToRow(item))
         .eq('id', item.id)
-        .select()
+        .select(_kItemSelect)
         .single();
     return _itemFromRow(row);
   }

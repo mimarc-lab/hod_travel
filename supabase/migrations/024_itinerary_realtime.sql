@@ -1,7 +1,15 @@
 -- =============================================================================
--- 024_itinerary_realtime.sql
--- Enable realtime for trip_days and itinerary_items (idempotent)
+-- 024_itinerary_realtime.sql  (idempotent — safe to re-run)
+-- Enable realtime for trip_days and itinerary_items.
+--
+-- REPLICA IDENTITY FULL is required so Supabase realtime can include all
+-- column values in WAL events. Without it, filtered subscriptions on
+-- non-primary-key columns (trip_id, team_id) silently drop events.
 -- =============================================================================
+
+-- trip_days ───────────────────────────────────────────────────────────────────
+
+ALTER TABLE trip_days REPLICA IDENTITY FULL;
 
 DO $$
 BEGIN
@@ -15,6 +23,10 @@ BEGIN
   END IF;
 END $$;
 
+-- itinerary_items ─────────────────────────────────────────────────────────────
+
+ALTER TABLE itinerary_items REPLICA IDENTITY FULL;
+
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -26,3 +38,9 @@ BEGIN
     ALTER PUBLICATION supabase_realtime ADD TABLE itinerary_items;
   END IF;
 END $$;
+
+-- Also apply REPLICA IDENTITY FULL to tables added in earlier migrations
+-- so their filtered subscriptions are equally reliable.
+
+ALTER TABLE trip_components REPLICA IDENTITY FULL;
+ALTER TABLE cost_items      REPLICA IDENTITY FULL;
