@@ -30,6 +30,7 @@ abstract class ItineraryRepository {
   /// each row. [items] should be the full ordered list for one trip day so that
   /// sort_order values are unique within the day (UNIQUE constraint on
   /// (trip_day_id, sort_order)).
+  Future<void> deleteDay(String id);
   Future<void> updateSortOrders(List<ItineraryItem> items);
 
   /// Realtime stream — emits a full snapshot whenever trip_days or
@@ -228,6 +229,11 @@ class SupabaseItineraryRepository implements ItineraryRepository {
   @override
   Future<void> deleteItem(String id) async {
     await _client.from('itinerary_items').delete().eq('id', id);
+  }
+
+  @override
+  Future<void> deleteDay(String id) async {
+    await _client.from('trip_days').delete().eq('id', id);
   }
 
   @override

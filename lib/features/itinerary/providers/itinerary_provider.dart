@@ -260,6 +260,27 @@ class ItineraryProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> deleteDay(String dayId) async {
+    if (_repo == null) return;
+    final idx = _days.indexWhere((d) => d.id == dayId);
+    if (idx == -1) return;
+    final removedDay = _days[idx];
+    final removedItems = _itemsByDayId[dayId];
+    _days = [..._days]..removeAt(idx);
+    _itemsByDayId.remove(dayId);
+    _selectedDayIndex = _selectedDayIndex.clamp(0, (_days.length - 1).clamp(0, double.maxFinite.toInt()));
+    notifyListeners();
+    try {
+      await _repo.deleteDay(dayId);
+    } catch (e) {
+      // Rollback
+      _days = [..._days]..insert(idx, removedDay);
+      if (removedItems != null) _itemsByDayId[dayId] = removedItems;
+      _error = e.toString();
+      notifyListeners();
+    }
+  }
+
   Future<void> deleteItem(String dayId, String itemId) async {
     final list = _itemsByDayId[dayId];
     if (list == null) return;

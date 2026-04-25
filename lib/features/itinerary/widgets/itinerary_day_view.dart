@@ -92,7 +92,63 @@ class _DayViewHeader extends StatelessWidget {
           _AddItemButton(
             onTap: () => showItemEditor(context, provider: provider, dayId: day.id),
           ),
+          const SizedBox(width: AppSpacing.xs),
+          _DayMenuButton(day: day, provider: provider),
         ],
+      ),
+    );
+  }
+}
+
+class _DayMenuButton extends StatelessWidget {
+  final TripDay day;
+  final ItineraryProvider provider;
+  const _DayMenuButton({required this.day, required this.provider});
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<String>(
+      onSelected: (value) async {
+        if (value == 'delete') {
+          final confirmed = await showDialog<bool>(
+            context: context,
+            builder: (_) => AlertDialog(
+              title: const Text('Delete day?'),
+              content: Text(
+                'Delete "Day ${day.dayNumber}${day.city.isNotEmpty ? ' — ${day.city}' : ''}"? '
+                'All items in this day will also be deleted.',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  style: FilledButton.styleFrom(backgroundColor: Colors.red),
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text('Delete'),
+                ),
+              ],
+            ),
+          );
+          if (confirmed == true) provider.deleteDay(day.id);
+        }
+      },
+      itemBuilder: (_) => [
+        const PopupMenuItem(
+          value: 'delete',
+          child: Text('Delete Day', style: TextStyle(color: Colors.red)),
+        ),
+      ],
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceAlt,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: const Icon(Icons.more_horiz_rounded,
+            size: 16, color: AppColors.textSecondary),
       ),
     );
   }

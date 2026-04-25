@@ -19,6 +19,7 @@ import '../providers/board_provider.dart';
 import '../../../features/intelligence/widgets/trip_intelligence_panel.dart';
 import '../../../features/itinerary/providers/itinerary_provider.dart';
 import '../../../features/trip_components/screens/trip_components_screen.dart';
+import '../../../features/health/screens/trip_health_screen.dart';
 import '../../../features/trips/providers/trip_provider.dart';
 import '../../../features/trips/screens/edit_trip_screen.dart';
 import '../widgets/board_group.dart';
@@ -51,7 +52,7 @@ class _TripBoardScreenState extends State<TripBoardScreen>
   /// Mutable local copy of the trip — updated when the user saves edits.
   late Trip _currentTrip;
 
-  static const _tabs = ['Board', 'Timeline', 'Map', 'Itinerary', 'Components', 'Budget', 'Intelligence', 'Client View'];
+  static const _tabs = ['Board', 'Timeline', 'Map', 'Itinerary', 'Components', 'Budget', 'Intelligence', 'Client View', 'Health'];
 
   @override
   void initState() {
@@ -257,6 +258,7 @@ class _TripBoardScreenState extends State<TripBoardScreen>
                         itineraryProvider: _itineraryProvider,
                       ),
                       ClientItineraryScreen(trip: widget.trip),
+                      TripHealthScreen(trip: widget.trip),
                     ],
                   ),
                 ),
