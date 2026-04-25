@@ -21,6 +21,7 @@ abstract class ItineraryRepository {
   Future<TripDay> createDay(TripDay day, String teamId);
   /// Upsert an existing day by its known UUID (for edits).
   Future<TripDay> upsertDay(TripDay day, String teamId);
+  Future<ItineraryItem?> fetchItemById(String id);
   Future<ItineraryItem> createItem(ItineraryItem item, String teamId);
   Future<ItineraryItem> updateItem(ItineraryItem item);
   Future<void> deleteItem(String id);
@@ -188,6 +189,17 @@ class SupabaseItineraryRepository implements ItineraryRepository {
   }
 
   static const _kItemSelect = '*, suppliers(id, name)';
+
+  @override
+  Future<ItineraryItem?> fetchItemById(String id) async {
+    final row = await _client
+        .from('itinerary_items')
+        .select(_kItemSelect)
+        .eq('id', id)
+        .maybeSingle();
+    if (row == null) return null;
+    return _itemFromRow(row);
+  }
 
   @override
   Future<ItineraryItem> createItem(ItineraryItem item, String teamId) async {

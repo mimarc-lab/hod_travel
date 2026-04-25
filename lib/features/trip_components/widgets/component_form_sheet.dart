@@ -381,6 +381,10 @@ class _ComponentFormSheetState extends State<_ComponentFormSheet> {
     TripComponent? saved;
     if (_isEditing) {
       saved = await widget.provider.updateComponent(component);
+      // Keep linked budget/itinerary records in sync with the updated fields.
+      if (saved != null) {
+        await widget.provider.syncLinkedRecords(saved);
+      }
     } else {
       saved = await widget.provider.addComponent(component);
     }

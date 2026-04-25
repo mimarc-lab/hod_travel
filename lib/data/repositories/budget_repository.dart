@@ -10,6 +10,7 @@ import '../models/cost_item_model.dart';
 abstract class BudgetRepository {
   Future<List<CostItem>> fetchForTrip(String tripId);
   Future<List<CostItem>> fetchAll(String teamId);
+  Future<CostItem?> fetchById(String id);
   Future<CostItem> create(CostItem item, String teamId);
   Future<CostItem> update(CostItem item);
   Future<void> delete(String id);
@@ -88,6 +89,17 @@ class SupabaseBudgetRepository implements BudgetRepository {
   SupabaseBudgetRepository(this._client);
 
   static const _kSelect = '*, suppliers(id, name)';
+
+  @override
+  Future<CostItem?> fetchById(String id) async {
+    final row = await _client
+        .from('cost_items')
+        .select(_kSelect)
+        .eq('id', id)
+        .maybeSingle();
+    if (row == null) return null;
+    return _fromRow(row);
+  }
 
   @override
   Future<List<CostItem>> fetchForTrip(String tripId) async {

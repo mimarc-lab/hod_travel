@@ -291,6 +291,74 @@ class ComponentsProvider extends ChangeNotifier {
     }
   }
 
+  // ── Sync linked records ────────────────────────────────────────────────────
+
+  /// Pushes updated component fields to any already-linked budget / itinerary
+  /// records. Called after every component edit so the linked records stay
+  /// in sync without the user having to re-link.
+  Future<void> syncLinkedRecords(TripComponent component) async {
+    final repos = AppRepositories.instance;
+    if (repos == null) return;
+
+    // 1. Budget item ──────────────────────────────────────────────────────────
+    if (component.costItemId != null) {
+      try {
+        final existing = await repos.budget.fetchById(component.costItemId!);
+        if (existing != null) {
+          final net  = component.netCost ?? existing.netCost;
+          final sell = CostItem.deriveSellPrice(
+              net, existing.markupType, existing.markupValue);
+          await repos.budget.update(existing.copyWith(
+            itemName:    component.title,
+            netCost:     net,
+            sellPrice:   sell,
+            depositPaid: component.depositPaid ?? existing.depositPaid,
+            city:        component.locationName?.isNotEmpty == true
+                ? component.locationName!
+                : existing.city,
+            date:           component.startDate,
+            clearDate:      component.startDate == null,
+            supplierId:     component.supplierId,
+            clearSupplierId: component.supplierId == null,
+            notes:      component.notesInternal,
+            clearNotes: component.notesInternal == null,
+          ));
+        }
+      } catch (e) {
+        debugPrint('[syncLinkedRecords] budget: $e');
+      }
+    }
+
+    // 2. Itinerary item ───────────────────────────────────────────────────────
+    if (component.itineraryItemId != null) {
+      try {
+        final existing =
+            await repos.itinerary.fetchItemById(component.itineraryItemId!);
+        if (existing != null) {
+          final st = _parseTimeStr(component.startTime);
+          final et = _parseTimeStr(component.endTime);
+          await repos.itinerary.updateItem(existing.copyWith(
+            title:        component.title,
+            description:  component.notesClient,
+            clearDescription: component.notesClient == null,
+            startTime:    st,
+            clearStartTime: st == null,
+            endTime:      et,
+            clearEndTime:   et == null,
+            location:     component.locationName,
+            clearLocation: component.locationName == null,
+            supplierId:   component.supplierId,
+            clearSupplierId: component.supplierId == null,
+            supplierName: component.supplierName,
+            clearSupplierName: component.supplierName == null,
+          ));
+        }
+      } catch (e) {
+        debugPrint('[syncLinkedRecords] itinerary: $e');
+      }
+    }
+  }
+
   // ── Type mappers ───────────────────────────────────────────────────────────
 
   static CostCategory _toCostCategory(ComponentType t) {
