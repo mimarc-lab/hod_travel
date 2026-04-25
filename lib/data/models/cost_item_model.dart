@@ -163,23 +163,26 @@ class BudgetSummary {
   });
 
   static BudgetSummary fromItems(List<CostItem> items) {
-    double net = 0, sell = 0, outstanding = 0, deposit = 0;
+    double net = 0, sell = 0, outstanding = 0, deposit = 0, remaining = 0;
     for (final item in items) {
-      net     += item.netCost;
-      sell    += item.sellPrice;
-      deposit += item.depositPaid;
+      net  += item.netCost;
+      sell += item.sellPrice;
+      if (item.depositPaid > 0) {
+        deposit   += item.depositPaid;
+        remaining += item.remainingBalance;
+      }
       if (item.paymentStatus != PaymentStatus.paid &&
           item.paymentStatus != PaymentStatus.cancelled) {
         outstanding += item.sellPrice;
       }
     }
     return BudgetSummary(
-      totalNetCost:         net,
-      totalSellPrice:       sell,
-      totalMargin:          sell - net,
-      outstandingAmount:    outstanding,
-      totalDepositPaid:     deposit,
-      totalRemainingBalance: net - deposit,
+      totalNetCost:          net,
+      totalSellPrice:        sell,
+      totalMargin:           sell - net,
+      outstandingAmount:     outstanding,
+      totalDepositPaid:      deposit,
+      totalRemainingBalance: remaining,
       itemCount: items.length,
     );
   }

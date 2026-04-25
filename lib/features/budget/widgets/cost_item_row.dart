@@ -172,24 +172,28 @@ class _DesktopRow extends StatelessWidget {
               // Deposit paid
               SizedBox(
                 width: BudgetColumns.deposit,
-                child: CurrencyAmount(
-                    amount: item.depositPaid, currency: item.currency,
-                    style: AppTextStyles.tableCell.copyWith(
-                        color: item.depositPaid > 0
-                            ? const Color(0xFF5A9E6F)
-                            : AppColors.textMuted)),
+                child: item.depositPaid > 0
+                    ? CurrencyAmount(
+                        amount: item.depositPaid, currency: item.currency,
+                        style: AppTextStyles.tableCell
+                            .copyWith(color: const Color(0xFF5A9E6F)))
+                    : Text('—', style: AppTextStyles.tableCell
+                        .copyWith(color: AppColors.textMuted)),
               ),
 
-              // Remaining balance
+              // Remaining balance — only shown when a deposit has been paid
               SizedBox(
                 width: BudgetColumns.remaining,
-                child: CurrencyAmount(
-                    amount: item.remainingBalance, currency: item.currency,
-                    style: AppTextStyles.tableCell.copyWith(
-                        fontWeight: FontWeight.w500,
-                        color: item.remainingBalance > 0
-                            ? const Color(0xFFD4845A)
-                            : const Color(0xFF5A9E6F))),
+                child: item.depositPaid > 0
+                    ? CurrencyAmount(
+                        amount: item.remainingBalance, currency: item.currency,
+                        style: AppTextStyles.tableCell.copyWith(
+                            fontWeight: FontWeight.w500,
+                            color: item.remainingBalance > 0.005
+                                ? const Color(0xFFD4845A)
+                                : const Color(0xFF5A9E6F)))
+                    : Text('—', style: AppTextStyles.tableCell
+                        .copyWith(color: AppColors.textMuted)),
               ),
 
               // Sell price
@@ -306,31 +310,33 @@ class _MobileCard extends StatelessWidget {
                             style: AppTextStyles.tableCell),
                       ],
                     ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Deposit', style: AppTextStyles.labelSmall
-                            .copyWith(color: AppColors.textMuted)),
-                        CurrencyAmount(
-                            amount: item.depositPaid, currency: item.currency,
-                            style: AppTextStyles.tableCell.copyWith(
-                                color: const Color(0xFF5A9E6F))),
-                      ],
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Remaining', style: AppTextStyles.labelSmall
-                            .copyWith(color: AppColors.textMuted)),
-                        CurrencyAmount(
-                            amount: item.remainingBalance, currency: item.currency,
-                            style: AppTextStyles.tableCell.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: item.remainingBalance > 0
-                                    ? const Color(0xFFD4845A)
-                                    : const Color(0xFF5A9E6F))),
-                      ],
-                    ),
+                    if (item.depositPaid > 0) ...[
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Deposit', style: AppTextStyles.labelSmall
+                              .copyWith(color: AppColors.textMuted)),
+                          CurrencyAmount(
+                              amount: item.depositPaid, currency: item.currency,
+                              style: AppTextStyles.tableCell.copyWith(
+                                  color: const Color(0xFF5A9E6F))),
+                        ],
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Remaining', style: AppTextStyles.labelSmall
+                              .copyWith(color: AppColors.textMuted)),
+                          CurrencyAmount(
+                              amount: item.remainingBalance, currency: item.currency,
+                              style: AppTextStyles.tableCell.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: item.remainingBalance > 0.005
+                                      ? const Color(0xFFD4845A)
+                                      : const Color(0xFF5A9E6F))),
+                        ],
+                      ),
+                    ],
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
