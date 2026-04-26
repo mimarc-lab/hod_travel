@@ -460,42 +460,31 @@ class _InstructionsGroup extends StatelessWidget {
     if (escalation?.isNotEmpty  == true) sections.add(('ESCALATION',  escalation!));
     if (sections.isEmpty) return const SizedBox.shrink();
 
-    return Container(
-      decoration: BoxDecoration(
-        color:        AppColors.surfaceAlt,
-        borderRadius: BorderRadius.circular(6),
-        border:       Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          for (int i = 0; i < sections.length; i++) ...[
-            if (i > 0)
-              const Divider(height: 1, thickness: 1, color: AppColors.border),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    sections[i].$1,
-                    style: AppTextStyles.overline.copyWith(
-                      color:         AppColors.textSecondary,
-                      letterSpacing: 0.8,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    sections[i].$2,
-                    style: AppTextStyles.bodySmall
-                        .copyWith(color: AppColors.textSecondary, height: 1.5),
-                  ),
-                ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (int i = 0; i < sections.length; i++) ...[
+          if (i > 0) const SizedBox(height: 10),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                sections[i].$1,
+                style: AppTextStyles.overline.copyWith(
+                  color:         AppColors.textMuted,
+                  letterSpacing: 0.8,
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 3),
+              Text(
+                sections[i].$2,
+                style: AppTextStyles.bodySmall
+                    .copyWith(color: AppColors.textSecondary, height: 1.5),
+              ),
+            ],
+          ),
         ],
-      ),
+      ],
     );
   }
 }

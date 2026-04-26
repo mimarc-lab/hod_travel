@@ -427,9 +427,7 @@ class RunSheetPdfExport {
 
           // Contacts + responsible
           if (_hasContactInfo(item)) ...[
-            pw.SizedBox(height: 8),
-            pw.Container(height: 0.5, color: _border),
-            pw.SizedBox(height: 8),
+            pw.SizedBox(height: 10),
             if (item.primaryContactName?.isNotEmpty == true)
               _contactRow('Contact', item.primaryContactName!,
                   item.primaryContactPhone, font, fontBold),
@@ -443,9 +441,7 @@ class RunSheetPdfExport {
 
           // Notes (role-scoped)
           if (_hasNotes(item, showOps, showLogistics, showTransport, showGuide)) ...[
-            pw.SizedBox(height: 8),
-            pw.Container(height: 0.5, color: _border),
-            pw.SizedBox(height: 8),
+            pw.SizedBox(height: 10),
             if (showOps       && item.opsNotes?.isNotEmpty       == true)
               _noteRow('OPS', item.opsNotes!, font, fontBold),
             if (showLogistics && item.logisticsNotes?.isNotEmpty == true)
@@ -458,15 +454,17 @@ class RunSheetPdfExport {
 
           // Operational instructions
           if (item.hasInstructions) ...[
-            pw.SizedBox(height: 8),
-            pw.Container(height: 0.5, color: _border),
-            pw.SizedBox(height: 8),
+            pw.SizedBox(height: 10),
             if (item.operationalInstructions?.isNotEmpty == true)
               _instructionRow('OPERATIONAL', item.operationalInstructions!, font, fontBold),
-            if (item.contingencyInstructions?.isNotEmpty == true)
+            if (item.contingencyInstructions?.isNotEmpty == true) ...[
+              pw.SizedBox(height: 8),
               _instructionRow('CONTINGENCY', item.contingencyInstructions!, font, fontBold),
-            if (item.escalationInstructions?.isNotEmpty == true)
+            ],
+            if (item.escalationInstructions?.isNotEmpty == true) ...[
+              pw.SizedBox(height: 8),
               _instructionRow('ESCALATION', item.escalationInstructions!, font, fontBold),
+            ],
           ],
         ],
       ),
@@ -501,38 +499,32 @@ class RunSheetPdfExport {
   static pw.Widget _noteRow(
     String label, String text, pw.Font font, pw.Font fontBold,
   ) {
-    return pw.Padding(
-      padding: const pw.EdgeInsets.only(bottom: 5),
-      child: pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          pw.Text(label,
-              style: pw.TextStyle(
-                font: fontBold, fontSize: 7.5, color: _gold, letterSpacing: 1)),
-          pw.SizedBox(height: 2),
-          pw.Text(text,
-              style: pw.TextStyle(font: font, fontSize: 9, color: _ink, height: 1.5)),
-        ],
-      ),
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Text(label,
+            style: pw.TextStyle(
+              font: fontBold, fontSize: 7.5, color: _gold, letterSpacing: 1)),
+        pw.SizedBox(height: 2),
+        pw.Text(text,
+            style: pw.TextStyle(font: font, fontSize: 9, color: _ink, height: 1.5)),
+      ],
     );
   }
 
   static pw.Widget _instructionRow(
     String label, String text, pw.Font font, pw.Font fontBold,
   ) {
-    return pw.Padding(
-      padding: const pw.EdgeInsets.only(bottom: 5),
-      child: pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          pw.Text(label,
-              style: pw.TextStyle(
-                font: fontBold, fontSize: 7.5, color: _muted, letterSpacing: 1)),
-          pw.SizedBox(height: 2),
-          pw.Text(text,
-              style: pw.TextStyle(font: font, fontSize: 9, color: _ink, height: 1.5)),
-        ],
-      ),
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Text(label,
+            style: pw.TextStyle(
+              font: fontBold, fontSize: 7.5, color: _muted, letterSpacing: 1)),
+        pw.SizedBox(height: 2),
+        pw.Text(text,
+            style: pw.TextStyle(font: font, fontSize: 9, color: _ink, height: 1.5)),
+      ],
     );
   }
 

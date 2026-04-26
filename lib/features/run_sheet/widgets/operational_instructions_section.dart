@@ -479,31 +479,15 @@ class _ReadView extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          decoration: BoxDecoration(
-            color:        AppColors.surfaceAlt,
-            borderRadius: BorderRadius.circular(6),
-            border:       Border.all(color: AppColors.border),
+        for (int i = 0; i < sections.length; i++) ...[
+          if (i > 0) const SizedBox(height: 10),
+          _PlainInstructionBlock(
+            label: sections[i].$1,
+            text:  sections[i].$2,
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              for (int i = 0; i < sections.length; i++) ...[
-                if (i > 0)
-                  const Divider(height: 1, thickness: 1, color: AppColors.border),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                  child: _PlainInstructionBlock(
-                    label: sections[i].$1,
-                    text:  sections[i].$2,
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
+        ],
         if (item.instructionsSource != null) ...[
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
           _SourceBadge(source: item.instructionsSource!),
         ],
       ],
@@ -524,11 +508,11 @@ class _PlainInstructionBlock extends StatelessWidget {
         Text(
           label.toUpperCase(),
           style: AppTextStyles.overline.copyWith(
-            color:         AppColors.textSecondary,
+            color:         AppColors.textMuted,
             letterSpacing: 0.8,
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 3),
         Text(
           text,
           style: AppTextStyles.bodySmall
