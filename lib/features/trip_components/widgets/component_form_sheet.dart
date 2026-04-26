@@ -8,7 +8,10 @@ import '../../../core/supabase/app_db.dart';
 import '../../../data/models/supplier_model.dart';
 import '../../../data/models/trip_component_model.dart';
 import '../../../data/models/trip_model.dart';
+import '../../../features/ai_suggestions/services/ai_config.dart';
+import '../../../features/ai_suggestions/services/ai_provider.dart';
 import '../providers/components_provider.dart';
+import '../services/component_title_suggestion_service.dart';
 import 'component_linking_dialog.dart';
 
 Future<void> showComponentFormSheet(
@@ -177,6 +180,11 @@ class _ComponentFormSheetState extends State<_ComponentFormSheet> {
   final Map<String, dynamic> _detailValues = {}; // booleans + dropdowns
 
   bool _saving = false;
+
+  // ── AI title suggestions ───────────────────────────────────────────────────
+  bool         _suggestingTitle  = false;
+  List<String> _titleSuggestions = [];
+  String?      _suggestionError;
 
   bool get _isEditing => widget.existing != null;
 
@@ -402,6 +410,47 @@ class _ComponentFormSheetState extends State<_ComponentFormSheet> {
     if (mounted) Navigator.of(context).pop();
   }
 
+  // ── AI title suggestion ───────────────────────────────────────────────────────
+
+  Future<void> _suggestTitle() async {
+    if (!AiConfig.instance.isConfigured) {
+      setState(() {
+        _suggestionError  = 'AI not configured — add your API key in Settings → AI.';
+        _titleSuggestions = [];
+      });
+      return;
+    }
+    setState(() {
+      _suggestingTitle  = true;
+      _titleSuggestions = [];
+      _suggestionError  = null;
+    });
+    try {
+      final service = ComponentTitleSuggestionService(ClaudeAiProvider());
+      final results  = await service.suggestTitles(
+        componentType: _type.label,
+        userInput:     _titleCtrl.text.trim(),
+        supplierName:  _supplierName,
+        destination:   _locationCtrl.text.trim().isNotEmpty
+            ? _locationCtrl.text.trim()
+            : null,
+      );
+      if (mounted) {
+        setState(() => _titleSuggestions =
+            results.isEmpty ? [] : results);
+        if (results.isEmpty && mounted) {
+          setState(() => _suggestionError = 'No suggestions returned — try adding more context.');
+        }
+      }
+    } on AiProviderException catch (e) {
+      if (mounted) setState(() => _suggestionError = e.message);
+    } catch (_) {
+      if (mounted) setState(() => _suggestionError = 'Suggestion failed — please try again.');
+    } finally {
+      if (mounted) setState(() => _suggestingTitle = false);
+    }
+  }
+
   // ── Build ────────────────────────────────────────────────────────────────────
 
   @override
@@ -554,11 +603,55 @@ class _ComponentFormSheetState extends State<_ComponentFormSheet> {
           _fieldGap(),
           _labeledField(
             label: 'Title *',
-            child: TextFormField(
-              controller: _titleCtrl,
-              decoration: _inputDeco('e.g. Mulia Resort – Deluxe Ocean Villa'),
-              validator: (v) => (v == null || v.trim().isEmpty) ? 'Title is required' : null,
-              style: AppTextStyles.bodyMedium,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: _titleCtrl,
+                        decoration: _inputDeco('e.g. Mulia Resort – Deluxe Ocean Villa'),
+                        validator: (v) =>
+                            (v == null || v.trim().isEmpty) ? 'Title is required' : null,
+                        style: AppTextStyles.bodyMedium,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    _SuggestTitleButton(
+                      loading:  _suggestingTitle,
+                      onTap:    _suggestTitle,
+                    ),
+                  ],
+                ),
+                if (_suggestionError != null) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    _suggestionError!,
+                    style: AppTextStyles.labelSmall
+                        .copyWith(color: AppColors.statusBlockedText),
+                  ),
+                ],
+                if (_titleSuggestions.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  _TitleSuggestionChips(
+                    suggestions: _titleSuggestions,
+                    onSelect: (title) => setState(() {
+                      _titleCtrl
+                        ..text = title
+                        ..selection = TextSelection.fromPosition(
+                            TextPosition(offset: title.length));
+                      _titleSuggestions = [];
+                      _suggestionError  = null;
+                    }),
+                    onDismiss: () => setState(() {
+                      _titleSuggestions = [];
+                      _suggestionError  = null;
+                    }),
+                  ),
+                ],
+              ],
             ),
           ),
           _rowGap(),
@@ -1315,6 +1408,129 @@ class _TimeField extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ── AI title suggestion widgets ───────────────────────────────────────────────
+
+class _SuggestTitleButton extends StatelessWidget {
+  final bool         loading;
+  final VoidCallback onTap;
+  const _SuggestTitleButton({required this.loading, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 44,
+      child: OutlinedButton.icon(
+        onPressed: loading ? null : onTap,
+        icon: loading
+            ? const SizedBox(
+                width:  12,
+                height: 12,
+                child:  CircularProgressIndicator(strokeWidth: 1.8),
+              )
+            : const Icon(Icons.auto_awesome_rounded, size: 14),
+        label: Text(loading ? 'Thinking…' : 'Suggest'),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: AppColors.accent,
+          side:  const BorderSide(color: AppColors.accent),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppSpacing.inputRadius)),
+          padding:   const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+          textStyle: AppTextStyles.labelSmall,
+        ),
+      ),
+    );
+  }
+}
+
+class _TitleSuggestionChips extends StatelessWidget {
+  final List<String>         suggestions;
+  final ValueChanged<String> onSelect;
+  final VoidCallback         onDismiss;
+
+  const _TitleSuggestionChips({
+    required this.suggestions,
+    required this.onSelect,
+    required this.onDismiss,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+      decoration: BoxDecoration(
+        color:        const Color(0xFFF5F3FF),
+        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+        border:       Border.all(color: AppColors.accent.withAlpha(45)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header row
+          Row(
+            children: [
+              const Icon(Icons.auto_awesome_rounded,
+                  size: 12, color: AppColors.accent),
+              const SizedBox(width: 5),
+              Text(
+                'Suggested Titles',
+                style: AppTextStyles.overline
+                    .copyWith(color: AppColors.accent, letterSpacing: 0.8),
+              ),
+              const Spacer(),
+              GestureDetector(
+                onTap:  onDismiss,
+                child: const Icon(Icons.close_rounded,
+                    size: 15, color: AppColors.textMuted),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+
+          // Suggestion chips
+          Wrap(
+            spacing:    6,
+            runSpacing: 6,
+            children: suggestions.map((s) {
+              return GestureDetector(
+                onTap: () => onSelect(s),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color:        AppColors.surface,
+                    borderRadius: BorderRadius.circular(20),
+                    border:       Border.all(
+                        color: AppColors.accent.withAlpha(70)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        s,
+                        style: AppTextStyles.bodySmall
+                            .copyWith(color: AppColors.textPrimary),
+                      ),
+                      const SizedBox(width: 5),
+                      const Icon(Icons.north_west_rounded,
+                          size: 10, color: AppColors.textMuted),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Tap to use — you can edit after selecting',
+            style: AppTextStyles.labelSmall
+                .copyWith(color: AppColors.textMuted),
+          ),
+        ],
       ),
     );
   }
