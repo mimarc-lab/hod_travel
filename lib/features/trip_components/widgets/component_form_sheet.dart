@@ -10,6 +10,7 @@ import '../../../data/models/trip_component_model.dart';
 import '../../../data/models/trip_model.dart';
 import '../../../features/ai_suggestions/services/ai_config.dart';
 import '../../../features/ai_suggestions/services/ai_provider.dart';
+import '../../../features/itinerary/providers/itinerary_provider.dart';
 import '../providers/components_provider.dart';
 import '../services/component_title_suggestion_service.dart';
 import 'component_linking_dialog.dart';
@@ -19,15 +20,17 @@ Future<void> showComponentFormSheet(
   required Trip trip,
   required ComponentsProvider provider,
   TripComponent? existing,
+  ItineraryProvider? itineraryProvider,
 }) {
   return showModalBottomSheet(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     builder: (_) => _ComponentFormSheet(
-      trip:     trip,
-      provider: provider,
-      existing: existing,
+      trip:              trip,
+      provider:          provider,
+      existing:          existing,
+      itineraryProvider: itineraryProvider,
     ),
   );
 }
@@ -109,11 +112,13 @@ class _ComponentFormSheet extends StatefulWidget {
   final Trip               trip;
   final ComponentsProvider provider;
   final TripComponent?     existing;
+  final ItineraryProvider? itineraryProvider;
 
   const _ComponentFormSheet({
     required this.trip,
     required this.provider,
     this.existing,
+    this.itineraryProvider,
   });
 
   @override
@@ -391,7 +396,12 @@ class _ComponentFormSheetState extends State<_ComponentFormSheet> {
       saved = await widget.provider.updateComponent(component);
       // Keep linked budget/itinerary records in sync with the updated fields.
       if (saved != null) {
-        await widget.provider.syncLinkedRecords(saved);
+        final updatedItinItem = await widget.provider.syncLinkedRecords(saved);
+        // Patch in-memory itinerary state immediately so the Itinerary tab
+        // reflects the change without waiting for the realtime event.
+        if (updatedItinItem != null) {
+          widget.itineraryProvider?.patchItem(updatedItinItem);
+        }
       }
     } else {
       saved = await widget.provider.addComponent(component);

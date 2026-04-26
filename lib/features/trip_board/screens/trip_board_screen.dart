@@ -250,7 +250,7 @@ class _TripBoardScreenState extends State<TripBoardScreen>
                       TimelineScreen(trip: widget.trip, provider: _provider), // Timeline
                       TripMapScreen(trip: widget.trip, provider: _itineraryProvider), // Map
                       ItineraryScreen(trip: widget.trip, provider: _itineraryProvider),
-                      TripComponentsScreen(trip: widget.trip),
+                      TripComponentsScreen(trip: widget.trip, itineraryProvider: _itineraryProvider),
                       TripBudgetScreen(trip: widget.trip),
                       TripIntelligencePanel(
                         trip: widget.trip,

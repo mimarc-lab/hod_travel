@@ -296,9 +296,11 @@ class ComponentsProvider extends ChangeNotifier {
   /// Pushes updated component fields to any already-linked budget / itinerary
   /// records. Called after every component edit so the linked records stay
   /// in sync without the user having to re-link.
-  Future<void> syncLinkedRecords(TripComponent component) async {
+  ///
+  /// Returns the updated [ItineraryItem] if one was synced, otherwise null.
+  Future<ItineraryItem?> syncLinkedRecords(TripComponent component) async {
     final repos = AppRepositories.instance;
-    if (repos == null) return;
+    if (repos == null) return null;
 
     // 1. Budget item ──────────────────────────────────────────────────────────
     if (component.costItemId != null) {
@@ -337,7 +339,7 @@ class ComponentsProvider extends ChangeNotifier {
         if (existing != null) {
           final st = _parseTimeStr(component.startTime);
           final et = _parseTimeStr(component.endTime);
-          await repos.itinerary.updateItem(existing.copyWith(
+          final updated = await repos.itinerary.updateItem(existing.copyWith(
             title:        component.title,
             description:  component.notesClient,
             clearDescription: component.notesClient == null,
@@ -352,11 +354,14 @@ class ComponentsProvider extends ChangeNotifier {
             supplierName: component.supplierName,
             clearSupplierName: component.supplierName == null,
           ));
+          return updated;
         }
       } catch (e) {
         debugPrint('[syncLinkedRecords] itinerary: $e');
       }
     }
+
+    return null;
   }
 
   // ── Type mappers ───────────────────────────────────────────────────────────

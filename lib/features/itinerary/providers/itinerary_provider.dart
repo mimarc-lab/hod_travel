@@ -261,6 +261,20 @@ class ItineraryProvider extends ChangeNotifier {
     }
   }
 
+  /// Applies a DB-persisted item update directly to in-memory state so the
+  /// Itinerary tab reflects changes from other screens (e.g. Component edits)
+  /// without waiting for the Supabase realtime event.
+  void patchItem(ItineraryItem updated) {
+    for (final list in _itemsByDayId.values) {
+      final idx = list.indexWhere((i) => i.id == updated.id);
+      if (idx != -1) {
+        list[idx] = updated;
+        notifyListeners();
+        return;
+      }
+    }
+  }
+
   Future<void> deleteDay(String dayId) async {
     if (_repo == null) return;
     final idx = _days.indexWhere((d) => d.id == dayId);

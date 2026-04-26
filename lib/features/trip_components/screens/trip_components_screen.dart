@@ -7,6 +7,7 @@ import '../../../core/utils/responsive.dart';
 import '../../../data/models/trip_component_model.dart';
 import '../../../data/models/trip_model.dart';
 import '../../../features/ai_suggestions/itinerary_sequence/itinerary_sequence_review_screen.dart';
+import '../../../features/itinerary/providers/itinerary_provider.dart';
 import '../providers/components_provider.dart';
 import '../widgets/component_card.dart';
 import '../widgets/component_filter_bar.dart';
@@ -15,8 +16,9 @@ import '../widgets/component_table_row.dart';
 
 class TripComponentsScreen extends StatefulWidget {
   final Trip trip;
+  final ItineraryProvider? itineraryProvider;
 
-  const TripComponentsScreen({super.key, required this.trip});
+  const TripComponentsScreen({super.key, required this.trip, this.itineraryProvider});
 
   @override
   State<TripComponentsScreen> createState() => _TripComponentsScreenState();
@@ -48,8 +50,9 @@ class _TripComponentsScreenState extends State<TripComponentsScreen>
   void _openAddSheet() {
     showComponentFormSheet(
       context,
-      trip:     widget.trip,
-      provider: _provider,
+      trip:              widget.trip,
+      provider:          _provider,
+      itineraryProvider: widget.itineraryProvider,
     );
   }
 
@@ -60,9 +63,10 @@ class _TripComponentsScreenState extends State<TripComponentsScreen>
   void _openEditSheet(TripComponent component) {
     showComponentFormSheet(
       context,
-      trip:     widget.trip,
-      provider: _provider,
-      existing: component,
+      trip:              widget.trip,
+      provider:          _provider,
+      existing:          component,
+      itineraryProvider: widget.itineraryProvider,
     );
   }
 
