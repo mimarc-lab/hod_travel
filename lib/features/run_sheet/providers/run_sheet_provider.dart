@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../../../data/models/itinerary_models.dart';
+import '../../../data/models/run_sheet_instruction_template.dart';
 import '../../../data/models/run_sheet_item.dart';
 import '../../../data/repositories/itinerary_repository.dart';
 import '../../../data/repositories/run_sheet_repository.dart';
@@ -207,12 +208,18 @@ class RunSheetProvider extends ChangeNotifier {
           primaryContactPhone: item.primaryContactPhone,
           backupContactName:   item.backupContactName,
           backupContactPhone:  item.backupContactPhone,
-          responsibleName:     item.responsibleName,
-          responsibleUserId:   item.responsibleUserId,
-          opsNotes:            item.opsNotes,
-          logisticsNotes:      item.logisticsNotes,
-          transportNotes:      item.transportNotes,
-          guideNotes:          item.guideNotes,
+          responsibleName:          item.responsibleName,
+          responsibleUserId:        item.responsibleUserId,
+          opsNotes:                 item.opsNotes,
+          logisticsNotes:           item.logisticsNotes,
+          transportNotes:           item.transportNotes,
+          guideNotes:               item.guideNotes,
+          operationalInstructions:  item.operationalInstructions,
+          contingencyInstructions:  item.contingencyInstructions,
+          escalationInstructions:   item.escalationInstructions,
+          instructionsSource:       item.instructionsSource,
+          instructionsApprovedBy:   item.instructionsApprovedBy,
+          instructionsApprovedAt:   item.instructionsApprovedAt,
         );
         final newId = await _runSheetRepo.insert(row, _teamId ?? '');
         _replaceId(item.id, newId, status);
@@ -237,37 +244,87 @@ class RunSheetProvider extends ChangeNotifier {
   void _replaceId(String oldId, String newId, RunSheetStatus status) {
     _allItems = [
       for (final i in _allItems)
-        if (i.id == oldId)
-          RunSheetItem(
-            id:                  newId,
-            itineraryItemId:     i.itineraryItemId,
-            tripId:              i.tripId,
-            dayId:               i.dayId,
-            title:               i.title,
-            type:                i.type,
-            startTime:           i.startTime,
-            endTime:             i.endTime,
-            timeBlock:           i.timeBlock,
-            location:            i.location,
-            supplierId:          i.supplierId,
-            supplierName:        i.supplierName,
-            description:         i.description,
-            status:              status,
-            primaryContactName:  i.primaryContactName,
-            primaryContactPhone: i.primaryContactPhone,
-            backupContactName:   i.backupContactName,
-            backupContactPhone:  i.backupContactPhone,
-            responsibleName:     i.responsibleName,
-            responsibleUserId:   i.responsibleUserId,
-            opsNotes:            i.opsNotes,
-            logisticsNotes:      i.logisticsNotes,
-            transportNotes:      i.transportNotes,
-            guideNotes:          i.guideNotes,
-            sortOrder:           i.sortOrder,
-          )
-        else
-          i,
+        if (i.id == oldId) i.copyWith(id: newId, status: status) else i,
     ];
+  }
+
+  // ── Instructions ───────────────────────────────────────────────────────────
+
+  /// Persists operational, contingency, and escalation instructions for [item].
+  /// If the item has no DB record yet, a new row is inserted first.
+  Future<void> saveInstructions(
+    RunSheetItem item, {
+    required String?            operational,
+    required String?            contingency,
+    required String?            escalation,
+    required InstructionsSource source,
+    String?                     approvedBy,
+  }) async {
+    if (_runSheetRepo == null) return;
+
+    final approvedAt = (source == InstructionsSource.suggested ||
+            source == InstructionsSource.editedAfterSuggestion)
+        ? DateTime.now()
+        : null;
+
+    // Optimistic local update
+    final updated = item.copyWith(
+      id:                      item.isPersisted ? item.id : item.id,
+      operationalInstructions: operational,
+      contingencyInstructions: contingency,
+      escalationInstructions:  escalation,
+      instructionsSource:      source,
+      instructionsApprovedBy:  approvedBy,
+      instructionsApprovedAt:  approvedAt,
+    );
+    _allItems = [
+      for (final i in _allItems) if (i.id == item.id) updated else i,
+    ];
+    notifyListeners();
+
+    try {
+      final row = RunSheetRow(
+        id:                       item.isPersisted ? item.id : '',
+        tripId:                   _tripId,
+        dayId:                    item.dayId,
+        itineraryItemId:          item.itineraryItemId,
+        status:                   item.status,
+        primaryContactName:       item.primaryContactName,
+        primaryContactPhone:      item.primaryContactPhone,
+        backupContactName:        item.backupContactName,
+        backupContactPhone:       item.backupContactPhone,
+        responsibleName:          item.responsibleName,
+        responsibleUserId:        item.responsibleUserId,
+        opsNotes:                 item.opsNotes,
+        logisticsNotes:           item.logisticsNotes,
+        transportNotes:           item.transportNotes,
+        guideNotes:               item.guideNotes,
+        sortOrder:                item.sortOrder,
+        operationalInstructions:  operational,
+        contingencyInstructions:  contingency,
+        escalationInstructions:   escalation,
+        instructionsSource:       source,
+        instructionsApprovedBy:   approvedBy,
+        instructionsApprovedAt:   approvedAt,
+      );
+      final savedId = await _runSheetRepo.upsertRow(row, _teamId ?? '');
+      if (savedId != item.id) {
+        // Was synthetic — swap in the real DB id
+        _allItems = [
+          for (final i in _allItems)
+            if (i.id == item.id) i.copyWith(id: savedId) else i,
+        ];
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('[RunSheetProvider.saveInstructions] error: $e');
+      // Revert
+      _allItems = [
+        for (final i in _allItems) if (i.id == updated.id) item else i,
+      ];
+      notifyListeners();
+      rethrow;
+    }
   }
 
   TripDay? _todayDay(List<TripDay> days) {

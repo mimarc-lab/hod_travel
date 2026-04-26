@@ -167,7 +167,8 @@ class AiSuggestionProvider extends ChangeNotifier {
         _service!.suggestTasks(ctx, _tripId, _teamId),
       AiSuggestionType.flowImprovement =>
         _service!.suggestFlowImprovements(ctx, _tripId, _teamId),
-      AiSuggestionType.itinerarySequence => [],
+      AiSuggestionType.itinerarySequence            => [],
+      AiSuggestionType.runSheetInstructionSuggestion => [],
     };
   }
 

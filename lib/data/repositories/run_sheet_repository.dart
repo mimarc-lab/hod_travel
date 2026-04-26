@@ -15,6 +15,10 @@ abstract class RunSheetRepository {
   /// Insert a new row; returns the DB-assigned id.
   Future<String> insert(RunSheetRow row, String teamId);
 
+  /// Upsert a full row. If [row.id] is empty or starts with '_synth_', inserts
+  /// and returns the DB-assigned id. Otherwise updates and returns the same id.
+  Future<String> upsertRow(RunSheetRow row, String teamId);
+
   Future<void> updateStatus(String runSheetItemId, RunSheetStatus status);
 }
 
@@ -77,6 +81,18 @@ class SupabaseRunSheetRepository implements RunSheetRepository {
         .select('id')
         .single();
     return result['id'] as String;
+  }
+
+  @override
+  Future<String> upsertRow(RunSheetRow row, String teamId) async {
+    final isSynthetic = row.id.isEmpty || row.id.startsWith('_synth_');
+    if (isSynthetic) {
+      return insert(row, teamId);
+    }
+    final payload = Map<String, dynamic>.from(row.toJson(teamId: teamId))
+      ..['updated_at'] = DateTime.now().toIso8601String();
+    await _client.from('run_sheet_items').update(payload).eq('id', row.id);
+    return row.id;
   }
 
   @override

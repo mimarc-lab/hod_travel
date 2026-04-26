@@ -7,6 +7,7 @@ import '../../../data/models/run_sheet_item.dart';
 import '../providers/run_sheet_provider.dart';
 import '../services/run_sheet_view_mode.dart';
 import 'run_sheet_contact_block.dart';
+import 'run_sheet_item_detail.dart';
 import 'run_sheet_status_chip.dart';
 
 class RunSheetItemCard extends StatelessWidget {
@@ -26,9 +27,11 @@ class RunSheetItemCard extends StatelessWidget {
     final isCancelled = item.status == RunSheetStatus.cancelled;
     final dimmed     = isComplete || isCancelled;
 
-    return Opacity(
-      opacity: dimmed ? 0.55 : 1.0,
-      child: Container(
+    return GestureDetector(
+      onTap: () => showRunSheetItemDetail(context, item: item, provider: provider),
+      child: Opacity(
+        opacity: dimmed ? 0.55 : 1.0,
+        child: Container(
         decoration: BoxDecoration(
           color:        AppColors.surface,
           borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
@@ -68,6 +71,7 @@ class RunSheetItemCard extends StatelessWidget {
           ),
         ),
       ),
+    ),
     );
   }
 }

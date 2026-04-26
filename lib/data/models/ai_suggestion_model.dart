@@ -9,67 +9,74 @@ enum AiSuggestionType {
   signatureExperience,
   taskSuggestion,
   flowImprovement,
-  itinerarySequence;
+  itinerarySequence,
+  runSheetInstructionSuggestion;
 
   String get label => switch (this) {
-        AiSuggestionType.draftItinerary      => 'Draft Itinerary',
-        AiSuggestionType.missingGap          => 'Missing Gap',
-        AiSuggestionType.supplierRecommendation => 'Supplier',
-        AiSuggestionType.signatureExperience => 'Experience',
-        AiSuggestionType.taskSuggestion      => 'Task',
-        AiSuggestionType.flowImprovement     => 'Flow',
-        AiSuggestionType.itinerarySequence   => 'Sequence Draft',
+        AiSuggestionType.draftItinerary               => 'Draft Itinerary',
+        AiSuggestionType.missingGap                   => 'Missing Gap',
+        AiSuggestionType.supplierRecommendation       => 'Supplier',
+        AiSuggestionType.signatureExperience          => 'Experience',
+        AiSuggestionType.taskSuggestion               => 'Task',
+        AiSuggestionType.flowImprovement              => 'Flow',
+        AiSuggestionType.itinerarySequence            => 'Sequence Draft',
+        AiSuggestionType.runSheetInstructionSuggestion => 'Run Sheet Instructions',
       };
 
   String get dbValue => switch (this) {
-        AiSuggestionType.draftItinerary      => 'draft_itinerary',
-        AiSuggestionType.missingGap          => 'missing_gap',
-        AiSuggestionType.supplierRecommendation => 'supplier_recommendation',
-        AiSuggestionType.signatureExperience => 'signature_experience',
-        AiSuggestionType.taskSuggestion      => 'task_suggestion',
-        AiSuggestionType.flowImprovement     => 'flow_improvement',
-        AiSuggestionType.itinerarySequence   => 'itinerary_sequence',
+        AiSuggestionType.draftItinerary               => 'draft_itinerary',
+        AiSuggestionType.missingGap                   => 'missing_gap',
+        AiSuggestionType.supplierRecommendation       => 'supplier_recommendation',
+        AiSuggestionType.signatureExperience          => 'signature_experience',
+        AiSuggestionType.taskSuggestion               => 'task_suggestion',
+        AiSuggestionType.flowImprovement              => 'flow_improvement',
+        AiSuggestionType.itinerarySequence            => 'itinerary_sequence',
+        AiSuggestionType.runSheetInstructionSuggestion => 'run_sheet_instruction_suggestion',
       };
 
   static AiSuggestionType fromDb(String v) => switch (v) {
-        'draft_itinerary'        => AiSuggestionType.draftItinerary,
-        'missing_gap'            => AiSuggestionType.missingGap,
-        'supplier_recommendation'=> AiSuggestionType.supplierRecommendation,
-        'signature_experience'   => AiSuggestionType.signatureExperience,
-        'task_suggestion'        => AiSuggestionType.taskSuggestion,
-        'flow_improvement'       => AiSuggestionType.flowImprovement,
-        'itinerary_sequence'     => AiSuggestionType.itinerarySequence,
-        _                        => AiSuggestionType.flowImprovement,
+        'draft_itinerary'                  => AiSuggestionType.draftItinerary,
+        'missing_gap'                      => AiSuggestionType.missingGap,
+        'supplier_recommendation'          => AiSuggestionType.supplierRecommendation,
+        'signature_experience'             => AiSuggestionType.signatureExperience,
+        'task_suggestion'                  => AiSuggestionType.taskSuggestion,
+        'flow_improvement'                 => AiSuggestionType.flowImprovement,
+        'itinerary_sequence'               => AiSuggestionType.itinerarySequence,
+        'run_sheet_instruction_suggestion' => AiSuggestionType.runSheetInstructionSuggestion,
+        _                                  => AiSuggestionType.flowImprovement,
       };
 
   IconData get icon => switch (this) {
-        AiSuggestionType.draftItinerary      => Icons.auto_fix_high_rounded,
-        AiSuggestionType.missingGap          => Icons.warning_amber_rounded,
-        AiSuggestionType.supplierRecommendation => Icons.storefront_rounded,
-        AiSuggestionType.signatureExperience => Icons.auto_awesome_rounded,
-        AiSuggestionType.taskSuggestion      => Icons.task_alt_rounded,
-        AiSuggestionType.flowImprovement     => Icons.route_rounded,
-        AiSuggestionType.itinerarySequence   => Icons.view_timeline_rounded,
+        AiSuggestionType.draftItinerary               => Icons.auto_fix_high_rounded,
+        AiSuggestionType.missingGap                   => Icons.warning_amber_rounded,
+        AiSuggestionType.supplierRecommendation       => Icons.storefront_rounded,
+        AiSuggestionType.signatureExperience          => Icons.auto_awesome_rounded,
+        AiSuggestionType.taskSuggestion               => Icons.task_alt_rounded,
+        AiSuggestionType.flowImprovement              => Icons.route_rounded,
+        AiSuggestionType.itinerarySequence            => Icons.view_timeline_rounded,
+        AiSuggestionType.runSheetInstructionSuggestion => Icons.assignment_rounded,
       };
 
   Color get color => switch (this) {
-        AiSuggestionType.draftItinerary      => const Color(0xFF7C3AED),
-        AiSuggestionType.missingGap          => const Color(0xFFD97706),
-        AiSuggestionType.supplierRecommendation => const Color(0xFF0891B2),
-        AiSuggestionType.signatureExperience => const Color(0xFF7C3AED),
-        AiSuggestionType.taskSuggestion      => const Color(0xFF059669),
-        AiSuggestionType.flowImprovement     => const Color(0xFF2563EB),
-        AiSuggestionType.itinerarySequence   => const Color(0xFF0F766E),
+        AiSuggestionType.draftItinerary               => const Color(0xFF7C3AED),
+        AiSuggestionType.missingGap                   => const Color(0xFFD97706),
+        AiSuggestionType.supplierRecommendation       => const Color(0xFF0891B2),
+        AiSuggestionType.signatureExperience          => const Color(0xFF7C3AED),
+        AiSuggestionType.taskSuggestion               => const Color(0xFF059669),
+        AiSuggestionType.flowImprovement              => const Color(0xFF2563EB),
+        AiSuggestionType.itinerarySequence            => const Color(0xFF0F766E),
+        AiSuggestionType.runSheetInstructionSuggestion => const Color(0xFF1D4ED8),
       };
 
   Color get backgroundColor => switch (this) {
-        AiSuggestionType.draftItinerary      => const Color(0xFFF5F3FF),
-        AiSuggestionType.missingGap          => const Color(0xFFFFFBEB),
-        AiSuggestionType.supplierRecommendation => const Color(0xFFECFEFF),
-        AiSuggestionType.signatureExperience => const Color(0xFFF5F3FF),
-        AiSuggestionType.taskSuggestion      => const Color(0xFFF0FDF4),
-        AiSuggestionType.flowImprovement     => const Color(0xFFEFF6FF),
-        AiSuggestionType.itinerarySequence   => const Color(0xFFF0FDFA),
+        AiSuggestionType.draftItinerary               => const Color(0xFFF5F3FF),
+        AiSuggestionType.missingGap                   => const Color(0xFFFFFBEB),
+        AiSuggestionType.supplierRecommendation       => const Color(0xFFECFEFF),
+        AiSuggestionType.signatureExperience          => const Color(0xFFF5F3FF),
+        AiSuggestionType.taskSuggestion               => const Color(0xFFF0FDF4),
+        AiSuggestionType.flowImprovement              => const Color(0xFFEFF6FF),
+        AiSuggestionType.itinerarySequence            => const Color(0xFFF0FDFA),
+        AiSuggestionType.runSheetInstructionSuggestion => const Color(0xFFEFF6FF),
       };
 }
 
