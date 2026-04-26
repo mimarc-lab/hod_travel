@@ -10,6 +10,7 @@ import '../../../data/models/user_model.dart';
 import '../../../features/ai_suggestions/services/ai_config.dart';
 import '../../../features/ai_suggestions/services/ai_key_store.dart';
 import '../../../features/templates/screens/template_manager_screen.dart';
+import 'run_sheet_instruction_template_screen.dart';
 import '../../../data/models/effective_permission.dart';
 import '../../../data/models/team_member_permission.dart';
 import '../../../shared/widgets/role_badge.dart';
@@ -72,6 +73,12 @@ class SettingsScreen extends StatelessWidget {
                     title: 'TRIP TEMPLATES',
                     subtitle: 'Create and manage reusable task templates for new trips.',
                     children: [_TemplatesSection()],
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  _SectionCard(
+                    title: 'RUN SHEET INSTRUCTION TEMPLATES',
+                    subtitle: 'Customise the default operational, contingency, and escalation instructions pre-filled for each component type.',
+                    children: [_RunSheetTemplatesSection()],
                   ),
                   const SizedBox(height: AppSpacing.lg),
                   _SectionCard(
@@ -933,6 +940,42 @@ class _TemplatesSection extends StatelessWidget {
                   size: 15, color: Colors.white),
               const SizedBox(width: 6),
               Text('Manage Templates',
+                  style: AppTextStyles.labelMedium
+                      .copyWith(color: Colors.white)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Run Sheet Templates section ───────────────────────────────────────────────
+
+class _RunSheetTemplatesSection extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(AppSpacing.base),
+      child: GestureDetector(
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => const RunSheetInstructionTemplateScreen(),
+          ),
+        ),
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+          decoration: BoxDecoration(
+            color: AppColors.accent,
+            borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.checklist_rounded, size: 15, color: Colors.white),
+              const SizedBox(width: 6),
+              Text('Manage Run Sheet Instructions',
                   style: AppTextStyles.labelMedium
                       .copyWith(color: Colors.white)),
             ],

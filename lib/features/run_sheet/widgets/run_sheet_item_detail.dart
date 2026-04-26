@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
+import '../../../core/supabase/app_db.dart';
 import '../../../data/models/itinerary_models.dart';
 import '../../../data/models/run_sheet_instruction_template.dart';
 import '../../../data/models/run_sheet_item.dart';
@@ -42,15 +43,22 @@ class _ItemDetailSheet extends StatefulWidget {
 }
 
 class _ItemDetailSheetState extends State<_ItemDetailSheet> {
-  static const _templateService = RunSheetInstructionTemplateService();
+  late final RunSheetInstructionTemplateService _templateService;
   late RunSheetItem _item;
   SuggestedInstructions? _suggestions;
 
   @override
   void initState() {
     super.initState();
-    _item        = widget.item;
-    _suggestions = _templateService.suggestFor(_item.type.dbValue);
+    _item = widget.item;
+    final repos = AppRepositories.instance;
+    _templateService = RunSheetInstructionTemplateService(
+      repo:   repos?.runSheetInstructionTemplates,
+      teamId: repos?.currentTeamId,
+    );
+    _templateService.suggestFor(_item.type.dbValue).then((s) {
+      if (mounted) setState(() => _suggestions = s);
+    });
   }
 
   Future<void> _saveInstructions(

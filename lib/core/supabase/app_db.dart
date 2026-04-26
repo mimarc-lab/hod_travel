@@ -21,6 +21,7 @@ import '../../data/repositories/trip_template_repository.dart';
 import '../../data/repositories/client_dossier_repository.dart';
 import '../../data/repositories/ai_memory_repository.dart';
 import '../../data/repositories/trip_component_repository.dart';
+import '../../data/repositories/run_sheet_instruction_template_repository.dart';
 import '../../features/auth/auth_repository.dart';
 import '../../features/security/permission_service.dart';
 import '../../services/audit_log_service.dart';
@@ -81,8 +82,9 @@ class AppRepositories {
   final AiSuggestionRepository aiSuggestions;
 
   // ── Run Sheets ────────────────────────────────────────────────────────────
-  final RunSheetRepository      runSheets;
-  final RunSheetShareRepository runSheetShares;
+  final RunSheetRepository                    runSheets;
+  final RunSheetShareRepository               runSheetShares;
+  final RunSheetInstructionTemplateRepository runSheetInstructionTemplates;
 
   // ── Client Dossiers ───────────────────────────────────────────────────────
   final ClientDossierRepository clientDossiers;
@@ -117,6 +119,7 @@ class AppRepositories {
     required this.aiSuggestions,
     required this.runSheets,
     required this.runSheetShares,
+    required this.runSheetInstructionTemplates,
     required this.clientDossiers,
     required this.aiMemory,
     required this.permissions,
@@ -151,8 +154,9 @@ class AppRepositories {
       budget:               SupabaseBudgetRepository(client),
       signatureExperiences: SupabaseSignatureExperienceRepository(client),
       aiSuggestions:        SupabaseAiSuggestionRepository(client),
-      runSheets:            SupabaseRunSheetRepository(client),
-      runSheetShares:       SupabaseRunSheetShareRepository(client),
+      runSheets:                      SupabaseRunSheetRepository(client),
+      runSheetShares:                 SupabaseRunSheetShareRepository(client),
+      runSheetInstructionTemplates:   SupabaseRunSheetInstructionTemplateRepository(client),
       clientDossiers:       SupabaseClientDossierRepository(client),
       aiMemory:             SupabaseAiMemoryRepository(client),
       permissions:          PermissionService(client),

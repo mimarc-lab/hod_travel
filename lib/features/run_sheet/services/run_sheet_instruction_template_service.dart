@@ -1,20 +1,44 @@
 import '../../../data/models/run_sheet_instruction_template.dart';
+import '../../../data/repositories/run_sheet_instruction_template_repository.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // RunSheetInstructionTemplateService
 //
-// Resolves suggested instructions for a given item type. Uses the hardcoded
-// DefaultInstructionTemplates as the base. Team-customized DB templates can
-// be layered on top in a future iteration.
+// Resolves suggested instructions for a given item type.
+// Prefers team-customized DB templates; falls back to hardcoded defaults.
 // ─────────────────────────────────────────────────────────────────────────────
 
 class RunSheetInstructionTemplateService {
-  const RunSheetInstructionTemplateService();
+  final RunSheetInstructionTemplateRepository? _repo;
+  final String? _teamId;
 
-  /// Returns suggested instructions for [itemTypeDbValue] (e.g. 'accommodation',
-  /// 'transport', 'dining'). Returns null if no templates exist for the type.
-  SuggestedInstructions? suggestFor(String itemTypeDbValue) =>
-      DefaultInstructionTemplates.buildFor(itemTypeDbValue);
+  const RunSheetInstructionTemplateService({
+    RunSheetInstructionTemplateRepository? repo,
+    String? teamId,
+  })  : _repo   = repo,
+        _teamId = teamId;
+
+  Future<SuggestedInstructions?> suggestFor(String itemTypeDbValue) async {
+    if (_repo != null && _teamId != null && _teamId!.isNotEmpty) {
+      try {
+        final all     = await _repo!.fetchForTeam(_teamId!);
+        final forType = all.where((t) => t.componentType == itemTypeDbValue).toList();
+        if (forType.isNotEmpty) {
+          String combine(InstructionType type) => forType
+              .where((r) => r.instructionType == type)
+              .map((r) => r.templateText)
+              .join('\n');
+          final s = SuggestedInstructions(
+            operational: combine(InstructionType.operational),
+            contingency:  combine(InstructionType.contingency),
+            escalation:   combine(InstructionType.escalation),
+          );
+          if (!s.isEmpty) return s;
+        }
+      } catch (_) {}
+    }
+    return DefaultInstructionTemplates.buildFor(itemTypeDbValue);
+  }
 
   bool hasTemplatesFor(String itemTypeDbValue) =>
       DefaultInstructionTemplates.hasTemplatesFor(itemTypeDbValue);
