@@ -6,7 +6,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import '../../../data/models/itinerary_models.dart';
 import '../../../data/models/run_sheet_item.dart';
-import 'run_sheet_view_mode.dart';
+import '../../../data/models/run_sheet_view_mode.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // RunSheetPdfExport
@@ -31,15 +31,43 @@ class RunSheetPdfExport {
 
   // ── Entry point ──────────────────────────────────────────────────────────────
 
+  // ── Inline role filter (self-contained, no external service dependency) ────────
+
+  static List<RunSheetItem> _filterByRole(
+      List<RunSheetItem> items, RunSheetViewMode viewMode) {
+    return switch (viewMode) {
+      RunSheetViewMode.driver =>
+          items.where((i) =>
+              i.type == ItemType.transport ||
+              i.type == ItemType.flight).toList(),
+      RunSheetViewMode.guide =>
+          items.where((i) => i.type == ItemType.experience).toList(),
+      _ => List<RunSheetItem>.from(items), // director & operations see all
+    };
+  }
+
+  static bool _showOps(RunSheetViewMode m) =>
+      m == RunSheetViewMode.director || m == RunSheetViewMode.operations;
+  static bool _showLogistics(RunSheetViewMode m) =>
+      m != RunSheetViewMode.guide;
+  static bool _showTransport(RunSheetViewMode m) =>
+      m == RunSheetViewMode.director ||
+      m == RunSheetViewMode.driver ||
+      m == RunSheetViewMode.operations;
+  static bool _showGuide(RunSheetViewMode m) =>
+      m == RunSheetViewMode.director ||
+      m == RunSheetViewMode.guide ||
+      m == RunSheetViewMode.operations;
+
+  // ── Entry point ──────────────────────────────────────────────────────────────
+
   static Future<void> share({
     required String             tripName,
     required List<RunSheetItem> allItems,
     required List<TripDay>      days,
     required RunSheetViewMode   viewMode,
   }) async {
-    // Role filter: director/operations → all items; driver → transport+flight;
-    // guide → experience only. Days with no matching items are skipped.
-    final items = RunSheetRoleFilter.apply(allItems, viewMode);
+    final items = _filterByRole(allItems, viewMode);
     final bytes = await _build(
       tripName: tripName,
       items:    items,
@@ -72,10 +100,10 @@ class RunSheetPdfExport {
       defaultTextStyle: pw.TextStyle(font: font, fontSize: 10, color: _ink),
     );
 
-    final showOps       = RunSheetRoleFilter.showOpsNotes(viewMode);
-    final showLogistics = RunSheetRoleFilter.showLogisticsNotes(viewMode);
-    final showTransport = RunSheetRoleFilter.showTransportNotes(viewMode);
-    final showGuide     = RunSheetRoleFilter.showGuideNotes(viewMode);
+    final showOps       = _showOps(viewMode);
+    final showLogistics = _showLogistics(viewMode);
+    final showTransport = _showTransport(viewMode);
+    final showGuide     = _showGuide(viewMode);
 
     // Group items by day
     final Map<String, List<RunSheetItem>> byDay = {};
@@ -357,9 +385,9 @@ class RunSheetPdfExport {
           showTransport: showTransport,
           showGuide:     showGuide,
         ),
-        pw.SizedBox(height: 10),
+        pw.SizedBox(height: 24),
       ],
-      pw.SizedBox(height: 20),
+      pw.SizedBox(height: 40),
     ];
   }
 
@@ -378,7 +406,7 @@ class RunSheetPdfExport {
         ?? _timeBlockLabel(item.timeBlock);
 
     return pw.Container(
-      padding: const pw.EdgeInsets.all(14),
+      padding: const pw.EdgeInsets.all(16),
       decoration: pw.BoxDecoration(
         color:        _white,
         border:       pw.Border.all(color: _border, width: 0.5),

@@ -347,7 +347,7 @@ class _ItemList extends StatelessWidget {
             sliver: SliverList.separated(
               itemCount:        items.length,
               separatorBuilder: (_, _) =>
-                  const SizedBox(height: AppSpacing.lg),
+                  const SizedBox(height: AppSpacing.xl),
               itemBuilder: (_, i) => RunSheetItemCard(
                 item:     items[i],
                 provider: provider,
