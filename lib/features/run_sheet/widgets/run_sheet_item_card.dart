@@ -3,6 +3,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../data/models/itinerary_models.dart';
+import '../../../data/models/run_sheet_instruction_template.dart';
 import '../../../data/models/run_sheet_item.dart';
 import '../providers/run_sheet_provider.dart';
 import '../services/run_sheet_view_mode.dart';
@@ -260,6 +261,74 @@ class _CardBody extends StatelessWidget {
               iconColor:   const Color(0xFFF59E0B),
             ),
             const SizedBox(height: 8),
+          ],
+
+          // ── Operational Instructions ─────────────────────────────────
+          if (item.operationalInstructions?.isNotEmpty ?? false) ...[
+            _NotesBlock(
+              icon:        Icons.checklist_rounded,
+              label:       'OPERATIONAL',
+              text:        item.operationalInstructions!,
+              bgColor:     const Color(0xFFEFF6FF),
+              borderColor: const Color(0xFFBFDBFE),
+              textColor:   const Color(0xFF1E40AF),
+              iconColor:   const Color(0xFF3B82F6),
+            ),
+            const SizedBox(height: 6),
+          ],
+
+          if (item.contingencyInstructions?.isNotEmpty ?? false) ...[
+            _NotesBlock(
+              icon:        Icons.warning_amber_rounded,
+              label:       'CONTINGENCY',
+              text:        item.contingencyInstructions!,
+              bgColor:     const Color(0xFFFFFBEB),
+              borderColor: const Color(0xFFFDE68A),
+              textColor:   const Color(0xFF92400E),
+              iconColor:   const Color(0xFFF59E0B),
+            ),
+            const SizedBox(height: 6),
+          ],
+
+          if (item.escalationInstructions?.isNotEmpty ?? false) ...[
+            _NotesBlock(
+              icon:        Icons.escalator_warning_rounded,
+              label:       'ESCALATION',
+              text:        item.escalationInstructions!,
+              bgColor:     const Color(0xFFFEF2F2),
+              borderColor: const Color(0xFFFECACA),
+              textColor:   const Color(0xFF991B1B),
+              iconColor:   const Color(0xFFEF4444),
+            ),
+            const SizedBox(height: 6),
+          ],
+
+          // Suggest badge — shown when no instructions but templates exist
+          if (!item.hasInstructions &&
+              DefaultInstructionTemplates.hasTemplatesFor(item.type.dbValue)) ...[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+              decoration: BoxDecoration(
+                color:        const Color(0xFFF0FDFA),
+                borderRadius: BorderRadius.circular(5),
+                border:       Border.all(
+                    color: const Color(0xFF0F766E).withAlpha(50)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.auto_awesome_rounded,
+                      size: 11, color: Color(0xFF0F766E)),
+                  const SizedBox(width: 5),
+                  Text(
+                    'Suggested instructions available — tap to review',
+                    style: AppTextStyles.labelSmall
+                        .copyWith(color: const Color(0xFF0F766E)),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 6),
           ],
 
           // Responsible person
