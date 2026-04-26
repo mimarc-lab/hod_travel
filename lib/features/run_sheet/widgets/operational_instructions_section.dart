@@ -465,28 +465,43 @@ class _ReadView extends StatelessWidget {
         style: AppTextStyles.bodySmall.copyWith(color: AppColors.textMuted),
       );
     }
+    final sections = <(String, String)>[];
+    if (item.operationalInstructions?.isNotEmpty == true) {
+      sections.add(('OPERATIONAL', item.operationalInstructions!));
+    }
+    if (item.contingencyInstructions?.isNotEmpty == true) {
+      sections.add(('CONTINGENCY', item.contingencyInstructions!));
+    }
+    if (item.escalationInstructions?.isNotEmpty == true) {
+      sections.add(('ESCALATION', item.escalationInstructions!));
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (item.operationalInstructions?.isNotEmpty ?? false)
-          _PlainInstructionBlock(
-            label: 'Operational',
-            text:  item.operationalInstructions!,
+        Container(
+          decoration: BoxDecoration(
+            color:        AppColors.surfaceAlt,
+            borderRadius: BorderRadius.circular(6),
+            border:       Border.all(color: AppColors.border),
           ),
-        if (item.contingencyInstructions?.isNotEmpty ?? false) ...[
-          const SizedBox(height: AppSpacing.sm),
-          _PlainInstructionBlock(
-            label: 'Contingency',
-            text:  item.contingencyInstructions!,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              for (int i = 0; i < sections.length; i++) ...[
+                if (i > 0)
+                  const Divider(height: 1, thickness: 1, color: AppColors.border),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  child: _PlainInstructionBlock(
+                    label: sections[i].$1,
+                    text:  sections[i].$2,
+                  ),
+                ),
+              ],
+            ],
           ),
-        ],
-        if (item.escalationInstructions?.isNotEmpty ?? false) ...[
-          const SizedBox(height: AppSpacing.sm),
-          _PlainInstructionBlock(
-            label: 'Escalation',
-            text:  item.escalationInstructions!,
-          ),
-        ],
+        ),
         if (item.instructionsSource != null) ...[
           const SizedBox(height: 6),
           _SourceBadge(source: item.instructionsSource!),

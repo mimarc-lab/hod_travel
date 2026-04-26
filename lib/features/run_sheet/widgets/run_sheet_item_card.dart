@@ -264,26 +264,11 @@ class _CardBody extends StatelessWidget {
           ],
 
           // ── Operational Instructions ─────────────────────────────────
-          if (item.operationalInstructions?.isNotEmpty ?? false) ...[
-            _PlainInstructionBlock(
-              label: 'OPERATIONAL',
-              text:  item.operationalInstructions!,
-            ),
-            const SizedBox(height: 6),
-          ],
-
-          if (item.contingencyInstructions?.isNotEmpty ?? false) ...[
-            _PlainInstructionBlock(
-              label: 'CONTINGENCY',
-              text:  item.contingencyInstructions!,
-            ),
-            const SizedBox(height: 6),
-          ],
-
-          if (item.escalationInstructions?.isNotEmpty ?? false) ...[
-            _PlainInstructionBlock(
-              label: 'ESCALATION',
-              text:  item.escalationInstructions!,
+          if (item.hasInstructions) ...[
+            _InstructionsGroup(
+              operational: item.operationalInstructions,
+              contingency: item.contingencyInstructions,
+              escalation:  item.escalationInstructions,
             ),
             const SizedBox(height: 6),
           ],
@@ -461,30 +446,56 @@ class _NotesBlock extends StatelessWidget {
   }
 }
 
-class _PlainInstructionBlock extends StatelessWidget {
-  final String label;
-  final String text;
-  const _PlainInstructionBlock({required this.label, required this.text});
+class _InstructionsGroup extends StatelessWidget {
+  final String? operational;
+  final String? contingency;
+  final String? escalation;
+  const _InstructionsGroup({this.operational, this.contingency, this.escalation});
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: AppTextStyles.overline.copyWith(
-            color:         AppColors.textSecondary,
-            letterSpacing: 0.8,
-          ),
-        ),
-        const SizedBox(height: 3),
-        Text(
-          text,
-          style: AppTextStyles.bodySmall
-              .copyWith(color: AppColors.textSecondary, height: 1.5),
-        ),
-      ],
+    final sections = <(String, String)>[];
+    if (operational?.isNotEmpty == true) sections.add(('OPERATIONAL', operational!));
+    if (contingency?.isNotEmpty == true) sections.add(('CONTINGENCY', contingency!));
+    if (escalation?.isNotEmpty  == true) sections.add(('ESCALATION',  escalation!));
+    if (sections.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      decoration: BoxDecoration(
+        color:        AppColors.surfaceAlt,
+        borderRadius: BorderRadius.circular(6),
+        border:       Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (int i = 0; i < sections.length; i++) ...[
+            if (i > 0)
+              const Divider(height: 1, thickness: 1, color: AppColors.border),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    sections[i].$1,
+                    style: AppTextStyles.overline.copyWith(
+                      color:         AppColors.textSecondary,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    sections[i].$2,
+                    style: AppTextStyles.bodySmall
+                        .copyWith(color: AppColors.textSecondary, height: 1.5),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }
