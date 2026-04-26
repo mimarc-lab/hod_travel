@@ -75,13 +75,16 @@ class _RunSheetScreenState extends State<RunSheetScreen> {
         trip:       widget.trip,
         viewMode:   widget.viewMode,
         onShare:    widget.viewMode == RunSheetViewMode.director
-            ? () => showRunSheetShareDialog(
+            ? () {
+                // Read items at tap time so we always have the loaded list.
+                showRunSheetShareDialog(
                   context,
                   tripId:   widget.trip.id,
                   tripName: widget.trip.name,
-                  allItems: _provider.allItems,
-                  days:     _provider.days,
-                )
+                  allItems: List.from(_provider.allItems),
+                  days:     List.from(_provider.days),
+                );
+              }
             : null, // only directors can share
       ),
       body: ListenableBuilder(

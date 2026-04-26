@@ -35,15 +35,18 @@ class RunSheetPdfExport {
 
   static List<RunSheetItem> _filterByRole(
       List<RunSheetItem> items, RunSheetViewMode viewMode) {
-    return switch (viewMode) {
-      RunSheetViewMode.driver =>
-          items.where((i) =>
-              i.type == ItemType.transport ||
-              i.type == ItemType.flight).toList(),
-      RunSheetViewMode.guide =>
-          items.where((i) => i.type == ItemType.experience).toList(),
-      _ => List<RunSheetItem>.from(items), // director & operations see all
-    };
+    if (viewMode == RunSheetViewMode.driver) {
+      return items
+          .where((i) => i.type == ItemType.transport || i.type == ItemType.flight)
+          .toList();
+    }
+    if (viewMode == RunSheetViewMode.guide) {
+      return items
+          .where((i) => i.type == ItemType.experience)
+          .toList();
+    }
+    // director & operations — all items
+    return List<RunSheetItem>.from(items);
   }
 
   static bool _showOps(RunSheetViewMode m) =>
@@ -75,7 +78,10 @@ class RunSheetPdfExport {
       viewMode: viewMode,
     );
     final filename = '${_sanitize(tripName)}_${viewMode.dbValue}_run_sheet.pdf';
-    await Printing.sharePdf(bytes: bytes, filename: filename);
+    await Printing.layoutPdf(
+      onLayout: (_) async => bytes,
+      name: filename,
+    );
   }
 
   // ── Build document ───────────────────────────────────────────────────────────
@@ -385,9 +391,9 @@ class RunSheetPdfExport {
           showTransport: showTransport,
           showGuide:     showGuide,
         ),
-        pw.SizedBox(height: 24),
+        pw.SizedBox(height: 32),
       ],
-      pw.SizedBox(height: 40),
+      pw.SizedBox(height: 48),
     ];
   }
 
@@ -406,10 +412,10 @@ class RunSheetPdfExport {
         ?? _timeBlockLabel(item.timeBlock);
 
     return pw.Container(
-      padding: const pw.EdgeInsets.all(16),
+      padding: const pw.EdgeInsets.symmetric(horizontal: 16, vertical: 18),
       decoration: pw.BoxDecoration(
         color:        _white,
-        border:       pw.Border.all(color: _border, width: 0.5),
+        border:       pw.Border.all(color: _border, width: 1),
         borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
       ),
       child: pw.Column(
