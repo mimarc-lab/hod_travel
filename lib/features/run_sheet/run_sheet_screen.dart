@@ -79,6 +79,8 @@ class _RunSheetScreenState extends State<RunSheetScreen> {
                   context,
                   tripId:   widget.trip.id,
                   tripName: widget.trip.name,
+                  allItems: _provider.allItems,
+                  days:     _provider.days,
                 )
             : null, // only directors can share
       ),

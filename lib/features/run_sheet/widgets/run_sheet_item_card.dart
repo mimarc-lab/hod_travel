@@ -265,40 +265,25 @@ class _CardBody extends StatelessWidget {
 
           // ── Operational Instructions ─────────────────────────────────
           if (item.operationalInstructions?.isNotEmpty ?? false) ...[
-            _NotesBlock(
-              icon:        Icons.checklist_rounded,
-              label:       'OPERATIONAL',
-              text:        item.operationalInstructions!,
-              bgColor:     const Color(0xFFEFF6FF),
-              borderColor: const Color(0xFFBFDBFE),
-              textColor:   const Color(0xFF1E40AF),
-              iconColor:   const Color(0xFF3B82F6),
+            _PlainInstructionBlock(
+              label: 'OPERATIONAL',
+              text:  item.operationalInstructions!,
             ),
             const SizedBox(height: 6),
           ],
 
           if (item.contingencyInstructions?.isNotEmpty ?? false) ...[
-            _NotesBlock(
-              icon:        Icons.warning_amber_rounded,
-              label:       'CONTINGENCY',
-              text:        item.contingencyInstructions!,
-              bgColor:     const Color(0xFFFFFBEB),
-              borderColor: const Color(0xFFFDE68A),
-              textColor:   const Color(0xFF92400E),
-              iconColor:   const Color(0xFFF59E0B),
+            _PlainInstructionBlock(
+              label: 'CONTINGENCY',
+              text:  item.contingencyInstructions!,
             ),
             const SizedBox(height: 6),
           ],
 
           if (item.escalationInstructions?.isNotEmpty ?? false) ...[
-            _NotesBlock(
-              icon:        Icons.escalator_warning_rounded,
-              label:       'ESCALATION',
-              text:        item.escalationInstructions!,
-              bgColor:     const Color(0xFFFEF2F2),
-              borderColor: const Color(0xFFFECACA),
-              textColor:   const Color(0xFF991B1B),
-              iconColor:   const Color(0xFFEF4444),
+            _PlainInstructionBlock(
+              label: 'ESCALATION',
+              text:  item.escalationInstructions!,
             ),
             const SizedBox(height: 6),
           ],
@@ -472,6 +457,34 @@ class _NotesBlock extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _PlainInstructionBlock extends StatelessWidget {
+  final String label;
+  final String text;
+  const _PlainInstructionBlock({required this.label, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: AppTextStyles.overline.copyWith(
+            color:         AppColors.textSecondary,
+            letterSpacing: 0.8,
+          ),
+        ),
+        const SizedBox(height: 3),
+        Text(
+          text,
+          style: AppTextStyles.bodySmall
+              .copyWith(color: AppColors.textSecondary, height: 1.5),
+        ),
+      ],
     );
   }
 }

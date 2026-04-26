@@ -469,34 +469,22 @@ class _ReadView extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (item.operationalInstructions?.isNotEmpty ?? false)
-          _InstructionBlock(
-            label:    'Operational',
-            text:     item.operationalInstructions!,
-            bgColor:  const Color(0xFFEFF6FF),
-            border:   const Color(0xFFBFDBFE),
-            text_:    const Color(0xFF1E40AF),
-            icon:     Icons.checklist_rounded,
+          _PlainInstructionBlock(
+            label: 'Operational',
+            text:  item.operationalInstructions!,
           ),
         if (item.contingencyInstructions?.isNotEmpty ?? false) ...[
           const SizedBox(height: AppSpacing.sm),
-          _InstructionBlock(
-            label:    'Contingency',
-            text:     item.contingencyInstructions!,
-            bgColor:  const Color(0xFFFFFBEB),
-            border:   const Color(0xFFFDE68A),
-            text_:    const Color(0xFF92400E),
-            icon:     Icons.warning_amber_rounded,
+          _PlainInstructionBlock(
+            label: 'Contingency',
+            text:  item.contingencyInstructions!,
           ),
         ],
         if (item.escalationInstructions?.isNotEmpty ?? false) ...[
           const SizedBox(height: AppSpacing.sm),
-          _InstructionBlock(
-            label:    'Escalation',
-            text:     item.escalationInstructions!,
-            bgColor:  const Color(0xFFFEF2F2),
-            border:   const Color(0xFFFECACA),
-            text_:    const Color(0xFF991B1B),
-            icon:     Icons.escalator_warning_rounded,
+          _PlainInstructionBlock(
+            label: 'Escalation',
+            text:  item.escalationInstructions!,
           ),
         ],
         if (item.instructionsSource != null) ...[
@@ -508,55 +496,30 @@ class _ReadView extends StatelessWidget {
   }
 }
 
-class _InstructionBlock extends StatelessWidget {
-  final String   label;
-  final String   text;
-  final Color    bgColor;
-  final Color    border;
-  final Color    text_;
-  final IconData icon;
-
-  const _InstructionBlock({
-    required this.label,
-    required this.text,
-    required this.bgColor,
-    required this.border,
-    required this.text_,
-    required this.icon,
-  });
+class _PlainInstructionBlock extends StatelessWidget {
+  final String label;
+  final String text;
+  const _PlainInstructionBlock({required this.label, required this.text});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color:        bgColor,
-        borderRadius: BorderRadius.circular(6),
-        border:       Border.all(color: border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, size: 11, color: text_),
-              const SizedBox(width: 5),
-              Text(
-                label.toUpperCase(),
-                style: AppTextStyles.overline.copyWith(
-                  color: text_, letterSpacing: 0.8,
-                ),
-              ),
-            ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label.toUpperCase(),
+          style: AppTextStyles.overline.copyWith(
+            color:         AppColors.textSecondary,
+            letterSpacing: 0.8,
           ),
-          const SizedBox(height: 4),
-          Text(
-            text,
-            style: AppTextStyles.bodySmall
-                .copyWith(color: text_.withAlpha(200), height: 1.5),
-          ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          text,
+          style: AppTextStyles.bodySmall
+              .copyWith(color: AppColors.textSecondary, height: 1.5),
+        ),
+      ],
     );
   }
 }

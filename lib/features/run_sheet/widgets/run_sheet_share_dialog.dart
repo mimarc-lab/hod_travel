@@ -4,8 +4,11 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/supabase/app_db.dart';
+import '../../../data/models/itinerary_models.dart';
+import '../../../data/models/run_sheet_item.dart';
 import '../../../data/models/run_sheet_share_token.dart';
 import '../../../data/models/run_sheet_view_mode.dart';
+import '../services/run_sheet_pdf_export.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // RunSheetShareDialog
@@ -18,13 +21,17 @@ import '../../../data/models/run_sheet_view_mode.dart';
 // ─────────────────────────────────────────────────────────────────────────────
 
 class RunSheetShareDialog extends StatefulWidget {
-  final String tripId;
-  final String tripName;
+  final String             tripId;
+  final String             tripName;
+  final List<RunSheetItem> allItems;
+  final List<TripDay>      days;
 
   const RunSheetShareDialog({
     super.key,
     required this.tripId,
     required this.tripName,
+    required this.allItems,
+    required this.days,
   });
 
   @override
@@ -35,6 +42,7 @@ class _RunSheetShareDialogState extends State<RunSheetShareDialog> {
   RunSheetViewMode _selectedMode = RunSheetViewMode.driver;
   _Expiry          _selectedExpiry = _Expiry.never;
   bool             _isGenerating = false;
+  bool             _isExportingPdf = false;
   RunSheetShareToken? _generated;
   String?          _error;
 
@@ -75,6 +83,22 @@ class _RunSheetShareDialogState extends State<RunSheetShareDialog> {
       setState(() { _error = 'Could not generate link. Please try again.'; });
     } finally {
       setState(() { _isGenerating = false; });
+    }
+  }
+
+  Future<void> _exportPdf() async {
+    setState(() { _isExportingPdf = true; _error = null; });
+    try {
+      await RunSheetPdfExport.share(
+        tripName: widget.tripName,
+        allItems: widget.allItems,
+        days:     widget.days,
+        viewMode: _selectedMode,
+      );
+    } catch (_) {
+      setState(() { _error = 'Could not generate PDF. Please try again.'; });
+    } finally {
+      setState(() { _isExportingPdf = false; });
     }
   }
 
@@ -179,11 +203,11 @@ class _RunSheetShareDialogState extends State<RunSheetShareDialog> {
                 const SizedBox(height: AppSpacing.base),
               ],
 
-              // Generate button
+              // Generate link button
               SizedBox(
                 width: double.infinity,
                 child: FilledButton.icon(
-                  onPressed: _isGenerating ? null : _generate,
+                  onPressed: _isGenerating || _isExportingPdf ? null : _generate,
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColors.accent,
                     foregroundColor: Colors.white,
@@ -203,6 +227,54 @@ class _RunSheetShareDialogState extends State<RunSheetShareDialog> {
                     _generated == null ? 'Generate Link' : 'Regenerate Link',
                     style: AppTextStyles.labelSmall.copyWith(
                       color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+
+              // Divider
+              Row(
+                children: [
+                  const Expanded(child: Divider()),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    child: Text(
+                      'or',
+                      style: AppTextStyles.labelSmall
+                          .copyWith(color: AppColors.textMuted),
+                    ),
+                  ),
+                  const Expanded(child: Divider()),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.sm),
+
+              // Export PDF button
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: _isGenerating || _isExportingPdf ? null : _exportPdf,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.textPrimary,
+                    side: const BorderSide(color: AppColors.border),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8)),
+                  ),
+                  icon: _isExportingPdf
+                      ? SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: AppColors.textSecondary),
+                        )
+                      : const Icon(Icons.picture_as_pdf_rounded, size: 16),
+                  label: Text(
+                    _isExportingPdf ? 'Generating PDF…' : 'Export PDF',
+                    style: AppTextStyles.labelSmall.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -519,14 +591,18 @@ class _GeneratedLinkCardState extends State<_GeneratedLinkCard> {
 
 Future<void> showRunSheetShareDialog(
   BuildContext context, {
-  required String tripId,
-  required String tripName,
+  required String             tripId,
+  required String             tripName,
+  required List<RunSheetItem> allItems,
+  required List<TripDay>      days,
 }) {
   return showDialog(
     context: context,
     builder: (_) => RunSheetShareDialog(
       tripId:   tripId,
       tripName: tripName,
+      allItems: allItems,
+      days:     days,
     ),
   );
 }
