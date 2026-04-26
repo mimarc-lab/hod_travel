@@ -98,7 +98,8 @@ class SuggestionApplyService {
       AiSuggestionType.signatureExperience =>
         _applySignatureExperience(suggestion),
       AiSuggestionType.taskSuggestion => _applyTask(suggestion.proposedPayload),
-      AiSuggestionType.flowImprovement => SuggestionApplyResult.acknowledged(),
+      AiSuggestionType.flowImprovement  => SuggestionApplyResult.acknowledged(),
+      AiSuggestionType.itinerarySequence=> SuggestionApplyResult.acknowledged(),
     };
   }
 

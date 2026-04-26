@@ -5,6 +5,7 @@ import '../../../core/constants/app_text_styles.dart';
 import '../../../core/utils/responsive.dart';
 import '../../../core/supabase/app_db.dart';
 import '../../../data/models/trip_model.dart';
+import '../../../features/ai_suggestions/itinerary_sequence/itinerary_sequence_review_screen.dart';
 import '../providers/itinerary_provider.dart';
 import '../widgets/day_navigator.dart';
 import '../widgets/itinerary_day_view.dart';
@@ -95,10 +96,23 @@ class _ItineraryScreenState extends State<ItineraryScreen>
         if (_provider.days.isEmpty) {
           return _EmptyItinerary(provider: _provider);
         }
-        if (Responsive.isMobile(context)) {
-          return _MobileLayout(provider: _provider);
-        }
-        return _DesktopLayout(provider: _provider);
+
+        final layout = Responsive.isMobile(context)
+            ? _MobileLayout(provider: _provider)
+            : _DesktopLayout(provider: _provider);
+
+        return Column(
+          children: [
+            _ItineraryToolbar(
+              onSuggestSequence: () => showItinerarySequenceReview(
+                context,
+                trip:              widget.trip,
+                itineraryProvider: _provider,
+              ),
+            ),
+            Expanded(child: layout),
+          ],
+        );
       },
     );
   }
@@ -153,6 +167,57 @@ class _MobileLayout extends StatelessWidget {
                 ),
         ),
       ],
+    );
+  }
+}
+
+// ── Itinerary toolbar ─────────────────────────────────────────────────────────
+
+class _ItineraryToolbar extends StatelessWidget {
+  final VoidCallback onSuggestSequence;
+  const _ItineraryToolbar({required this.onSuggestSequence});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.pagePaddingH,
+        vertical:   AppSpacing.sm,
+      ),
+      decoration: const BoxDecoration(
+        color:  AppColors.surface,
+        border: Border(bottom: BorderSide(color: AppColors.border)),
+      ),
+      child: Row(
+        children: [
+          const Spacer(),
+          GestureDetector(
+            onTap: onSuggestSequence,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color:        const Color(0xFFF0FDFA),
+                borderRadius: BorderRadius.circular(6),
+                border:       Border.all(
+                    color: const Color(0xFF0F766E).withAlpha(60)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.view_timeline_rounded,
+                      size: 13, color: Color(0xFF0F766E)),
+                  const SizedBox(width: 5),
+                  Text(
+                    'Suggest Sequence',
+                    style: AppTextStyles.labelMedium
+                        .copyWith(color: const Color(0xFF0F766E)),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

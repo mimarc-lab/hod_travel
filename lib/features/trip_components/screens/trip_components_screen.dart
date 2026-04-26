@@ -6,6 +6,7 @@ import '../../../core/supabase/app_db.dart';
 import '../../../core/utils/responsive.dart';
 import '../../../data/models/trip_component_model.dart';
 import '../../../data/models/trip_model.dart';
+import '../../../features/ai_suggestions/itinerary_sequence/itinerary_sequence_review_screen.dart';
 import '../providers/components_provider.dart';
 import '../widgets/component_card.dart';
 import '../widgets/component_filter_bar.dart';
@@ -52,6 +53,10 @@ class _TripComponentsScreenState extends State<TripComponentsScreen>
     );
   }
 
+  void _openSequenceDraft() {
+    showItinerarySequenceReview(context, trip: widget.trip);
+  }
+
   void _openEditSheet(TripComponent component) {
     showComponentFormSheet(
       context,
@@ -69,8 +74,9 @@ class _TripComponentsScreenState extends State<TripComponentsScreen>
       children: [
         // Toolbar
         _ComponentsToolbar(
-          onAdd:    _openAddSheet,
-          onRefresh: _provider.refresh,
+          onAdd:         _openAddSheet,
+          onRefresh:     _provider.refresh,
+          onBuildDraft:  _openSequenceDraft,
         ),
 
         // Filter bar
@@ -146,8 +152,9 @@ class _TripComponentsScreenState extends State<TripComponentsScreen>
 
 class _ComponentsToolbar extends StatelessWidget {
   final VoidCallback onAdd;
+  final VoidCallback onBuildDraft;
   final Future<void> Function() onRefresh;
-  const _ComponentsToolbar({required this.onAdd, required this.onRefresh});
+  const _ComponentsToolbar({required this.onAdd, required this.onRefresh, required this.onBuildDraft});
 
   @override
   Widget build(BuildContext context) {
@@ -174,6 +181,29 @@ class _ComponentsToolbar extends StatelessWidget {
             ],
           ),
           const Spacer(),
+          GestureDetector(
+            onTap: onBuildDraft,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color:        const Color(0xFFF0FDFA),
+                borderRadius: BorderRadius.circular(6),
+                border:       Border.all(color: const Color(0xFF0F766E).withAlpha(60)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.view_timeline_rounded, size: 13, color: Color(0xFF0F766E)),
+                  const SizedBox(width: 5),
+                  Text(
+                    'Build Itinerary Draft',
+                    style: AppTextStyles.labelMedium.copyWith(color: const Color(0xFF0F766E)),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
           IconButton(
             onPressed: onRefresh,
             icon: const Icon(Icons.refresh_rounded, size: 18),

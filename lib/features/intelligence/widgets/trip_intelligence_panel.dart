@@ -13,6 +13,7 @@ import '../../../features/ai_suggestions/services/ai_provider.dart';
 import '../../../features/ai_memory/suggestion_feedback_tracker.dart';
 import '../../../features/ai_memory/preference_inference_engine.dart';
 import '../../../features/ai_suggestions/services/suggestion_apply_service.dart';
+import '../../../features/ai_suggestions/itinerary_sequence/itinerary_sequence_review_screen.dart';
 import '../../../features/ai_suggestions/widgets/ai_suggestion_card.dart';
 import '../../../features/ai_suggestions/widgets/ai_suggestion_review_panel.dart';
 import '../../../features/itinerary/providers/itinerary_provider.dart';
@@ -499,6 +500,14 @@ class _AiSuggestionsSectionState extends State<_AiSuggestionsSection> {
                 );
               }).toList(),
             ),
+            const SizedBox(height: AppSpacing.sm),
+
+            // ── Assisted Itinerary Sequencing entry point ──────────────────
+            _SequenceChip(
+              trip:              widget.trip,
+              itineraryProvider: widget.itineraryProvider,
+              isLoading:         isGenerating,
+            ),
 
             // ── Loading indicator ──────────────────────────────────────────
             if (isGenerating) ...[
@@ -602,6 +611,70 @@ class _GenerateChip extends StatelessWidget {
             Text(label,
                 style: TextStyle(
                     fontSize: 11, fontWeight: FontWeight.w600, color: color)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Sequence itinerary chip ───────────────────────────────────────────────────
+
+class _SequenceChip extends StatelessWidget {
+  final Trip              trip;
+  final ItineraryProvider? itineraryProvider;
+  final bool              isLoading;
+
+  const _SequenceChip({
+    required this.trip,
+    this.itineraryProvider,
+    required this.isLoading,
+  });
+
+  static const _color = Color(0xFF0F766E);
+  static const _bg    = Color(0xFFF0FDFA);
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: isLoading
+          ? null
+          : () => showItinerarySequenceReview(
+                context,
+                trip:              trip,
+                itineraryProvider: itineraryProvider,
+              ),
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color:        _bg,
+          borderRadius: BorderRadius.circular(20),
+          border:       Border.all(color: _color.withAlpha(60)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.view_timeline_rounded, size: 12, color: _color),
+            const SizedBox(width: 5),
+            Text(
+              'Sequence Itinerary',
+              style: TextStyle(
+                  fontSize: 11, fontWeight: FontWeight.w600, color: _color),
+            ),
+            const SizedBox(width: 5),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+              decoration: BoxDecoration(
+                color:        _color.withAlpha(18),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                'AI Draft',
+                style: TextStyle(
+                    fontSize: 9, fontWeight: FontWeight.w700, color: _color),
+              ),
+            ),
           ],
         ),
       ),

@@ -37,6 +37,7 @@ class ItineraryProvider extends ChangeNotifier {
   // ── Getters ────────────────────────────────────────────────────────────────
 
   List<TripDay> get days      => _days;
+  Map<String, List<ItineraryItem>> get itemsByDayId => _itemsByDayId;
   int get selectedDayIndex    => _selectedDayIndex;
   bool get isLoading          => _isLoading;
   String? get error           => _error;
