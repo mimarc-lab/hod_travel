@@ -343,11 +343,11 @@ class _ItemList extends StatelessWidget {
         else
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(
-                AppSpacing.base, 0, AppSpacing.base, AppSpacing.massive),
+                AppSpacing.base, AppSpacing.sm, AppSpacing.base, AppSpacing.massive),
             sliver: SliverList.separated(
               itemCount:        items.length,
               separatorBuilder: (_, _) =>
-                  const SizedBox(height: AppSpacing.sm),
+                  const SizedBox(height: AppSpacing.lg),
               itemBuilder: (_, i) => RunSheetItemCard(
                 item:     items[i],
                 provider: provider,

@@ -37,6 +37,8 @@ class RunSheetPdfExport {
     required List<TripDay>      days,
     required RunSheetViewMode   viewMode,
   }) async {
+    // Role filter: director/operations → all items; driver → transport+flight;
+    // guide → experience only. Days with no matching items are skipped.
     final items = RunSheetRoleFilter.apply(allItems, viewMode);
     final bytes = await _build(
       tripName: tripName,
