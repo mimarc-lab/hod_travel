@@ -10,6 +10,7 @@ import '../../../data/models/trip_component_model.dart';
 import '../../../data/models/trip_model.dart';
 import '../../../features/ai_suggestions/services/ai_config.dart';
 import '../../../features/ai_suggestions/services/ai_provider.dart';
+import '../../../features/documents/widgets/linked_documents_section.dart';
 import '../../../features/itinerary/providers/itinerary_provider.dart';
 import '../providers/components_provider.dart';
 import '../services/component_title_suggestion_service.dart';
@@ -974,6 +975,18 @@ class _ComponentFormSheetState extends State<_ComponentFormSheet> {
               style: AppTextStyles.bodyMedium,
             ),
           ),
+
+          // ── Linked Documents (edit mode only) ────────────────────────────
+          if (_isEditing && widget.existing?.id != null) ...[
+            _sectionDivider(),
+            _sectionHeader('Documents'),
+            _fieldGap(),
+            LinkedDocumentsSection(
+              key:         ValueKey('docs_${widget.existing!.id}'),
+              tripId:      widget.trip.id,
+              componentId: widget.existing!.id,
+            ),
+          ],
 
           const SizedBox(height: AppSpacing.xl),
         ],

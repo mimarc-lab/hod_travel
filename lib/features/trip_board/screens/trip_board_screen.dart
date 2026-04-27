@@ -8,6 +8,7 @@ import '../../../core/utils/responsive.dart';
 import '../../../data/models/trip_model.dart';
 import '../../../features/budget/screens/trip_budget_screen.dart';
 import '../../../features/client_view/client_itinerary_screen.dart';
+import '../../../features/documents/screens/trip_documents_screen.dart';
 import '../../../features/itinerary/screens/itinerary_screen.dart';
 import '../../../features/run_sheet/run_sheet_screen.dart';
 import '../../../features/timeline/timeline_screen.dart';
@@ -52,13 +53,13 @@ class _TripBoardScreenState extends State<TripBoardScreen>
   /// Mutable local copy of the trip — updated when the user saves edits.
   late Trip _currentTrip;
 
-  static const _tabs = ['Board', 'Timeline', 'Map', 'Itinerary', 'Components', 'Budget', 'Intelligence', 'Client View', 'Health'];
+  static const _tabs = ['Board', 'Timeline', 'Map', 'Itinerary', 'Components', 'Budget', 'Documents', 'Intelligence', 'Client View', 'Health'];
 
   @override
   void initState() {
     super.initState();
     _currentTrip = widget.trip;
-    _tabController = TabController(length: _tabs.length, vsync: this);
+    _tabController = TabController(length: _tabs.length, vsync: this); // 10 tabs
     _provider = BoardProvider(
       widget.trip,
       repository:        AppRepositories.instance?.tasks,
@@ -252,6 +253,7 @@ class _TripBoardScreenState extends State<TripBoardScreen>
                       ItineraryScreen(trip: widget.trip, provider: _itineraryProvider),
                       TripComponentsScreen(trip: widget.trip, itineraryProvider: _itineraryProvider),
                       TripBudgetScreen(trip: widget.trip),
+                      TripDocumentsScreen(trip: widget.trip),
                       TripIntelligencePanel(
                         trip: widget.trip,
                         boardProvider: _provider,
@@ -571,7 +573,7 @@ class _BoardToolbar extends StatelessWidget {
           if (onRecalculate != null) ...[
             ListenableBuilder(
               listenable: provider,
-              builder: (_, __) {
+              builder: (_, _) {
                 final busy = provider.isRecalculating;
                 return GestureDetector(
                   onTap: busy ? null : onRecalculate,

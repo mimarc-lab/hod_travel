@@ -9,6 +9,7 @@ import '../../../data/models/run_sheet_item.dart';
 import '../providers/run_sheet_provider.dart';
 import '../services/run_sheet_instruction_template_service.dart';
 import '../services/run_sheet_view_mode.dart';
+import '../../../features/documents/widgets/linked_documents_section.dart';
 import 'operational_instructions_section.dart';
 import 'run_sheet_contact_block.dart';
 import 'run_sheet_status_chip.dart';
@@ -147,6 +148,14 @@ class _ItemDetailSheetState extends State<_ItemDetailSheet> {
                       const SizedBox(height: AppSpacing.sm),
                       _NotesSection(item: _item, viewMode: viewMode),
                     ],
+
+                    // Documents
+                    const SizedBox(height: AppSpacing.base),
+                    LinkedDocumentsSection(
+                      key:             ValueKey('docs_rs_${_item.id}'),
+                      tripId:          _item.tripId,
+                      runSheetItemId:  _item.id,
+                    ),
 
                     const SizedBox(height: AppSpacing.xl),
                   ],

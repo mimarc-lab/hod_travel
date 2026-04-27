@@ -22,6 +22,7 @@ import '../../data/repositories/client_dossier_repository.dart';
 import '../../data/repositories/ai_memory_repository.dart';
 import '../../data/repositories/trip_component_repository.dart';
 import '../../data/repositories/run_sheet_instruction_template_repository.dart';
+import '../../data/repositories/trip_document_repository.dart';
 import '../../features/auth/auth_repository.dart';
 import '../../features/security/permission_service.dart';
 import '../../services/audit_log_service.dart';
@@ -96,6 +97,9 @@ class AppRepositories {
   final PermissionService permissions;
   final AuditLogService    auditLogs;
 
+  // ── Documents ─────────────────────────────────────────────────────────────
+  final TripDocumentRepository documents;
+
   // ── Cross-cutting ─────────────────────────────────────────────────────────
   final NotificationRepository notifications;
   final ApprovalRepository approvals;
@@ -124,6 +128,7 @@ class AppRepositories {
     required this.aiMemory,
     required this.permissions,
     required this.auditLogs,
+    required this.documents,
     required this.notifications,
     required this.approvals,
     required this.attachments,
@@ -161,6 +166,7 @@ class AppRepositories {
       aiMemory:             SupabaseAiMemoryRepository(client),
       permissions:          PermissionService(client),
       auditLogs:            AuditLogService(client),
+      documents:    SupabaseTripDocumentRepository(client),
       notifications:        SupabaseNotificationRepository(client),
       approvals:    SupabaseApprovalRepository(client),
       attachments:  SupabaseAttachmentRepository(client),
