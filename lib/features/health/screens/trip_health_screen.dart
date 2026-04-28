@@ -41,6 +41,7 @@ class _TripHealthScreenState extends State<TripHealthScreen>
       budget:     repos?.budget,
       itinerary:  repos?.itinerary,
       runSheets:  repos?.runSheets,
+      documents:  repos?.documents,
     );
   }
 

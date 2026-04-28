@@ -7,6 +7,7 @@ import '../../../data/models/cost_item_model.dart';
 import '../../../data/models/supplier_model.dart';
 import '../../../data/models/trip_model.dart';
 import '../providers/budget_provider.dart';
+import '../../documents/widgets/linked_documents_section.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Public entry point
@@ -490,6 +491,20 @@ class _CostItemEditorFormState extends State<_CostItemEditorForm> {
                       'Booking reference, instructions, remarks…',
                       maxLines: 3),
                 ),
+
+                // Documents (edit mode only)
+                if (widget.existing?.id != null &&
+                    widget.existing!.id.isNotEmpty) ...[
+                  const SizedBox(height: AppSpacing.base),
+                  _Field(
+                    label: 'DOCUMENTS',
+                    child: LinkedDocumentsSection(
+                      key:        ValueKey('docs_cost_${widget.existing!.id}'),
+                      tripId:     _tripId,
+                      costItemId: widget.existing!.id,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

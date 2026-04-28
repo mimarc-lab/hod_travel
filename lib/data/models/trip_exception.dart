@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-enum TripExceptionType { task, component, dataIntegrity, financial, supplier }
+enum TripExceptionType { task, component, dataIntegrity, financial, supplier, document }
 
 enum TripExceptionSeverity { low, medium, high }
 
@@ -19,6 +19,7 @@ extension TripExceptionTypeDisplay on TripExceptionType {
     TripExceptionType.dataIntegrity => 'Data Integrity',
     TripExceptionType.financial     => 'Financial',
     TripExceptionType.supplier      => 'Supplier',
+    TripExceptionType.document      => 'Document',
   };
 
   IconData get icon => switch (this) {
@@ -27,6 +28,7 @@ extension TripExceptionTypeDisplay on TripExceptionType {
     TripExceptionType.dataIntegrity => Icons.link_off_rounded,
     TripExceptionType.financial     => Icons.attach_money_rounded,
     TripExceptionType.supplier      => Icons.storefront_rounded,
+    TripExceptionType.document      => Icons.description_outlined,
   };
 
   Color get color => switch (this) {
@@ -35,6 +37,7 @@ extension TripExceptionTypeDisplay on TripExceptionType {
     TripExceptionType.dataIntegrity => const Color(0xFFB45309),
     TripExceptionType.financial     => const Color(0xFF065F46),
     TripExceptionType.supplier      => const Color(0xFF1D4ED8),
+    TripExceptionType.document      => const Color(0xFF9D174D),
   };
 }
 

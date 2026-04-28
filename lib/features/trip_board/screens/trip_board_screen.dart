@@ -86,7 +86,7 @@ class _TripBoardScreenState extends State<TripBoardScreen>
   Future<void> _openEditTrip(BuildContext context) async {
     final updated = await Navigator.of(context).push<Trip>(
       MaterialPageRoute(
-        builder: (_) => EditTripScreen(trip: _currentTrip),
+        builder: (_) => EditTripScreen(trip: _currentTrip, tripProvider: widget.tripProvider),
       ),
     );
     if (updated != null && mounted) {

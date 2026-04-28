@@ -3,6 +3,7 @@ import '../models/itinerary_models.dart';
 import '../models/run_sheet_item.dart';
 import '../models/task_model.dart';
 import '../models/trip_component_model.dart';
+import '../models/trip_document.dart';
 import '../models/trip_exception.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -22,6 +23,7 @@ class ExceptionEngine {
     required List<CostItem> costItems,
     required Map<String, List<ItineraryItem>> itemsByDayId,
     required List<RunSheetRow> runSheetRows,
+    List<TripDocument> documents = const [],
   }) {
     final out = <TripException>[];
     final now     = DateTime.now();
@@ -294,6 +296,83 @@ class ExceptionEngine {
           relatedEntityId:   task.id,
           suggestedAction:   'Follow up with the supplier or escalate.',
           actionType:        TripExceptionAction.escalate,
+        ));
+      }
+    }
+
+    // ── Document exceptions ───────────────────────────────────────────────────
+
+    // Build set of componentIds that have at least one booking confirmation doc
+    final confirmedDocComponentIds = {
+      for (final d in documents)
+        if (d.componentId != null &&
+            d.documentType == DocumentType.bookingConfirmation &&
+            d.status != DocumentStatus.archived)
+          d.componentId!,
+    };
+
+    for (final doc in documents) {
+      if (doc.status == DocumentStatus.archived) continue;
+
+      // Explicitly marked missing
+      if (doc.status == DocumentStatus.missing) {
+        out.add(TripException(
+          id:                'doc_missing_${doc.id}',
+          type:              TripExceptionType.document,
+          severity:          TripExceptionSeverity.medium,
+          message:           'Document "${doc.title}" is marked as missing.',
+          relatedEntityName: doc.title,
+          relatedEntityId:   doc.id,
+          suggestedAction:   'Upload or re-request the missing document.',
+          actionType:        TripExceptionAction.addMissingData,
+        ));
+        continue;
+      }
+
+      // Expired — either by status flag or by expiry date
+      final expired = doc.status == DocumentStatus.expired || doc.isExpired;
+      if (expired) {
+        out.add(TripException(
+          id:                'doc_expired_${doc.id}',
+          type:              TripExceptionType.document,
+          severity:          TripExceptionSeverity.high,
+          message:           'Document "${doc.title}" has expired.',
+          relatedEntityName: doc.title,
+          relatedEntityId:   doc.id,
+          suggestedAction:   'Renew or replace this document.',
+          actionType:        TripExceptionAction.addMissingData,
+        ));
+        continue;
+      }
+
+      // Expiring within 30 days
+      if (doc.isExpiringSoon) {
+        final days = doc.expiryDate!.difference(DateTime.now()).inDays;
+        out.add(TripException(
+          id:                'doc_expiring_${doc.id}',
+          type:              TripExceptionType.document,
+          severity:          TripExceptionSeverity.medium,
+          message:           'Document "${doc.title}" expires in $days day${days == 1 ? '' : 's'}.',
+          relatedEntityName: doc.title,
+          relatedEntityId:   doc.id,
+          suggestedAction:   'Renew this document before it expires.',
+          actionType:        TripExceptionAction.addMissingData,
+        ));
+      }
+    }
+
+    // Confirmed/booked components without a booking confirmation document
+    for (final c in active) {
+      if (!confirmedDocComponentIds.contains(c.id)) {
+        out.add(TripException(
+          id:                'doc_no_confirmation_${c.id}',
+          type:              TripExceptionType.document,
+          severity:          TripExceptionSeverity.medium,
+          message:           '"${c.title}" has no booking confirmation document.',
+          relatedEntityName: c.title,
+          relatedEntityId:   c.id,
+          suggestedAction:   'Upload the booking confirmation for this component.',
+          actionType:        TripExceptionAction.addMissingData,
         ));
       }
     }

@@ -49,6 +49,7 @@ class SupplierProvider extends ChangeNotifier {
         final q = _searchQuery.toLowerCase();
         final match = s.name.toLowerCase().contains(q) ||
             s.city.toLowerCase().contains(q) ||
+            s.country.toLowerCase().contains(q) ||
             (s.contactName?.toLowerCase().contains(q) ?? false) ||
             s.tags.any((t) => t.toLowerCase().contains(q));
         if (!match) return false;

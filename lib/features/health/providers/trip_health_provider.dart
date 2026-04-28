@@ -1,12 +1,11 @@
 import 'package:flutter/foundation.dart';
-import '../../../core/supabase/app_db.dart';
-import '../../../data/models/board_group_model.dart';
 import '../../../data/models/cost_item_model.dart';
 import '../../../data/models/itinerary_models.dart';
 import '../../../data/models/milestone_status.dart';
 import '../../../data/models/run_sheet_item.dart';
 import '../../../data/models/task_model.dart';
 import '../../../data/models/trip_component_model.dart';
+import '../../../data/models/trip_document.dart';
 import '../../../data/models/trip_exception.dart';
 import '../../../data/models/trip_model.dart';
 import '../../../data/repositories/budget_repository.dart';
@@ -14,6 +13,7 @@ import '../../../data/repositories/itinerary_repository.dart';
 import '../../../data/repositories/run_sheet_repository.dart';
 import '../../../data/repositories/task_repository.dart';
 import '../../../data/repositories/trip_component_repository.dart';
+import '../../../data/repositories/trip_document_repository.dart';
 import '../../../data/services/critical_path_engine.dart';
 import '../../../data/services/exception_engine.dart';
 import '../../../data/services/milestone_engine.dart';
@@ -27,12 +27,13 @@ import '../../../data/services/readiness_engine.dart';
 // ─────────────────────────────────────────────────────────────────────────────
 
 class TripHealthProvider extends ChangeNotifier {
-  final Trip                      _trip;
-  final TaskRepository?           _tasks;
-  final TripComponentRepository?  _components;
-  final BudgetRepository?         _budget;
-  final ItineraryRepository?      _itinerary;
-  final RunSheetRepository?       _runSheets;
+  final Trip                       _trip;
+  final TaskRepository?            _tasks;
+  final TripComponentRepository?   _components;
+  final BudgetRepository?          _budget;
+  final ItineraryRepository?       _itinerary;
+  final RunSheetRepository?        _runSheets;
+  final TripDocumentRepository?    _documents;
 
   bool                   _isLoading  = false;
   String?                _error;
@@ -48,12 +49,14 @@ class TripHealthProvider extends ChangeNotifier {
     BudgetRepository?        budget,
     ItineraryRepository?     itinerary,
     RunSheetRepository?      runSheets,
+    TripDocumentRepository?  documents,
   })  : _trip       = trip,
         _tasks      = tasks,
         _components = components,
         _budget     = budget,
         _itinerary  = itinerary,
-        _runSheets  = runSheets {
+        _runSheets  = runSheets,
+        _documents  = documents {
     reload();
   }
 
@@ -90,6 +93,7 @@ class TripHealthProvider extends ChangeNotifier {
         _fetchCostItems(),
         _fetchItinerary(),
         _fetchRunSheetRows(),
+        _fetchDocuments(),
       ]);
 
       final tasks        = results[0] as List<Task>;
@@ -97,6 +101,7 @@ class TripHealthProvider extends ChangeNotifier {
       final costItems    = results[2] as List<CostItem>;
       final itin         = results[3] as _ItinData;
       final runSheetRows = results[4] as List<RunSheetRow>;
+      final documents    = results[5] as List<TripDocument>;
 
       final exceptions = ExceptionEngine.detect(
         tasks:        tasks,
@@ -104,6 +109,7 @@ class TripHealthProvider extends ChangeNotifier {
         costItems:    costItems,
         itemsByDayId: itin.itemsByDayId,
         runSheetRows: runSheetRows,
+        documents:    documents,
       );
 
       final milestones = MilestoneEngine.evaluate(
@@ -167,6 +173,12 @@ class TripHealthProvider extends ChangeNotifier {
   Future<List<RunSheetRow>> _fetchRunSheetRows() async {
     if (_runSheets == null) return const [];
     try { return await _runSheets.fetchForTrip(_trip.id); }
+    catch (_) { return const []; }
+  }
+
+  Future<List<TripDocument>> _fetchDocuments() async {
+    if (_documents == null) return const [];
+    try { return await _documents.fetchForTrip(tripId: _trip.id); }
     catch (_) { return const []; }
   }
 }
