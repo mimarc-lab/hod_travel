@@ -178,7 +178,7 @@ class ComponentsProvider extends ChangeNotifier {
             tripId:         component.tripId,
             itemName:       component.title,
             category:       _toCostCategory(component.componentType),
-            city:           component.locationName ?? '',
+            city:           component.city ?? '',
             date:           component.startDate,
             currency:       'USD',
             netCost:        net,
@@ -222,7 +222,7 @@ class ComponentsProvider extends ChangeNotifier {
               tripId:    component.tripId,
               dayNumber: days.length + 1,
               date:      component.startDate,
-              city:      component.locationName ?? '',
+              city:      component.city ?? '',
             ),
             teamId!,
           );
@@ -315,8 +315,8 @@ class ComponentsProvider extends ChangeNotifier {
             netCost:     net,
             sellPrice:   sell,
             depositPaid: component.depositPaid ?? existing.depositPaid,
-            city:        component.locationName?.isNotEmpty == true
-                ? component.locationName!
+            city:        component.city?.isNotEmpty == true
+                ? component.city!
                 : existing.city,
             date:           component.startDate,
             clearDate:      component.startDate == null,

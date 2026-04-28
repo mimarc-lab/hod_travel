@@ -254,6 +254,7 @@ class TripComponent {
   final String? endTime;
 
   // Location
+  final String? city;
   final String? locationName;
   final String? address;
 
@@ -308,6 +309,7 @@ class TripComponent {
     this.endDate,
     this.startTime,
     this.endTime,
+    this.city,
     this.locationName,
     this.address,
     this.supplierBookingReference,
@@ -353,6 +355,7 @@ class TripComponent {
     bool clearStartTime = false,
     String? endTime,
     bool clearEndTime = false,
+    String? city,
     String? locationName,
     String? address,
     String? supplierBookingReference,
@@ -392,6 +395,7 @@ class TripComponent {
         endDate:       clearEndDate   ? null : endDate   ?? this.endDate,
         startTime:     clearStartTime ? null : startTime ?? this.startTime,
         endTime:       clearEndTime   ? null : endTime   ?? this.endTime,
+        city:          city          ?? this.city,
         locationName:  locationName  ?? this.locationName,
         address:       address       ?? this.address,
         supplierBookingReference: supplierBookingReference ?? this.supplierBookingReference,

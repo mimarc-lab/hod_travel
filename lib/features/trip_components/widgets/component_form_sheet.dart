@@ -150,6 +150,7 @@ class _ComponentFormSheetState extends State<_ComponentFormSheet> {
   TimeOfDay? _endTime;
 
   // Location
+  late TextEditingController _cityCtrl;
   late TextEditingController _locationCtrl;
   late TextEditingController _addressCtrl;
 
@@ -211,6 +212,7 @@ class _ComponentFormSheetState extends State<_ComponentFormSheet> {
     _startTime = _parseTime(e?.startTime);
     _endTime   = _parseTime(e?.endTime);
 
+    _cityCtrl     = TextEditingController(text: e?.city ?? '');
     _locationCtrl = TextEditingController(text: e?.locationName ?? '');
     _addressCtrl  = TextEditingController(text: e?.address ?? '');
 
@@ -288,6 +290,7 @@ class _ComponentFormSheetState extends State<_ComponentFormSheet> {
   @override
   void dispose() {
     _titleCtrl.dispose();
+    _cityCtrl.dispose();
     _locationCtrl.dispose();
     _addressCtrl.dispose();
     _bookingRefCtrl.dispose();
@@ -366,6 +369,7 @@ class _ComponentFormSheetState extends State<_ComponentFormSheet> {
       endDate:    _endDate,
       startTime:  _startTime != null ? _fmtTime(_startTime!) : null,
       endTime:    _endTime   != null ? _fmtTime(_endTime!)   : null,
+      city:         _nullIfEmpty(_cityCtrl.text),
       locationName: _nullIfEmpty(_locationCtrl.text),
       address:      _nullIfEmpty(_addressCtrl.text),
       supplierBookingReference: _nullIfEmpty(_bookingRefCtrl.text),
@@ -740,6 +744,15 @@ class _ComponentFormSheetState extends State<_ComponentFormSheet> {
           // ── Location ─────────────────────────────────────────────────────────
           _sectionHeader('Location'),
           _fieldGap(),
+          _labeledField(
+            label: 'City',
+            child: TextFormField(
+              controller: _cityCtrl,
+              decoration: _inputDeco('e.g. Bled, Paris, Tokyo'),
+              style: AppTextStyles.bodyMedium,
+            ),
+          ),
+          _rowGap(),
           _labeledField(
             label: labels.locationName,
             child: TextFormField(
