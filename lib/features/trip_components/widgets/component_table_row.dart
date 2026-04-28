@@ -141,9 +141,9 @@ class ComponentTableRow extends StatelessWidget {
               // City
               SizedBox(
                 width: ComponentColumns.city,
-                child: Text(component.locationName ?? '—',
+                child: Text(component.city ?? '—',
                     style: AppTextStyles.tableCell
-                        .copyWith(color: component.locationName == null
+                        .copyWith(color: component.city == null
                             ? AppColors.textMuted
                             : null),
                     overflow: TextOverflow.ellipsis),
