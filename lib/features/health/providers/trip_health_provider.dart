@@ -178,7 +178,7 @@ class TripHealthProvider extends ChangeNotifier {
 
   Future<List<TripDocument>> _fetchDocuments() async {
     if (_documents == null) return const [];
-    try { return await _documents.fetchForTrip(tripId: _trip.id); }
+    try { return await _documents.fetchForTrip(_trip.id); }
     catch (_) { return const []; }
   }
 }
