@@ -451,13 +451,24 @@ class ComponentsProvider extends ChangeNotifier {
       final noDate = days.where((d) => d.date == null).toList();
       final ordered = [...withDate, ...noDate];
 
+      // Check if any renumbering is actually needed before touching the DB.
+      bool needsRenumber = false;
       for (int i = 0; i < ordered.length; i++) {
-        final day = ordered[i];
-        final correct = i + 1;
-        if (day.dayNumber != correct) {
-          reordered = true;
+        if (ordered[i].dayNumber != i + 1) { needsRenumber = true; break; }
+      }
+
+      if (needsRenumber) {
+        reordered = true;
+        // Pass 1: move to large temporary numbers (10001+) to avoid the
+        // UNIQUE(trip_id, day_number) constraint during circular renaming.
+        for (int i = 0; i < ordered.length; i++) {
           await repos.itinerary.upsertDay(
-              day.copyWith(dayNumber: correct), teamId!);
+              ordered[i].copyWith(dayNumber: i + 1 + 10000), teamId!);
+        }
+        // Pass 2: set final correct numbers.
+        for (int i = 0; i < ordered.length; i++) {
+          await repos.itinerary.upsertDay(
+              ordered[i].copyWith(dayNumber: i + 1), teamId!);
         }
       }
 
