@@ -336,6 +336,53 @@ class TripComponent {
     required this.updatedAt,
   });
 
+  /// Returns the display icon based on the specific transport sub-type
+  /// stored in detailsJson, falling back to the generic component icon.
+  IconData get effectiveIcon {
+    if (componentType == ComponentType.transport) {
+      switch (detailsJson['transport_type'] as String?) {
+        case 'Flight':
+        case 'Private Jet':
+        case 'Helicopter':
+          return Icons.flight_rounded;
+        case 'Train':
+          return Icons.train_rounded;
+        case 'Ferry':
+          return Icons.directions_boat_rounded;
+        case 'Yacht':
+          return Icons.sailing_rounded;
+        case 'Bus':
+          return Icons.directions_bus_rounded;
+        case 'Car Transfer':
+          return Icons.directions_car_rounded;
+      }
+    }
+    return componentType.icon;
+  }
+
+  /// Returns the display color matching [effectiveIcon].
+  Color get effectiveColor {
+    if (componentType == ComponentType.transport) {
+      switch (detailsJson['transport_type'] as String?) {
+        case 'Flight':
+        case 'Private Jet':
+        case 'Helicopter':
+          return const Color(0xFF5B8DB8); // sky blue
+        case 'Train':
+          return const Color(0xFF7C5C3E); // rail brown
+        case 'Ferry':
+          return const Color(0xFF0369A1); // ocean blue
+        case 'Yacht':
+          return const Color(0xFF0891B2); // nautical teal
+        case 'Bus':
+          return const Color(0xFFD97706); // amber
+        case 'Car Transfer':
+          return const Color(0xFF4A90A4); // default transport
+      }
+    }
+    return componentType.color;
+  }
+
   TripComponent copyWith({
     ComponentType? componentType,
     ComponentStatus? status,

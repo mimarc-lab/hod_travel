@@ -135,7 +135,7 @@ class ComponentTableRow extends StatelessWidget {
               // Category badge
               SizedBox(
                 width: ComponentColumns.category,
-                child: _CategoryBadge(type: component.componentType),
+                child: _CategoryBadge(component: component),
               ),
 
               // City
@@ -241,27 +241,30 @@ class ComponentTableRow extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _CategoryBadge extends StatelessWidget {
-  final ComponentType type;
-  const _CategoryBadge({required this.type});
+  final TripComponent component;
+  const _CategoryBadge({required this.component});
 
   @override
   Widget build(BuildContext context) {
+    final type     = component.componentType;
+    final effIcon  = component.effectiveIcon;
+    final effColor = component.effectiveColor;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
       decoration: BoxDecoration(
-        color: type.bgColor,
+        color: effColor.withAlpha(20),
         borderRadius: BorderRadius.circular(5),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(type.icon, size: 11, color: type.color),
+          Icon(effIcon, size: 11, color: effColor),
           const SizedBox(width: 4),
           Flexible(
             child: Text(
               type.label,
               style: AppTextStyles.labelSmall.copyWith(
-                  color: type.color, fontWeight: FontWeight.w600),
+                  color: effColor, fontWeight: FontWeight.w600),
               overflow: TextOverflow.ellipsis,
             ),
           ),

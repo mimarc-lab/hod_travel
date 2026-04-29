@@ -25,7 +25,9 @@ class ComponentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final type = component.componentType;
+    final type         = component.componentType;
+    final effIcon      = component.effectiveIcon;
+    final effColor     = component.effectiveColor;
 
     return GestureDetector(
       onTap: onTap,
@@ -48,7 +50,7 @@ class ComponentCard extends StatelessWidget {
               Container(
                 width: 4,
                 decoration: BoxDecoration(
-                  color: type.color,
+                  color: effColor,
                   borderRadius: const BorderRadius.only(
                     topLeft:    Radius.circular(AppSpacing.cardRadius),
                     bottomLeft: Radius.circular(AppSpacing.cardRadius),
@@ -69,18 +71,18 @@ class ComponentCard extends StatelessWidget {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                             decoration: BoxDecoration(
-                              color: type.bgColor,
+                              color: effColor.withAlpha(20),
                               borderRadius: BorderRadius.circular(5),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(type.icon, size: 12, color: type.color),
+                                Icon(effIcon, size: 12, color: effColor),
                                 const SizedBox(width: 4),
                                 Text(
                                   type.label,
                                   style: AppTextStyles.labelSmall.copyWith(
-                                    color: type.color,
+                                    color: effColor,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
