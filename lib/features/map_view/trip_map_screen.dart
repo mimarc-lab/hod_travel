@@ -11,6 +11,7 @@ import '../../data/models/trip_model.dart';
 import '../itinerary/providers/itinerary_provider.dart';
 import 'services/map_transition_controller.dart';
 import 'services/map_view_mapper_service.dart';
+import 'services/trip_location_service.dart';
 import 'widgets/day_navigator_panel.dart';
 import 'widgets/map_filters_bar.dart';
 import 'widgets/map_pin_detail_card.dart';
