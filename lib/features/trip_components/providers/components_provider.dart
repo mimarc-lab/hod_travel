@@ -377,15 +377,17 @@ class ComponentsProvider extends ChangeNotifier {
     if (repos == null || teamId == null) return false;
 
     try {
-      // Fetch all components with both an itinerary link and a start date.
+      // Fetch all components; phase 1 only applies to those with a linked
+      // itinerary item AND a start date, but phase 2 always runs.
       final all = await repos.components.fetchForTrip(tripId);
       final linked = all
           .where((c) => c.itineraryItemId != null && c.startDate != null)
           .toList();
-      if (linked.isEmpty) return false;
 
       // Fetch days and all items in two queries.
       var days = await repos.itinerary.fetchDaysForTrip(tripId);
+      if (days.isEmpty) return false;
+
       final itemsByDay = await repos.itinerary.fetchItemsForTrip(tripId);
       final itemMap = <String, ItineraryItem>{
         for (final list in itemsByDay.values)
