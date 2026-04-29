@@ -359,6 +359,8 @@ class _ComponentFormSheetState extends State<_ComponentFormSheet> {
     );
     if (confirmed == true && mounted) {
       await widget.provider.deleteComponent(widget.existing!.id);
+      await widget.provider.recalculateItineraryFromComponents(widget.trip.id);
+      widget.itineraryProvider?.reload();
       if (mounted) Navigator.of(context).pop();
     }
   }
@@ -447,7 +449,23 @@ class _ComponentFormSheetState extends State<_ComponentFormSheet> {
       }
     }
 
-    if (mounted) Navigator.of(context).pop();
+    // Recalculate itinerary day order after any create/edit/link.
+    final reordered = await widget.provider
+        .recalculateItineraryFromComponents(widget.trip.id);
+    if (reordered) widget.itineraryProvider?.reload();
+
+    if (mounted) {
+      final messenger = ScaffoldMessenger.of(context);
+      Navigator.of(context).pop();
+      if (reordered) {
+        messenger.showSnackBar(const SnackBar(
+          content: Text(
+              'Itinerary reordered based on component date and time.'),
+          duration: Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
+        ));
+      }
+    }
   }
 
   // ── AI title suggestion ───────────────────────────────────────────────────────

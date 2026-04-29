@@ -364,6 +364,108 @@ class ComponentsProvider extends ChangeNotifier {
     return null;
   }
 
+  // ── Itinerary recalculation ────────────────────────────────────────────────
+
+  /// Ensures every component-linked itinerary item sits under the correct
+  /// TripDay (matched by startDate) and that all days are numbered in
+  /// chronological date order.
+  ///
+  /// Returns true if any day was moved or renumbered, so callers can decide
+  /// whether to show a reorder notification.
+  Future<bool> recalculateItineraryFromComponents(String tripId) async {
+    final repos = AppRepositories.instance;
+    if (repos == null || teamId == null) return false;
+
+    try {
+      // Fetch all components with both an itinerary link and a start date.
+      final all = await repos.components.fetchForTrip(tripId);
+      final linked = all
+          .where((c) => c.itineraryItemId != null && c.startDate != null)
+          .toList();
+      if (linked.isEmpty) return false;
+
+      // Fetch days and all items in two queries.
+      var days = await repos.itinerary.fetchDaysForTrip(tripId);
+      final itemsByDay = await repos.itinerary.fetchItemsForTrip(tripId);
+      final itemMap = <String, ItineraryItem>{
+        for (final list in itemsByDay.values)
+          for (final item in list) item.id: item,
+      };
+
+      bool reordered = false;
+
+      // ── Phase 1: move items to the correct day ─────────────────────────────
+      for (final c in linked) {
+        final target = DateTime(
+            c.startDate!.year, c.startDate!.month, c.startDate!.day);
+
+        // Find or create the day for this date.
+        TripDay? correctDay;
+        for (final d in days) {
+          if (d.date != null &&
+              d.date!.year  == target.year &&
+              d.date!.month == target.month &&
+              d.date!.day   == target.day) {
+            correctDay = d;
+            break;
+          }
+        }
+
+        if (correctDay == null) {
+          final city = linked
+              .where((x) =>
+                  x.startDate!.year  == target.year &&
+                  x.startDate!.month == target.month &&
+                  x.startDate!.day   == target.day &&
+                  x.city?.isNotEmpty == true)
+              .map((x) => x.city!)
+              .firstOrNull ?? c.city ?? '';
+          correctDay = await repos.itinerary.createDay(
+            TripDay(
+              id:        '',
+              tripId:    tripId,
+              dayNumber: days.length + 1, // temporary; fixed in phase 2
+              date:      target,
+              city:      city,
+            ),
+            teamId!,
+          );
+          days = [...days, correctDay];
+          reordered = true;
+        }
+
+        final item = itemMap[c.itineraryItemId!];
+        if (item != null && item.tripDayId != correctDay.id) {
+          await repos.itinerary.updateItem(
+              item.copyWith(tripDayId: correctDay.id));
+          reordered = true;
+        }
+      }
+
+      // ── Phase 2: renumber days in date order ───────────────────────────────
+      days = await repos.itinerary.fetchDaysForTrip(tripId);
+      final withDate = [...days.where((d) => d.date != null)]
+        ..sort((a, b) => a.date!.compareTo(b.date!));
+      final noDate = days.where((d) => d.date == null).toList();
+      final ordered = [...withDate, ...noDate];
+
+      for (int i = 0; i < ordered.length; i++) {
+        final day = ordered[i];
+        final correct = i + 1;
+        if (day.dayNumber != correct) {
+          reordered = true;
+          await repos.itinerary.upsertDay(
+              day.copyWith(dayNumber: correct), teamId!);
+        }
+      }
+
+      return reordered;
+    } catch (e) {
+      debugPrint('[recalculateItinerary] $e');
+      return false;
+    }
+  }
+
   // ── Type mappers ───────────────────────────────────────────────────────────
 
   static CostCategory _toCostCategory(ComponentType t) {

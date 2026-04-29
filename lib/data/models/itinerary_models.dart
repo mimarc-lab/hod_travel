@@ -37,6 +37,7 @@ class TripDay {
   });
 
   TripDay copyWith({
+    int? dayNumber,
     String? city,
     DateTime? date,
     bool clearDate = false,
@@ -49,7 +50,7 @@ class TripDay {
       id:        id,
       tripId:    tripId,
       teamId:    teamId,
-      dayNumber: dayNumber,
+      dayNumber: dayNumber ?? this.dayNumber,
       date:      clearDate ? null : (date ?? this.date),
       city:      city  ?? this.city,
       title:     clearTitle ? null : (title ?? this.title),
@@ -104,6 +105,7 @@ class ItineraryItem {
   });
 
   ItineraryItem copyWith({
+    String? tripDayId,
     ItemType? type,
     String? title,
     String? description,
@@ -130,7 +132,7 @@ class ItineraryItem {
   }) {
     return ItineraryItem(
       id:           id,
-      tripDayId:    tripDayId,
+      tripDayId:    tripDayId ?? this.tripDayId,
       teamId:       teamId,
       type:         type          ?? this.type,
       title:        title         ?? this.title,
