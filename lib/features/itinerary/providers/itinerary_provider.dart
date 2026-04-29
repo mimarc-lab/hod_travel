@@ -100,8 +100,26 @@ class ItineraryProvider extends ChangeNotifier {
   }
 
   Future<void> reload() async {
-    _sub?.cancel();
-    _subscribe();
+    if (_repo == null) return;
+    try {
+      final days  = await _repo.fetchDaysForTrip(trip.id);
+      final items = await _repo.fetchItemsForTrip(trip.id);
+      final prevDayId = selectedDay?.id;
+      _days = days;
+      _itemsByDayId = {
+        for (final e in items.entries) e.key: List.of(e.value),
+      };
+      if (prevDayId != null) {
+        final idx = _days.indexWhere((d) => d.id == prevDayId);
+        _selectedDayIndex = idx != -1 ? idx : 0;
+      } else {
+        _selectedDayIndex = _selectedDayIndex.clamp(0, (_days.length - 1).clamp(0, 999));
+      }
+      _error = null;
+      notifyListeners();
+    } catch (e) {
+      debugPrint('[ItineraryProvider.reload] $e');
+    }
   }
 
   // ── Day selection ──────────────────────────────────────────────────────────
