@@ -32,7 +32,8 @@ class TripMapMarker {
 
   /// True for transport items that have been placed between two resolved
   /// location stops.  These use the on-line badge visual instead of a pin.
-  bool get isTransportIcon => item.type == ItemType.transport;
+  bool get isTransportIcon =>
+      item.type == ItemType.transport || item.type == ItemType.flight;
 }
 
 /// Lightweight day reference carried by each marker (avoids importing
@@ -118,6 +119,7 @@ abstract class MapViewMapperService {
     for (final e in allItems) {
       if (e.item.type == ItemType.note) continue;
       if (e.item.type == ItemType.transport) continue; // handled in Pass 2
+      if (e.item.type == ItemType.flight) continue;    // handled in Pass 2
 
       final base = (e.item.latitude != null && e.item.longitude != null)
           ? LatLng(e.item.latitude!, e.item.longitude!)
@@ -160,7 +162,8 @@ abstract class MapViewMapperService {
 
     for (int i = 0; i < allItems.length; i++) {
       final e = allItems[i];
-      if (e.item.type != ItemType.transport) continue;
+      if (e.item.type != ItemType.transport &&
+          e.item.type != ItemType.flight) continue;
 
       // Nearest preceding location marker with a resolved position.
       // Skip items that have no entry in markerById (unresolvable location)

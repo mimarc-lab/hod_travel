@@ -238,7 +238,7 @@ class ComponentsProvider extends ChangeNotifier {
             ItineraryItem(
               id:             '',
               tripDayId:      dayId,
-              type:           _toItemType(component.componentType),
+              type:           _toItemType(component.componentType, detailsJson: component.detailsJson),
               title:          component.title,
               description:    component.notesClient,
               startTime:      _parseTimeStr(component.startTime),
@@ -493,11 +493,15 @@ class ComponentsProvider extends ChangeNotifier {
     }
   }
 
-  static ItemType _toItemType(ComponentType t) {
+  static ItemType _toItemType(ComponentType t,
+      {Map<String, dynamic>? detailsJson}) {
     switch (t) {
       case ComponentType.accommodation:      return ItemType.hotel;
       case ComponentType.dining:             return ItemType.dining;
-      case ComponentType.transport:          return ItemType.transport;
+      case ComponentType.transport:
+        final tType = detailsJson?['transport_type'] as String?;
+        if (tType == 'Flight' || tType == 'Private Jet') return ItemType.flight;
+        return ItemType.transport;
       case ComponentType.guide:              return ItemType.experience;
       case ComponentType.experience:         return ItemType.experience;
       case ComponentType.specialArrangement: return ItemType.experience;
