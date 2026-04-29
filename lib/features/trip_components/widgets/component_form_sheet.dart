@@ -338,6 +338,31 @@ class _ComponentFormSheetState extends State<_ComponentFormSheet> {
     return result;
   }
 
+  Future<void> _confirmDelete() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Delete component?'),
+        content: Text('Delete "${widget.existing!.title}"? This cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && mounted) {
+      await widget.provider.deleteComponent(widget.existing!.id);
+      if (mounted) Navigator.of(context).pop();
+    }
+  }
+
   Future<void> _save() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     setState(() => _saving = true);
@@ -527,6 +552,16 @@ class _ComponentFormSheetState extends State<_ComponentFormSheet> {
               style: AppTextStyles.heading2,
             ),
             const Spacer(),
+            if (_isEditing)
+              IconButton(
+                onPressed: _saving ? null : _confirmDelete,
+                icon: const Icon(Icons.delete_outline_rounded, size: 20),
+                color: Colors.red,
+                tooltip: 'Delete component',
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
+            if (_isEditing) const SizedBox(width: AppSpacing.sm),
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
               child: const Text('Cancel'),
