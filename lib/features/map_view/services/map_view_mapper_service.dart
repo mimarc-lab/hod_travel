@@ -207,6 +207,29 @@ abstract class MapViewMapperService {
         to ??= route?.to;
       }
 
+      // Final fallback: use the current day's city as departure and the
+      // next calendar day's city as arrival.  This handles flights/transfers
+      // whose titles don't follow the "A to B" pattern (e.g. "JFK Departure").
+      from ??= TripLocationService.resolve(null, e.day.city);
+      if (to == null) {
+        // Find the first item that belongs to a later day.
+        String? nextCity;
+        for (int j = i + 1; j < allItems.length; j++) {
+          if (allItems[j].day.number > e.day.number) {
+            nextCity = allItems[j].day.city;
+            break;
+          }
+        }
+        // If no later item exists, try the next sequential day in the days list.
+        if (nextCity == null) {
+          final nextDayNum = e.day.number + 1;
+          for (final day in days) {
+            if (day.dayNumber == nextDayNum) { nextCity = day.city; break; }
+          }
+        }
+        to = TripLocationService.resolve(null, nextCity);
+      }
+
       if (from == null || to == null) continue;
       if (from.latitude == to.latitude && from.longitude == to.longitude) {
         continue; // same point — skip
