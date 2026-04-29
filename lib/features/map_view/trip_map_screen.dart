@@ -112,10 +112,49 @@ class _TripMapScreenState extends State<TripMapScreen>
       }
     });
 
-    // Fit camera once on first load
-    if (!_mapReady && markers.isNotEmpty) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _fitVisible());
+    // Fit camera once on first load — use pins if available, city names otherwise.
+    if (!_mapReady) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (markers.isNotEmpty) {
+          _fitVisible();
+        } else {
+          _fitToCities();
+        }
+      });
     }
+  }
+
+  /// Centres the map on the trip's day cities when no itinerary pins exist yet.
+  void _fitToCities() {
+    final points = <LatLng>[];
+    for (final day in _itinerary.days) {
+      final pt = TripLocationService.resolve(null, day.city);
+      if (pt != null) points.add(pt);
+    }
+    if (points.isEmpty) {
+      setState(() => _mapReady = true);
+      return;
+    }
+    var minLat = points.first.latitude;
+    var maxLat = points.first.latitude;
+    var minLng = points.first.longitude;
+    var maxLng = points.first.longitude;
+    for (final p in points) {
+      if (p.latitude  < minLat) minLat = p.latitude;
+      if (p.latitude  > maxLat) maxLat = p.latitude;
+      if (p.longitude < minLng) minLng = p.longitude;
+      if (p.longitude > maxLng) maxLng = p.longitude;
+    }
+    _mapController.fitCamera(
+      CameraFit.bounds(
+        bounds: LatLngBounds(
+          LatLng(minLat - 1.5, minLng - 1.5),
+          LatLng(maxLat + 1.5, maxLng + 1.5),
+        ),
+        padding: const EdgeInsets.all(72),
+      ),
+    );
+    setState(() => _mapReady = true);
   }
 
   Map<String, List<ItineraryItem>> get _itineraryItemsByDayId {
@@ -412,7 +451,7 @@ class _MapAreaState extends State<_MapArea> {
         FlutterMap(
           mapController: widget.mapController,
           options: MapOptions(
-            initialCenter: const LatLng(35.6762, 139.6503), // Tokyo fallback
+            initialCenter: const LatLng(46.0, 14.0), // Central Europe fallback
             initialZoom:   5,
             minZoom:       2,
             maxZoom:       18,

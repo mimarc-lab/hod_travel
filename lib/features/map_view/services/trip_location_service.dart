@@ -291,11 +291,27 @@ abstract class TripLocationService {
     'Rhodes':         LatLng(36.4341, 28.2176),
     'Corfu':          LatLng(39.6243, 19.9217),
     'Crete':          LatLng(35.2401, 24.8093),
-    // Europe — Adriatic
+    // Europe — Adriatic & Balkans
     'Dubrovnik':      LatLng(42.6507, 18.0944),
     'Split':          LatLng(43.5081, 16.4402),
     'Hvar':           LatLng(43.1724, 16.4413),
     'Kotor':          LatLng(42.4247, 18.7712),
+    'Istria':         LatLng(45.2292, 13.9359),
+    'Pula':           LatLng(44.8666, 13.8496),
+    'Rovinj':         LatLng(45.0817, 13.6389),
+    'Poreč':          LatLng(45.2271, 13.5908),
+    'Zagreb':         LatLng(45.8150, 15.9819),
+    'Zadar':          LatLng(44.1194, 15.2314),
+    'Makarska':       LatLng(43.2958, 17.0180),
+    'Trogir':         LatLng(43.5169, 16.2516),
+    // Europe — Slovenia
+    'Ljubljana':      LatLng(46.0569, 14.5058),
+    'Bled':           LatLng(46.3681, 14.1146),
+    'Lake Bled':      LatLng(46.3634, 14.0940),
+    'Bohinj':         LatLng(46.2878, 13.9436),
+    'Piran':          LatLng(45.5285, 13.5682),
+    'Portorož':       LatLng(45.5101, 13.5922),
+    'Kranjska Gora':  LatLng(46.4856, 13.7872),
     // Europe — Central
     'Vienna':         LatLng(48.2082, 16.3738),
     'Salzburg':       LatLng(47.8095, 13.0550),
