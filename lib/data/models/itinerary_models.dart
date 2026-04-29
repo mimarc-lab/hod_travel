@@ -104,6 +104,22 @@ class ItineraryItem {
     this.longitude,
   });
 
+  /// Returns the effective display type.
+  /// Upgrades transport → flight when the title contains clear air-travel
+  /// keywords so that items like "JFK Airport Departure" show an airplane icon
+  /// even if the DB `type` column still holds 'transport'.
+  ItemType get displayType {
+    if (type == ItemType.transport) {
+      final lower = title.toLowerCase();
+      if (lower.contains('flight') ||
+          lower.contains('departure') ||
+          lower.contains('arrival')) {
+        return ItemType.flight;
+      }
+    }
+    return type;
+  }
+
   ItineraryItem copyWith({
     String? tripDayId,
     ItemType? type,

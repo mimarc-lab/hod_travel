@@ -322,7 +322,7 @@ class _ItemRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final typeColor = item.type.color;
+    final typeColor = item.displayType.color;
 
     return GestureDetector(
       onTap: onTap,
@@ -347,7 +347,7 @@ class _ItemRow extends StatelessWidget {
             child: Row(
               children: [
                 Icon(
-                  item.type.icon,
+                  item.displayType.icon,
                   size:  12,
                   color: isMapped ? typeColor : AppColors.textMuted,
                 ),

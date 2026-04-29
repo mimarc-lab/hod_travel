@@ -647,7 +647,8 @@ class _MapPin extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color   = marker.item.type.color;
+    final displayType = marker.item.displayType;
+    final color   = displayType.color;
     final pinSize = focused ? 36.0 : 28.0;
 
     return GestureDetector(
@@ -657,7 +658,7 @@ class _MapPin extends StatelessWidget {
           ? _TransportBadge(
               color:   color,
               focused: focused,
-              icon:    marker.item.type.icon,
+              icon:    displayType.icon,
             )
           // Location items: standard circle pin with pointer tip
           : Column(
@@ -683,7 +684,7 @@ class _MapPin extends StatelessWidget {
                     ],
                   ),
                   child: Icon(
-                    marker.item.type.icon,
+                    displayType.icon,
                     size:  focused ? 16 : 13,
                     color: Colors.white,
                   ),
