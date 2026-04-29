@@ -307,7 +307,7 @@ abstract class MapViewMapperService {
     ItemType? type,
   ) {
     if (type == null) return filtered;
-    return filtered.where((m) => m.item.type == type).toList();
+    return filtered.where((m) => m.item.displayType == type).toList();
   }
 
   // ── Route ──────────────────────────────────────────────────────────────────
@@ -320,7 +320,7 @@ abstract class MapViewMapperService {
   /// Primary sort: day number.  Secondary: start time (untimed items last).
   static List<LatLng> routePoints(List<TripMapMarker> markers) {
     final sorted =
-        markers.where((m) => m.item.type != ItemType.transport).toList()
+        markers.where((m) => m.item.displayType != ItemType.transport).toList()
           ..sort(_markerOrder);
     return sorted.map((m) => m.position).toList();
   }
@@ -376,7 +376,7 @@ abstract class MapViewMapperService {
   static List<({LatLng midpoint, double distanceKm, String fromId, String toId})> routeSegments(
       List<TripMapMarker> markers) {
     final sorted =
-        markers.where((m) => m.item.type != ItemType.transport).toList()
+        markers.where((m) => m.item.displayType != ItemType.transport).toList()
           ..sort(_markerOrder);
 
     if (sorted.length < 2) return const [];
