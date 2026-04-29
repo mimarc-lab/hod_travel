@@ -113,8 +113,7 @@ class ItineraryItem {
       final lower = title.toLowerCase();
       if (lower.contains('flight') ||
           lower.contains('departure') ||
-          lower.contains('arrival') ||
-          lower.contains('helicopter')) {
+          lower.contains('arrival')) {
         return ItemType.flight;
       }
     }

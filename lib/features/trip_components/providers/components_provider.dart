@@ -501,7 +501,7 @@ class ComponentsProvider extends ChangeNotifier {
       case ComponentType.dining:             return ItemType.dining;
       case ComponentType.transport:
         final tType = detailsJson?['transport_type'] as String?;
-        if (tType == 'Flight' || tType == 'Private Jet' || tType == 'Helicopter') {
+        if (tType == 'Flight' || tType == 'Private Jet') {
           return ItemType.flight;
         }
         final flightNum = detailsJson?['flight_number'] as String?;
