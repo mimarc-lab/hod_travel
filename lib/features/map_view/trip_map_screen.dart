@@ -168,15 +168,20 @@ class _TripMapScreenState extends State<TripMapScreen>
 
   // ── Visibility helpers ─────────────────────────────────────────────────────
 
-  /// Day + type filtered — used for route polyline, empty-state detection,
-  /// and bounding-box / zoom calculations.
+  /// Day-only filtered — used for the route polyline so the full path is always
+  /// visible regardless of the active type filter.
+  List<TripMapMarker> get _routeMarkers =>
+      MapViewMapperService.filterByDay(_allMarkers, _selectedDayId);
+
+  /// Day + type filtered — used for bounding-box / zoom calculations and the
+  /// empty-state check.
   List<TripMapMarker> get _focusMarkers {
     var m = MapViewMapperService.filterByDay(_allMarkers, _selectedDayId);
     m     = MapViewMapperService.filterByType(m, _selectedType);
     return m;
   }
 
-  /// Pins to render: day-filtered when a day is selected, all days otherwise.
+  /// Pins to render: day + type filtered.
   List<TripMapMarker> get _displayMarkers {
     final byDay = MapViewMapperService.filterByDay(_allMarkers, _selectedDayId);
     return MapViewMapperService.filterByType(byDay, _selectedType);
@@ -314,7 +319,7 @@ class _TripMapScreenState extends State<TripMapScreen>
         // Map
         Expanded(child: _MapArea(
           displayMarkers:      _displayMarkers,
-          routeMarkers:        _focusMarkers,
+          routeMarkers:        _routeMarkers,
           focusedMarker:       _focusedMarker,
           showRoute:           _showRoute,
           selectedType:        _selectedType,
@@ -346,8 +351,8 @@ class _TripMapScreenState extends State<TripMapScreen>
           flex: 55,
           child: _MapArea(
             displayMarkers: _displayMarkers,
-            routeMarkers:   _focusMarkers,
-  
+            routeMarkers:   _routeMarkers,
+
             focusedMarker:  _focusedMarker,
             showRoute:      _showRoute,
             selectedType:   _selectedType,
