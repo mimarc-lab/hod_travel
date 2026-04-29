@@ -340,6 +340,7 @@ class ComponentsProvider extends ChangeNotifier {
           final st = _parseTimeStr(component.startTime);
           final et = _parseTimeStr(component.endTime);
           final updated = await repos.itinerary.updateItem(existing.copyWith(
+            type:         _toItemType(component.componentType, detailsJson: component.detailsJson),
             title:        component.title,
             description:  component.notesClient,
             clearDescription: component.notesClient == null,
