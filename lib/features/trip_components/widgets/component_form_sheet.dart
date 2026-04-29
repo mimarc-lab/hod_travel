@@ -742,10 +742,24 @@ class _ComponentFormSheetState extends State<_ComponentFormSheet> {
               selectedName: _supplierName,
               suppliers:    _filteredSuppliers,
               loading:      _suppliersLoading,
-              onSelected:   (id, name) => setState(() {
-                _supplierId   = id;
-                _supplierName = name;
-              }),
+              onSelected: (id, name) {
+                final supplier = _allSuppliers.where((s) => s.id == id).firstOrNull;
+                setState(() {
+                  _supplierId   = id;
+                  _supplierName = name;
+                  if (supplier != null) {
+                    if (supplier.city.isNotEmpty) {
+                      _cityCtrl.text = supplier.city;
+                    }
+                    if (supplier.name.isNotEmpty) {
+                      _locationCtrl.text = supplier.name;
+                    }
+                    if (supplier.location?.isNotEmpty == true) {
+                      _addressCtrl.text = supplier.location!;
+                    }
+                  }
+                });
+              },
               onCleared:    () => setState(() {
                 _supplierId   = null;
                 _supplierName = null;
