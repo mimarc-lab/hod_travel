@@ -20,19 +20,24 @@ class TripMapMarker {
   final LatLng? routeFrom;
   final LatLng? routeTo;
 
+  /// True only when this marker was placed via Pass 2 (midpoint badge between
+  /// two adjacent stops).  Transport items that were successfully geocoded to
+  /// a specific location in Pass 1 have this set to false and render as pins.
+  final bool isRouteIcon;
+
   const TripMapMarker({
     required this.item,
     required this.day,
     required this.position,
     this.routeFrom,
     this.routeTo,
+    this.isRouteIcon = false,
   });
 
   String get id => item.id;
 
-  /// True for transport items that have been placed between two resolved
-  /// location stops.  These use the on-line badge visual instead of a pin.
-  bool get isTransportIcon => item.type == ItemType.transport;
+  /// True for transport items rendered as a mid-route badge (not a pin).
+  bool get isTransportIcon => isRouteIcon;
 }
 
 /// Lightweight day reference carried by each marker (avoids importing
@@ -117,7 +122,27 @@ abstract class MapViewMapperService {
 
     for (final e in allItems) {
       if (e.item.type == ItemType.note) continue;
-      if (e.item.type == ItemType.transport) continue; // handled in Pass 2
+
+      // Transport items: try to geocode a specific location first.
+      // If a location can be resolved (e.g. "JFK Airport" in the title),
+      // place a standalone pin here in Pass 1 rather than a midpoint badge.
+      // Items that can't be geocoded are left for Pass 2.
+      if (e.item.type == ItemType.transport) {
+        final LatLng? pos;
+        if (e.item.latitude != null && e.item.longitude != null) {
+          pos = LatLng(e.item.latitude!, e.item.longitude!);
+        } else {
+          pos = TripLocationService.resolve(e.item.location, e.day.city)
+              ?? TripLocationService.resolve(e.item.title, e.day.city);
+        }
+        if (pos != null) {
+          final marker = TripMapMarker(item: e.item, day: e.day, position: pos);
+          locationMarkers.add(marker);
+          markerById[e.item.id] = marker;
+        }
+        // If pos == null → handled in Pass 2 as a midpoint badge
+        continue;
+      }
 
       // Resolve position. For flight items also try the item title so that
       // airport names embedded in titles ("George Bush Inter...", "Marco Polo
@@ -171,6 +196,10 @@ abstract class MapViewMapperService {
     for (int i = 0; i < allItems.length; i++) {
       final e = allItems[i];
       if (e.item.type != ItemType.transport) continue;
+
+      // Already geocoded to a specific location in Pass 1 — render as a pin,
+      // not a midpoint badge.
+      if (markerById.containsKey(e.item.id)) continue;
 
       // Nearest preceding location marker with a resolved position.
       // Skip items that have no entry in markerById (unresolvable location)
@@ -252,6 +281,7 @@ abstract class MapViewMapperService {
           position: _midpoint(from, to),
           routeFrom: from,
           routeTo: to,
+          isRouteIcon: true,
         ),
       );
     }

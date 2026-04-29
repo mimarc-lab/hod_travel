@@ -502,6 +502,8 @@ class ComponentsProvider extends ChangeNotifier {
       case ComponentType.transport:
         final tType = detailsJson?['transport_type'] as String?;
         if (tType == 'Flight' || tType == 'Private Jet') return ItemType.flight;
+        final flightNum = detailsJson?['flight_number'] as String?;
+        if (flightNum != null && flightNum.trim().isNotEmpty) return ItemType.flight;
         return ItemType.transport;
       case ComponentType.guide:              return ItemType.experience;
       case ComponentType.experience:         return ItemType.experience;
