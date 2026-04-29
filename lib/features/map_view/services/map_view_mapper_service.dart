@@ -32,8 +32,7 @@ class TripMapMarker {
 
   /// True for transport items that have been placed between two resolved
   /// location stops.  These use the on-line badge visual instead of a pin.
-  bool get isTransportIcon =>
-      item.type == ItemType.transport || item.type == ItemType.flight;
+  bool get isTransportIcon => item.type == ItemType.transport;
 }
 
 /// Lightweight day reference carried by each marker (avoids importing
@@ -119,11 +118,20 @@ abstract class MapViewMapperService {
     for (final e in allItems) {
       if (e.item.type == ItemType.note) continue;
       if (e.item.type == ItemType.transport) continue; // handled in Pass 2
-      if (e.item.type == ItemType.flight) continue;    // handled in Pass 2
 
-      final base = (e.item.latitude != null && e.item.longitude != null)
-          ? LatLng(e.item.latitude!, e.item.longitude!)
-          : TripLocationService.resolve(e.item.location, e.day.city);
+      // Resolve position. For flight items also try the item title so that
+      // airport names embedded in titles ("George Bush Inter...", "Marco Polo
+      // Airport", "JFK Departure") geocode to the correct airport coordinates
+      // rather than falling back to a generic city centre.
+      final LatLng? base;
+      if (e.item.latitude != null && e.item.longitude != null) {
+        base = LatLng(e.item.latitude!, e.item.longitude!);
+      } else if (e.item.type == ItemType.flight) {
+        base = TripLocationService.resolve(e.item.location, null)
+            ?? TripLocationService.resolve(e.item.title, e.day.city);
+      } else {
+        base = TripLocationService.resolve(e.item.location, e.day.city);
+      }
       if (base == null) continue;
 
       final baseKey = _coordKey(base);
@@ -162,8 +170,7 @@ abstract class MapViewMapperService {
 
     for (int i = 0; i < allItems.length; i++) {
       final e = allItems[i];
-      if (e.item.type != ItemType.transport &&
-          e.item.type != ItemType.flight) continue;
+      if (e.item.type != ItemType.transport) continue;
 
       // Nearest preceding location marker with a resolved position.
       // Skip items that have no entry in markerById (unresolvable location)
