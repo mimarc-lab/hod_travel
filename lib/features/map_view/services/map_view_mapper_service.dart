@@ -123,35 +123,19 @@ abstract class MapViewMapperService {
     for (final e in allItems) {
       if (e.item.type == ItemType.note) continue;
 
-      // Transport items: try to geocode a specific location first.
-      // If a location can be resolved (e.g. "JFK Airport" in the title),
-      // place a standalone pin here in Pass 1 rather than a midpoint badge.
-      // Items that can't be geocoded are left for Pass 2.
-      if (e.item.type == ItemType.transport) {
-        final LatLng? pos;
-        if (e.item.latitude != null && e.item.longitude != null) {
-          pos = LatLng(e.item.latitude!, e.item.longitude!);
-        } else {
-          pos = TripLocationService.resolve(e.item.location, e.day.city)
-              ?? TripLocationService.resolve(e.item.title, e.day.city);
-        }
-        if (pos != null) {
-          final marker = TripMapMarker(item: e.item, day: e.day, position: pos);
-          locationMarkers.add(marker);
-          markerById[e.item.id] = marker;
-        }
-        // If pos == null → handled in Pass 2 as a midpoint badge
-        continue;
-      }
+      // Items whose effective display type is transport (car, ferry, bus, etc.)
+      // are always handled in Pass 2 as a midpoint badge sitting ON the route
+      // line between the two adjacent location stops.
+      if (e.item.displayType == ItemType.transport) continue;
 
-      // Resolve position. For flight items also try the item title so that
-      // airport names embedded in titles ("George Bush Inter...", "Marco Polo
-      // Airport", "JFK Departure") geocode to the correct airport coordinates
-      // rather than falling back to a generic city centre.
+      // Resolve position.
+      // Flight display-type items (including transport items whose title signals
+      // air travel, e.g. "JFK Airport Departure") try the title so that airport
+      // names geocode to exact airport coordinates.
       final LatLng? base;
       if (e.item.latitude != null && e.item.longitude != null) {
         base = LatLng(e.item.latitude!, e.item.longitude!);
-      } else if (e.item.type == ItemType.flight) {
+      } else if (e.item.displayType == ItemType.flight) {
         base = TripLocationService.resolve(e.item.location, null)
             ?? TripLocationService.resolve(e.item.title, e.day.city);
       } else {
@@ -195,35 +179,30 @@ abstract class MapViewMapperService {
 
     for (int i = 0; i < allItems.length; i++) {
       final e = allItems[i];
-      if (e.item.type != ItemType.transport) continue;
-
-      // Already geocoded to a specific location in Pass 1 — render as a pin,
-      // not a midpoint badge.
-      if (markerById.containsKey(e.item.id)) continue;
+      // Only items whose effective display type is transport become route badges.
+      if (e.item.displayType != ItemType.transport) continue;
 
       // Nearest preceding location marker with a resolved position.
-      // Skip items that have no entry in markerById (unresolvable location)
-      // and keep scanning backwards until we find one that does.
+      // Use displayType so that flight items (even those with raw type=transport
+      // such as "JFK Airport Departure") count as valid adjacent stops.
       TripMapMarker? prevMarker;
       for (int j = i - 1; j >= 0; j--) {
-        final t = allItems[j].item.type;
-        if (t != ItemType.transport && t != ItemType.note) {
-          final candidate = markerById[allItems[j].item.id];
+        final adj = allItems[j].item;
+        if (adj.displayType != ItemType.transport && adj.type != ItemType.note) {
+          final candidate = markerById[adj.id];
           if (candidate != null) {
             prevMarker = candidate;
             break;
           }
-          // item exists but location is unresolved — keep scanning
         }
       }
 
       // Nearest following location marker with a resolved position.
-      // Same logic: skip items whose location couldn't be resolved.
       TripMapMarker? nextMarker;
       for (int j = i + 1; j < allItems.length; j++) {
-        final t = allItems[j].item.type;
-        if (t != ItemType.transport && t != ItemType.note) {
-          final candidate = markerById[allItems[j].item.id];
+        final adj = allItems[j].item;
+        if (adj.displayType != ItemType.transport && adj.type != ItemType.note) {
+          final candidate = markerById[adj.id];
           if (candidate != null) {
             nextMarker = candidate;
             break;
