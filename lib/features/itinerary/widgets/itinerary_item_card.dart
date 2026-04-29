@@ -21,7 +21,7 @@ class ItineraryItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final typeColor = item.displayType.color;
+    final typeColor = item.effectiveColor;
 
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
@@ -58,7 +58,7 @@ class ItineraryItemCard extends StatelessWidget {
                   color: typeColor.withAlpha(25),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(item.displayType.icon, size: 15, color: typeColor),
+                child: Icon(item.effectiveIcon, size: 15, color: typeColor),
               ),
 
               // Content

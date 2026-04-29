@@ -31,7 +31,7 @@ class MapPinDetailCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final item      = marker.item;
     final day       = marker.day;
-    final typeColor = item.displayType.color;
+    final typeColor = item.effectiveColor;
 
     return Container(
       width: 276,
@@ -244,7 +244,7 @@ class _TypeBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = item.displayType.color;
+    final color = item.effectiveColor;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
       decoration: BoxDecoration(
@@ -254,7 +254,7 @@ class _TypeBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(item.displayType.icon, size: 10, color: color),
+          Icon(item.effectiveIcon, size: 10, color: color),
           const SizedBox(width: 4),
           Text(
             item.displayType.label.toUpperCase(),

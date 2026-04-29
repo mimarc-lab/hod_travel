@@ -120,6 +120,53 @@ class ItineraryItem {
     return type;
   }
 
+  /// Subtype-aware icon for transport/flight items.
+  /// Uses title keywords to distinguish ferry/train/bus/yacht/helicopter/flight.
+  IconData get effectiveIcon {
+    if (type == ItemType.transport || type == ItemType.flight) {
+      final lower = title.toLowerCase();
+      if (lower.contains('flight') || lower.contains('departure') ||
+          lower.contains('arrival') || lower.contains('private jet')) {
+        return Icons.flight_rounded;
+      }
+      if (lower.contains('helicopter')) return Icons.flight_rounded;
+      if (lower.contains('ferry'))      return Icons.directions_boat_rounded;
+      if (lower.contains('yacht') || lower.contains('sailing')) {
+        return Icons.sailing_rounded;
+      }
+      if (lower.contains('train') || lower.contains('rail')) {
+        return Icons.train_rounded;
+      }
+      if (lower.contains('bus') || lower.contains('coach')) {
+        return Icons.directions_bus_rounded;
+      }
+    }
+    return displayType.icon;
+  }
+
+  /// Subtype-aware color for transport/flight items.
+  Color get effectiveColor {
+    if (type == ItemType.transport || type == ItemType.flight) {
+      final lower = title.toLowerCase();
+      if (lower.contains('flight') || lower.contains('departure') ||
+          lower.contains('arrival') || lower.contains('private jet')) {
+        return const Color(0xFF5B8DB8);
+      }
+      if (lower.contains('helicopter')) return const Color(0xFF5B8DB8);
+      if (lower.contains('ferry'))      return const Color(0xFF0369A1);
+      if (lower.contains('yacht') || lower.contains('sailing')) {
+        return const Color(0xFF0891B2);
+      }
+      if (lower.contains('train') || lower.contains('rail')) {
+        return const Color(0xFF7C5C3E);
+      }
+      if (lower.contains('bus') || lower.contains('coach')) {
+        return const Color(0xFFD97706);
+      }
+    }
+    return displayType.color;
+  }
+
   ItineraryItem copyWith({
     String? tripDayId,
     ItemType? type,
