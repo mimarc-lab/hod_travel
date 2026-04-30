@@ -12,6 +12,8 @@ import '../../../features/ai_suggestions/services/ai_config.dart';
 import '../../../features/ai_suggestions/services/ai_provider.dart';
 import '../../../features/documents/widgets/linked_documents_section.dart';
 import '../../../features/itinerary/providers/itinerary_provider.dart';
+import '../../../features/suppliers/providers/supplier_provider.dart';
+import '../../../features/suppliers/widgets/supplier_editor.dart';
 import '../providers/components_provider.dart';
 import '../services/component_title_suggestion_service.dart';
 import 'component_linking_dialog.dart';
@@ -281,10 +283,12 @@ class _ComponentFormSheetState extends State<_ComponentFormSheet> {
   }
 
   List<Supplier> get _filteredSuppliers {
-    final cats = _type.relevantSupplierCategories;
-    return _allSuppliers
-        .where((s) => cats.contains(s.category))
-        .toList();
+    if (_type == ComponentType.other) return _allSuppliers;
+    final targetType = _type.mappedSupplierType;
+    return _allSuppliers.where((s) {
+      // Primary: filter by new supplier_type (set for all suppliers after migration)
+      return s.effectiveSupplierType == targetType;
+    }).toList();
   }
 
   @override
@@ -738,32 +742,59 @@ class _ComponentFormSheetState extends State<_ComponentFormSheet> {
           _labeledField(
             label: 'Supplier',
             child: _SupplierPickerField(
-              selectedId:   _supplierId,
-              selectedName: _supplierName,
-              suppliers:    _filteredSuppliers,
-              loading:      _suppliersLoading,
-              onSelected: (id, name) {
+              selectedId:    _supplierId,
+              selectedName:  _supplierName,
+              suppliers:     _filteredSuppliers,
+              allSuppliers:  _allSuppliers,
+              loading:       _suppliersLoading,
+              componentType: _type,
+              onSelected: (id, name, {bool mismatch = false}) async {
+                if (mismatch && context.mounted) {
+                  final choice = await _showMismatchDialog(context, name, _type);
+                  if (!context.mounted) return;
+                  if (choice == _MismatchChoice.cancel) return;
+                  // choice == useAnyway: proceed
+                }
                 final supplier = _allSuppliers.where((s) => s.id == id).firstOrNull;
                 setState(() {
                   _supplierId   = id;
                   _supplierName = name;
                   if (supplier != null) {
-                    if (supplier.city.isNotEmpty) {
-                      _cityCtrl.text = supplier.city;
-                    }
-                    if (supplier.name.isNotEmpty) {
-                      _locationCtrl.text = supplier.name;
-                    }
-                    if (supplier.location?.isNotEmpty == true) {
-                      _addressCtrl.text = supplier.location!;
-                    }
+                    if (supplier.city.isNotEmpty)          _cityCtrl.text     = supplier.city;
+                    if (supplier.name.isNotEmpty)          _locationCtrl.text = supplier.name;
+                    if (supplier.location?.isNotEmpty == true) _addressCtrl.text = supplier.location!;
                   }
                 });
               },
-              onCleared:    () => setState(() {
+              onCleared: () => setState(() {
                 _supplierId   = null;
                 _supplierName = null;
               }),
+              onAddNew: () async {
+                // Create a transient provider for the editor
+                final repos = AppRepositories.instance;
+                if (repos == null || !context.mounted) return;
+                final tempProvider = SupplierProvider(
+                  repository: repos.suppliers,
+                  teamId:     repos.currentTeamId ?? '',
+                );
+                if (!context.mounted) return;
+                await showSupplierEditor(
+                  context,
+                  provider:            tempProvider,
+                  initialSupplierType: _type.mappedSupplierType,
+                );
+                // Reload suppliers so the newly created one appears
+                if (!context.mounted) return;
+                setState(() => _suppliersLoading = true);
+                final fresh = await repos.suppliers.fetchAll(repos.currentTeamId ?? '');
+                if (!context.mounted) return;
+                setState(() {
+                  _allSuppliers    = fresh;
+                  _suppliersLoading = false;
+                });
+                tempProvider.dispose();
+              },
             ),
           ),
           _sectionDivider(),
@@ -1247,21 +1278,68 @@ class _StatusSelector extends StatelessWidget {
 
 // ── Supplier picker field ─────────────────────────────────────────────────────
 
+// ── Mismatch handling ─────────────────────────────────────────────────────────
+
+enum _MismatchChoice { cancel, useAnyway }
+
+Future<_MismatchChoice> _showMismatchDialog(
+  BuildContext context,
+  String supplierName,
+  ComponentType componentType,
+) async {
+  final choice = await showDialog<_MismatchChoice>(
+    context: context,
+    builder: (_) => AlertDialog(
+      title: const Text('Supplier Type Mismatch'),
+      content: Text(
+        '"$supplierName" is not classified as '
+        '${componentType.mappedSupplierType.label}. '
+        'This may indicate a miscategorised supplier.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(_MismatchChoice.cancel),
+          child: const Text('Choose Another'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(context).pop(_MismatchChoice.useAnyway),
+          child: const Text('Use Anyway'),
+        ),
+      ],
+    ),
+  );
+  return choice ?? _MismatchChoice.cancel;
+}
+
+// ── Supplier picker field ─────────────────────────────────────────────────────
+
+typedef _SupplierSelectedCallback = void Function(
+  String id,
+  String name, {
+  bool mismatch,
+});
+
 class _SupplierPickerField extends StatelessWidget {
   final String?          selectedId;
   final String?          selectedName;
-  final List<Supplier>   suppliers;
+  final List<Supplier>   suppliers;     // pre-filtered by component type
+  final List<Supplier>   allSuppliers;  // full list for mismatch detection
   final bool             loading;
-  final void Function(String id, String name) onSelected;
+  final ComponentType    componentType;
+  final _SupplierSelectedCallback onSelected;
   final VoidCallback     onCleared;
+  final VoidCallback?    onAddNew;
 
   const _SupplierPickerField({
     required this.selectedId,
     required this.selectedName,
     required this.suppliers,
+    required this.allSuppliers,
     required this.loading,
+    required this.componentType,
     required this.onSelected,
     required this.onCleared,
+    this.onAddNew,
   });
 
   @override
@@ -1309,17 +1387,35 @@ class _SupplierPickerField extends StatelessWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _SupplierSearchSheet(suppliers: suppliers),
+      builder: (_) => _SupplierSearchSheet(
+        suppliers:     suppliers,
+        allSuppliers:  allSuppliers,
+        componentType: componentType,
+        onAddNew:      onAddNew,
+      ),
     );
-    if (result != null) onSelected(result.id, result.name);
+    if (result == null) return;
+
+    // Detect mismatch: supplier came from the full list (not filtered list)
+    final inFiltered = suppliers.any((s) => s.id == result.id);
+    onSelected(result.id, result.name, mismatch: !inFiltered);
   }
 }
 
 // ── Supplier search sheet ─────────────────────────────────────────────────────
 
 class _SupplierSearchSheet extends StatefulWidget {
-  final List<Supplier> suppliers;
-  const _SupplierSearchSheet({required this.suppliers});
+  final List<Supplier>  suppliers;
+  final List<Supplier>  allSuppliers;
+  final ComponentType   componentType;
+  final VoidCallback?   onAddNew;
+
+  const _SupplierSearchSheet({
+    required this.suppliers,
+    required this.allSuppliers,
+    required this.componentType,
+    this.onAddNew,
+  });
 
   @override
   State<_SupplierSearchSheet> createState() => _SupplierSearchSheetState();
@@ -1327,7 +1423,8 @@ class _SupplierSearchSheet extends StatefulWidget {
 
 class _SupplierSearchSheetState extends State<_SupplierSearchSheet> {
   final _searchCtrl = TextEditingController();
-  String _query = '';
+  String _query     = '';
+  bool   _showAll   = false;
 
   @override
   void dispose() {
@@ -1335,40 +1432,104 @@ class _SupplierSearchSheetState extends State<_SupplierSearchSheet> {
     super.dispose();
   }
 
+  List<Supplier> get _sourceList =>
+      _showAll ? widget.allSuppliers : widget.suppliers;
+
   List<Supplier> get _results {
-    if (_query.isEmpty) return widget.suppliers;
+    if (_query.isEmpty) return _sourceList;
     final q = _query.toLowerCase();
-    return widget.suppliers
+    return _sourceList
         .where((s) =>
             s.name.toLowerCase().contains(q) ||
             s.city.toLowerCase().contains(q))
         .toList();
   }
 
+  bool _isMismatch(Supplier s) =>
+      !widget.suppliers.any((f) => f.id == s.id);
+
   @override
   Widget build(BuildContext context) {
+    final targetType = widget.componentType.mappedSupplierType;
+
     return Container(
-      height: MediaQuery.of(context).size.height * 0.6,
+      height: MediaQuery.of(context).size.height * 0.65,
       decoration: const BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       child: Column(
         children: [
+          // Handle
           Center(
             child: Container(
               margin:     const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-              width:      36, height: 4,
+              width: 36, height: 4,
               decoration: BoxDecoration(
                 color: AppColors.border,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
           ),
+
+          // Header row
           Padding(
             padding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.pagePaddingH,
-              vertical:   AppSpacing.sm,
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Select Supplier',
+                    style: AppTextStyles.heading3,
+                  ),
+                ),
+                // Toggle: show all suppliers / filtered only
+                GestureDetector(
+                  onTap: () => setState(() => _showAll = !_showAll),
+                  child: Text(
+                    _showAll ? 'Show suggested' : 'Show all',
+                    style: AppTextStyles.labelSmall.copyWith(
+                      color: AppColors.accent,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+
+          // Type badge
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.pagePaddingH),
+            child: Row(
+              children: [
+                Icon(targetType.icon, size: 13, color: targetType.color),
+                const SizedBox(width: 5),
+                Text(
+                  'Showing ${targetType.label}',
+                  style: AppTextStyles.labelSmall.copyWith(
+                    color: _showAll ? AppColors.textMuted : targetType.color,
+                  ),
+                ),
+                if (_showAll) ...[
+                  const SizedBox(width: 4),
+                  Text('(all types visible)',
+                      style: AppTextStyles.labelSmall
+                          .copyWith(color: AppColors.textMuted)),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+
+          // Search field
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.pagePaddingH,
+              vertical:   AppSpacing.xs,
             ),
             child: TextFormField(
               controller:  _searchCtrl,
@@ -1379,40 +1540,104 @@ class _SupplierSearchSheetState extends State<_SupplierSearchSheet> {
             ),
           ),
           const Divider(height: 1, color: AppColors.divider),
+
+          // Results
           Expanded(
             child: _results.isEmpty
                 ? Center(
                     child: Text(
                       'No suppliers found',
-                      style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textMuted),
+                      style: AppTextStyles.bodyMedium
+                          .copyWith(color: AppColors.textMuted),
                     ),
                   )
                 : ListView.builder(
                     itemCount: _results.length,
                     itemBuilder: (_, i) {
-                      final s = _results[i];
+                      final s       = _results[i];
+                      final isMm    = _showAll && _isMismatch(s);
+                      final typeClr = s.effectiveSupplierType.color;
                       return ListTile(
                         leading: Container(
                           width: 36, height: 36,
                           decoration: BoxDecoration(
-                            color: AppColors.accentFaint,
+                            color: typeClr.withAlpha(20),
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: const Icon(
-                            Icons.business_rounded,
+                          child: Icon(
+                            s.effectiveSupplierType.icon,
                             size: 18,
-                            color: AppColors.accent,
+                            color: typeClr,
                           ),
                         ),
-                        title: Text(s.name, style: AppTextStyles.bodyMedium),
+                        title: Row(
+                          children: [
+                            Expanded(
+                              child: Text(s.name, style: AppTextStyles.bodyMedium),
+                            ),
+                            if (isMm)
+                              Container(
+                                margin: const EdgeInsets.only(left: 6),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 5, vertical: 1),
+                                decoration: BoxDecoration(
+                                  color: Colors.orange.withAlpha(20),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  'Type mismatch',
+                                  style: AppTextStyles.overline.copyWith(
+                                    color: Colors.orange.shade700,
+                                    fontSize: 9,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
                         subtitle: Text(
-                          '${s.city}${s.country.isNotEmpty ? ', ${s.country}' : ''}',
+                          '${s.effectiveSupplierType.label}'
+                          '${s.supplierSubtype != null ? ' · ${subtypeLabel(s.supplierSubtype!)}' : ''}'
+                          ' · ${s.city}${s.country.isNotEmpty ? ', ${s.country}' : ''}',
                           style: AppTextStyles.bodySmall,
                         ),
-                        onTap: () => Navigator.of(context).pop((id: s.id, name: s.name)),
+                        onTap: () =>
+                            Navigator.of(context).pop((id: s.id, name: s.name)),
                       );
                     },
                   ),
+          ),
+
+          // ── Add New Supplier ──────────────────────────────────────────────
+          const Divider(height: 1, color: AppColors.divider),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.pagePaddingH,
+                vertical:   AppSpacing.sm,
+              ),
+              child: SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  icon:  const Icon(Icons.add_rounded, size: 16),
+                  label: Text(
+                    '+ Add New Supplier',
+                    style: AppTextStyles.bodyMedium
+                        .copyWith(fontWeight: FontWeight.w600),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.accent,
+                    side: const BorderSide(color: AppColors.accent),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8)),
+                  ),
+                  onPressed: () {
+                    Navigator.of(context).pop(); // close search sheet first
+                    widget.onAddNew?.call();
+                  },
+                ),
+              ),
+            ),
           ),
         ],
       ),

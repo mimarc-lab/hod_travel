@@ -12,15 +12,18 @@ import 'supplier_badges.dart';
 
 /// Shows the supplier editor in a dialog (desktop) or bottom sheet (mobile).
 /// Pass [existing] to edit; omit to create a new supplier.
-void showSupplierEditor(
+/// [initialSupplierType] pre-fills the type picker when creating a new supplier
+/// (e.g. when called from a component form).
+Future<void> showSupplierEditor(
   BuildContext context, {
   required SupplierProvider provider,
   Supplier? existing,
-}) {
+  SupplierType? initialSupplierType,
+}) async {
   final isMobile = MediaQuery.sizeOf(context).width < 600;
 
   if (isMobile) {
-    showModalBottomSheet(
+    await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: AppColors.surface,
@@ -36,18 +39,23 @@ void showSupplierEditor(
           scrollController: ctrl,
           provider: provider,
           existing: existing,
+          initialSupplierType: initialSupplierType,
         ),
       ),
     );
   } else {
-    showDialog(
+    await showDialog<void>(
       context: context,
       builder: (_) => Dialog(
         backgroundColor: AppColors.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 600, maxHeight: 720),
-          child: _SupplierEditorForm(provider: provider, existing: existing),
+          child: _SupplierEditorForm(
+            provider: provider,
+            existing: existing,
+            initialSupplierType: initialSupplierType,
+          ),
         ),
       ),
     );
@@ -62,11 +70,13 @@ class _SupplierEditorForm extends StatefulWidget {
   final SupplierProvider provider;
   final Supplier? existing;
   final ScrollController? scrollController;
+  final SupplierType? initialSupplierType;
 
   const _SupplierEditorForm({
     required this.provider,
     this.existing,
     this.scrollController,
+    this.initialSupplierType,
   });
 
   @override
@@ -74,7 +84,8 @@ class _SupplierEditorForm extends StatefulWidget {
 }
 
 class _SupplierEditorFormState extends State<_SupplierEditorForm> {
-  late SupplierCategory _category;
+  late SupplierType _supplierType;
+  String? _supplierSubtype;
   late double _rating;
   late bool _preferred;
 
@@ -95,9 +106,10 @@ class _SupplierEditorFormState extends State<_SupplierEditorForm> {
   void initState() {
     super.initState();
     final e = widget.existing;
-    _category  = e?.category       ?? SupplierCategory.hotel;
-    _rating    = e?.internalRating  ?? 3.0;
-    _preferred = e?.preferred       ?? false;
+    _supplierType  = e?.supplierType  ?? widget.initialSupplierType ?? SupplierType.accommodation;
+    _supplierSubtype = e?.supplierSubtype;
+    _rating        = e?.internalRating ?? 3.0;
+    _preferred     = e?.preferred      ?? false;
 
     _nameCtrl         = TextEditingController(text: e?.name          ?? '');
     _cityCtrl         = TextEditingController(text: e?.city          ?? '');
@@ -126,6 +138,23 @@ class _SupplierEditorFormState extends State<_SupplierEditorForm> {
   List<String> _parseTags(String raw) =>
       raw.split(',').map((t) => t.trim()).where((t) => t.isNotEmpty).toList();
 
+  // Derive a legacy SupplierCategory from the new supplier type + subtype so
+  // older code that reads `category` still has a meaningful value.
+  SupplierCategory _derivedCategory() {
+    switch (_supplierType) {
+      case SupplierType.accommodation:
+        return _supplierSubtype == 'villa'
+            ? SupplierCategory.villa
+            : SupplierCategory.hotel;
+      case SupplierType.dining:       return SupplierCategory.restaurant;
+      case SupplierType.transport:    return SupplierCategory.transport;
+      case SupplierType.guide:        return SupplierCategory.guide;
+      case SupplierType.experienceProvider: return SupplierCategory.experience;
+      case SupplierType.specialistServices: return SupplierCategory.concierge;
+      default:                        return SupplierCategory.other;
+    }
+  }
+
   void _save() {
     final name = _nameCtrl.text.trim();
     if (name.isEmpty) return;
@@ -136,10 +165,15 @@ class _SupplierEditorFormState extends State<_SupplierEditorForm> {
 
     String? nul(String v) => v.isEmpty ? null : v;
 
+    final derivedCat = _derivedCategory();
+
     if (_isEditing) {
       widget.provider.updateSupplier(widget.existing!.copyWith(
         name: name,
-        category: _category,
+        category: derivedCat,
+        supplierType: _supplierType,
+        supplierSubtype: _supplierSubtype,
+        clearSupplierSubtype: _supplierSubtype == null,
         city: city,
         country: country,
         location: nul(_locationCtrl.text.trim()),
@@ -162,7 +196,9 @@ class _SupplierEditorFormState extends State<_SupplierEditorForm> {
       widget.provider.addSupplier(Supplier(
         id: '',
         name: name,
-        category: _category,
+        category: derivedCat,
+        supplierType: _supplierType,
+        supplierSubtype: _supplierSubtype,
         city: city,
         country: country,
         location: nul(_locationCtrl.text.trim()),
@@ -199,14 +235,30 @@ class _SupplierEditorFormState extends State<_SupplierEditorForm> {
                 _Field(label: 'NAME *', child: _textField(_nameCtrl, 'e.g. Belmond Hotel Caruso')),
                 const SizedBox(height: AppSpacing.base),
 
-                // Category
+                // Supplier Type
                 _Field(
-                  label: 'CATEGORY',
-                  child: _StyledDropdown<SupplierCategory>(
-                    value: _category,
-                    items: SupplierCategory.values,
-                    labelOf: (c) => c.label,
-                    onChanged: (v) => setState(() => _category = v),
+                  label: 'SUPPLIER TYPE',
+                  child: _StyledDropdown<SupplierType>(
+                    value: _supplierType,
+                    items: SupplierType.values,
+                    labelOf: (t) => t.label,
+                    onChanged: (v) => setState(() {
+                      _supplierType    = v;
+                      _supplierSubtype = null; // reset subtype when type changes
+                    }),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.base),
+
+                // Supplier Subtype (dynamic per type)
+                _Field(
+                  label: 'SUPPLIER SUBTYPE',
+                  child: _StyledDropdown<String>(
+                    value: _supplierSubtype ?? '',
+                    items: ['', ...kSupplierSubtypes[_supplierType] ?? []],
+                    labelOf: (s) => s.isEmpty ? '— None —' : subtypeLabel(s),
+                    onChanged: (v) => setState(() =>
+                        _supplierSubtype = v.isEmpty ? null : v),
                   ),
                 ),
                 const SizedBox(height: AppSpacing.base),

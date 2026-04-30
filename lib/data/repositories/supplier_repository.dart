@@ -32,6 +32,8 @@ Supplier _fromRow(Map<String, dynamic> r, {List<String> tags = const []}) {
     category: SupplierCategoryDisplay.fromDb(
       r['category'] as String? ?? 'other',
     ),
+    supplierType:    SupplierType.fromDb(r['supplier_type']    as String?),
+    supplierSubtype: r['supplier_subtype'] as String?,
     location: r['location'] as String?,
     city: r['city'] as String? ?? '',
     country: r['country'] as String? ?? '',
@@ -50,6 +52,8 @@ Map<String, dynamic> _toRow(Supplier s, {String? teamId}) => {
   'team_id': ?teamId,
   'name': s.name,
   'category': s.category.dbValue,
+  if (s.supplierType != null) 'supplier_type': s.supplierType!.dbValue,
+  if (s.supplierSubtype != null) 'supplier_subtype': s.supplierSubtype,
   'location': s.location,
   'city': s.city,
   'country': s.country,

@@ -142,6 +142,18 @@ enum ComponentType {
     }
   }
 
+  /// Primary mapping: component type → supplier type (new taxonomy).
+  SupplierType get mappedSupplierType => switch (this) {
+    ComponentType.accommodation      => SupplierType.accommodation,
+    ComponentType.dining             => SupplierType.dining,
+    ComponentType.transport          => SupplierType.transport,
+    ComponentType.experience         => SupplierType.experienceProvider,
+    ComponentType.guide              => SupplierType.guide,
+    ComponentType.specialArrangement => SupplierType.specialistServices,
+    ComponentType.other              => SupplierType.other,
+  };
+
+  /// Legacy fallback: used when a supplier has no supplier_type set yet.
   List<SupplierCategory> get relevantSupplierCategories {
     switch (this) {
       case ComponentType.accommodation:      return [SupplierCategory.hotel, SupplierCategory.villa];
