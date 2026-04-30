@@ -17,7 +17,7 @@ class SupplierProvider extends ChangeNotifier {
   String? _error;
 
   String _searchQuery = '';
-  SupplierCategory? _categoryFilter;
+  SupplierType? _typeFilter;
   bool _preferredOnly = false;
 
   StreamSubscription<List<Supplier>>? _sub;
@@ -34,14 +34,14 @@ class SupplierProvider extends ChangeNotifier {
 
   bool get isLoading                   => _isLoading;
   String? get error                    => _error;
-  String get searchQuery               => _searchQuery;
-  SupplierCategory? get categoryFilter => _categoryFilter;
-  bool get preferredOnly               => _preferredOnly;
-  int get totalCount                   => _suppliers.length;
-  List<Supplier> get suppliers         => List.unmodifiable(_suppliers);
+  String get searchQuery             => _searchQuery;
+  SupplierType? get typeFilter       => _typeFilter;
+  bool get preferredOnly             => _preferredOnly;
+  int get totalCount                 => _suppliers.length;
+  List<Supplier> get suppliers       => List.unmodifiable(_suppliers);
 
   bool get hasActiveFilters =>
-      _searchQuery.isNotEmpty || _categoryFilter != null || _preferredOnly;
+      _searchQuery.isNotEmpty || _typeFilter != null || _preferredOnly;
 
   List<Supplier> get filteredSuppliers {
     return _suppliers.where((s) {
@@ -54,7 +54,7 @@ class SupplierProvider extends ChangeNotifier {
             s.tags.any((t) => t.toLowerCase().contains(q));
         if (!match) return false;
       }
-      if (_categoryFilter != null && s.category != _categoryFilter) return false;
+      if (_typeFilter != null && s.effectiveSupplierType != _typeFilter) return false;
       if (_preferredOnly && !s.preferred) return false;
       return true;
     }).toList()
@@ -99,9 +99,9 @@ class SupplierProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setCategoryFilter(SupplierCategory? category) {
-    if (_categoryFilter == category) return;
-    _categoryFilter = category;
+  void setTypeFilter(SupplierType? type) {
+    if (_typeFilter == type) return;
+    _typeFilter = type;
     notifyListeners();
   }
 
@@ -113,7 +113,7 @@ class SupplierProvider extends ChangeNotifier {
 
   void clearFilters() {
     _searchQuery = '';
-    _categoryFilter = null;
+    _typeFilter = null;
     _preferredOnly = false;
     notifyListeners();
   }

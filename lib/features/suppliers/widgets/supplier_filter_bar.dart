@@ -32,21 +32,21 @@ class SupplierFilterBar extends StatelessWidget {
             // "All" chip
             _FilterChip(
               label: 'All',
-              isSelected: provider.categoryFilter == null,
-              onTap: () => provider.setCategoryFilter(null),
+              isSelected: provider.typeFilter == null,
+              onTap: () => provider.setTypeFilter(null),
             ),
             const SizedBox(width: AppSpacing.xs),
 
-            // Category chips
-            ...SupplierCategory.values.map((cat) => Padding(
+            // Type chips
+            ...SupplierType.values.map((type) => Padding(
               padding: const EdgeInsets.only(right: AppSpacing.xs),
               child: _FilterChip(
-                label: cat.label,
-                icon: cat.icon,
-                color: cat.color,
-                isSelected: provider.categoryFilter == cat,
-                onTap: () => provider.setCategoryFilter(
-                  provider.categoryFilter == cat ? null : cat,
+                label: type.label,
+                icon: type.icon,
+                color: type.color,
+                isSelected: provider.typeFilter == type,
+                onTap: () => provider.setTypeFilter(
+                  provider.typeFilter == type ? null : type,
                 ),
               ),
             )),
