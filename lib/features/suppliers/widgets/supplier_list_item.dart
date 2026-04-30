@@ -55,7 +55,7 @@ class _DesktopRow extends StatelessWidget {
           child: Row(
             children: [
               // Category icon
-              CategoryIconBadge(category: supplier.category),
+              CategoryIconBadge(type: supplier.effectiveSupplierType),
               const SizedBox(width: AppSpacing.base),
 
               // Name + city
@@ -78,7 +78,7 @@ class _DesktopRow extends StatelessWidget {
               // Category badge
               Expanded(
                 flex: 3,
-                child: CategoryBadge(category: supplier.category),
+                child: CategoryBadge(type: supplier.effectiveSupplierType),
               ),
 
               // Preferred + rating
@@ -169,7 +169,7 @@ class _MobileCard extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                CategoryIconBadge(category: supplier.category, size: 40),
+                CategoryIconBadge(type: supplier.effectiveSupplierType, size: 40),
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Column(
@@ -188,7 +188,11 @@ class _MobileCard extends StatelessWidget {
                       const SizedBox(height: 3),
                       Row(
                         children: [
-                          CategoryBadge(category: supplier.category, compact: true),
+                          CategoryBadge(type: supplier.effectiveSupplierType, compact: true),
+                          if (supplier.supplierSubtype != null) ...[
+                            const SizedBox(width: AppSpacing.xs),
+                            SubtypeBadge(subtype: supplier.supplierSubtype!, compact: true),
+                          ],
                           const SizedBox(width: AppSpacing.sm),
                           Text(
                             '${supplier.city}, ${supplier.country}',

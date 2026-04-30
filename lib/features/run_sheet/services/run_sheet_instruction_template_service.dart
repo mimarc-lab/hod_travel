@@ -15,14 +15,16 @@ class RunSheetInstructionTemplateService {
   const RunSheetInstructionTemplateService({
     RunSheetInstructionTemplateRepository? repo,
     String? teamId,
-  })  : _repo   = repo,
-        _teamId = teamId;
+  }) : _repo = repo,
+       _teamId = teamId;
 
   Future<SuggestedInstructions?> suggestFor(String itemTypeDbValue) async {
-    if (_repo != null && _teamId != null && _teamId!.isNotEmpty) {
+    if (_repo != null && _teamId != null && _teamId.isNotEmpty) {
       try {
-        final all     = await _repo!.fetchForTeam(_teamId!);
-        final forType = all.where((t) => t.componentType == itemTypeDbValue).toList();
+        final all = await _repo.fetchForTeam(_teamId);
+        final forType = all
+            .where((t) => t.componentType == itemTypeDbValue)
+            .toList();
         if (forType.isNotEmpty) {
           String combine(InstructionType type) => forType
               .where((r) => r.instructionType == type)
@@ -30,8 +32,8 @@ class RunSheetInstructionTemplateService {
               .join('\n');
           final s = SuggestedInstructions(
             operational: combine(InstructionType.operational),
-            contingency:  combine(InstructionType.contingency),
-            escalation:   combine(InstructionType.escalation),
+            contingency: combine(InstructionType.contingency),
+            escalation: combine(InstructionType.escalation),
           );
           if (!s.isEmpty) return s;
         }

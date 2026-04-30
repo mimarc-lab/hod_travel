@@ -737,10 +737,10 @@ class _ComponentFormSheetState extends State<_ComponentFormSheet> {
           _sectionDivider(),
 
           // ── Supplier ─────────────────────────────────────────────────────────
-          _sectionHeader('Supplier'),
+          _sectionHeader('Supplier / Provider'),
           _fieldGap(),
           _labeledField(
-            label: 'Supplier',
+            label: 'Supplier / Provider',
             child: _SupplierPickerField(
               selectedId:    _supplierId,
               selectedName:  _supplierName,
@@ -779,6 +779,8 @@ class _ComponentFormSheetState extends State<_ComponentFormSheet> {
                   teamId:     repos.currentTeamId ?? '',
                 );
                 if (!context.mounted) return;
+                // Snapshot existing IDs so we can detect the new one after save
+                final existingIds = _allSuppliers.map((s) => s.id).toSet();
                 await showSupplierEditor(
                   context,
                   provider:            tempProvider,
@@ -789,9 +791,22 @@ class _ComponentFormSheetState extends State<_ComponentFormSheet> {
                 setState(() => _suppliersLoading = true);
                 final fresh = await repos.suppliers.fetchAll(repos.currentTeamId ?? '');
                 if (!context.mounted) return;
+                // Auto-select the supplier that wasn't in the list before
+                final newSupplier = fresh
+                    .where((s) => !existingIds.contains(s.id))
+                    .firstOrNull;
                 setState(() {
-                  _allSuppliers    = fresh;
+                  _allSuppliers     = fresh;
                   _suppliersLoading = false;
+                  if (newSupplier != null) {
+                    _supplierId   = newSupplier.id;
+                    _supplierName = newSupplier.name;
+                    if (newSupplier.city.isNotEmpty) _cityCtrl.text = newSupplier.city;
+                    if (newSupplier.name.isNotEmpty) _locationCtrl.text = newSupplier.name;
+                    if (newSupplier.location?.isNotEmpty == true) {
+                      _addressCtrl.text = newSupplier.location!;
+                    }
+                  }
                 });
                 tempProvider.dispose();
               },
@@ -1545,10 +1560,56 @@ class _SupplierSearchSheetState extends State<_SupplierSearchSheet> {
           Expanded(
             child: _results.isEmpty
                 ? Center(
-                    child: Text(
-                      'No suppliers found',
-                      style: AppTextStyles.bodyMedium
-                          .copyWith(color: AppColors.textMuted),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          _showAll
+                              ? Icons.search_off_rounded
+                              : targetType.icon,
+                          size: 32,
+                          color: _showAll
+                              ? AppColors.textMuted
+                              : targetType.color.withAlpha(80),
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                        Text(
+                          _showAll
+                              ? 'No suppliers found'
+                              : 'No suppliers found for this category',
+                          style: AppTextStyles.bodyMedium
+                              .copyWith(color: AppColors.textMuted),
+                        ),
+                        const SizedBox(height: AppSpacing.base),
+                        if (!_showAll) ...[
+                          OutlinedButton.icon(
+                            icon: const Icon(Icons.add_rounded, size: 15),
+                            label: const Text('+ Add New Supplier'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppColors.accent,
+                              side: const BorderSide(color: AppColors.accent),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8)),
+                              textStyle: AppTextStyles.labelSmall.copyWith(
+                                  fontWeight: FontWeight.w600),
+                            ),
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                              widget.onAddNew?.call();
+                            },
+                          ),
+                          const SizedBox(height: AppSpacing.sm),
+                          GestureDetector(
+                            onTap: () => setState(() => _showAll = true),
+                            child: Text(
+                              'or show all supplier types',
+                              style: AppTextStyles.labelSmall.copyWith(
+                                color: AppColors.accent,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   )
                 : ListView.builder(

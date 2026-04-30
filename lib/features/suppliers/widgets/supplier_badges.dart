@@ -4,18 +4,18 @@ import '../../../core/constants/app_text_styles.dart';
 import '../../../data/models/supplier_model.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// CategoryBadge — coloured pill showing supplier category
+// CategoryBadge — coloured pill showing supplier type
 // ─────────────────────────────────────────────────────────────────────────────
 
 class CategoryBadge extends StatelessWidget {
-  final SupplierCategory category;
-  final bool compact; // compact = icon only with tiny label below
+  final SupplierType type;
+  final bool compact;
 
-  const CategoryBadge({super.key, required this.category, this.compact = false});
+  const CategoryBadge({super.key, required this.type, this.compact = false});
 
   @override
   Widget build(BuildContext context) {
-    final color = category.color;
+    final color = type.color;
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: compact ? 7 : 9,
@@ -28,10 +28,10 @@ class CategoryBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(category.icon, size: compact ? 11 : 12, color: color),
+          Icon(type.icon, size: compact ? 11 : 12, color: color),
           const SizedBox(width: 4),
           Text(
-            category.label,
+            type.label,
             style: AppTextStyles.labelSmall.copyWith(
               color: color,
               fontWeight: FontWeight.w600,
@@ -44,18 +44,51 @@ class CategoryBadge extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// SubtypeBadge — secondary pill showing the supplier subtype
+// ─────────────────────────────────────────────────────────────────────────────
+
+class SubtypeBadge extends StatelessWidget {
+  final String subtype;
+  final bool compact;
+
+  const SubtypeBadge({super.key, required this.subtype, this.compact = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 7 : 9,
+        vertical: compact ? 3 : 4,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceAlt,
+        borderRadius: BorderRadius.circular(5),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Text(
+        subtypeLabel(subtype),
+        style: AppTextStyles.labelSmall.copyWith(
+          color: AppColors.textSecondary,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // CategoryIconBadge — square icon tile for use in list items
 // ─────────────────────────────────────────────────────────────────────────────
 
 class CategoryIconBadge extends StatelessWidget {
-  final SupplierCategory category;
+  final SupplierType type;
   final double size;
 
-  const CategoryIconBadge({super.key, required this.category, this.size = 36});
+  const CategoryIconBadge({super.key, required this.type, this.size = 36});
 
   @override
   Widget build(BuildContext context) {
-    final color = category.color;
+    final color = type.color;
     return Container(
       width: size,
       height: size,
@@ -63,7 +96,7 @@ class CategoryIconBadge extends StatelessWidget {
         color: color.withAlpha(22),
         borderRadius: BorderRadius.circular(9),
       ),
-      child: Icon(category.icon, size: size * 0.44, color: color),
+      child: Icon(type.icon, size: size * 0.44, color: color),
     );
   }
 }

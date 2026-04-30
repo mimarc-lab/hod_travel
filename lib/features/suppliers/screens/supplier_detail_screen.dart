@@ -152,7 +152,7 @@ class _DetailHeader extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               // Category icon
-              CategoryIconBadge(category: supplier.category, size: 44),
+              CategoryIconBadge(type: supplier.effectiveSupplierType, size: 44),
               const SizedBox(width: AppSpacing.base),
 
               // Name + badges
@@ -166,7 +166,9 @@ class _DetailHeader extends StatelessWidget {
                       spacing: AppSpacing.xs,
                       runSpacing: AppSpacing.xs,
                       children: [
-                        CategoryBadge(category: supplier.category),
+                        CategoryBadge(type: supplier.effectiveSupplierType),
+                        if (supplier.supplierSubtype != null)
+                          SubtypeBadge(subtype: supplier.supplierSubtype!),
                         if (supplier.preferred) const PreferredBadge(),
                         RatingDots(rating: supplier.internalRating, size: 13),
                       ],
