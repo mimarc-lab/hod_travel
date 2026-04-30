@@ -165,7 +165,7 @@ class ComponentTableRow extends StatelessWidget {
               // Start time
               SizedBox(
                 width: ComponentColumns.startTime,
-                child: Text(component.startTime ?? '—',
+                child: Text(_fmt12(component.startTime),
                     style: AppTextStyles.tableCell.copyWith(
                         color: component.startTime == null
                             ? AppColors.textMuted
@@ -175,7 +175,7 @@ class ComponentTableRow extends StatelessWidget {
               // End time
               SizedBox(
                 width: ComponentColumns.endTime,
-                child: Text(component.endTime ?? '—',
+                child: Text(_fmt12(component.endTime),
                     style: AppTextStyles.tableCell.copyWith(
                         color: component.endTime == null
                             ? AppColors.textMuted
@@ -234,6 +234,26 @@ class ComponentTableRow extends StatelessWidget {
       ),
     );
   }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Converts a "HH:MM" or "HH:MM:SS" 24-hour string to "h:mm AM/PM".
+/// Returns "—" when [raw] is null or unparseable.
+String _fmt12(String? raw) {
+  if (raw == null) return '—';
+  final parts = raw.split(':');
+  if (parts.length < 2) return raw;
+  final h = int.tryParse(parts[0]);
+  final m = int.tryParse(parts[1]);
+  if (h == null || m == null) return raw;
+  final tod = TimeOfDay(hour: h, minute: m);
+  final hh  = tod.hourOfPeriod == 0 ? 12 : tod.hourOfPeriod;
+  final mm  = m.toString().padLeft(2, '0');
+  final period = tod.period == DayPeriod.am ? 'AM' : 'PM';
+  return '$hh:$mm $period';
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
