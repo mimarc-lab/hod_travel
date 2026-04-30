@@ -130,7 +130,9 @@ class ItineraryItem {
         return Icons.flight_rounded;
       }
       if (lower.contains('helicopter')) return Icons.flight_rounded;
-      if (lower.contains('ferry'))      return Icons.directions_boat_rounded;
+      if (lower.contains('ferry') || lower.contains('water taxi')) {
+        return Icons.directions_boat_rounded;
+      }
       if (lower.contains('yacht') || lower.contains('sailing')) {
         return Icons.sailing_rounded;
       }
@@ -153,7 +155,9 @@ class ItineraryItem {
         return const Color(0xFF5B8DB8);
       }
       if (lower.contains('helicopter')) return const Color(0xFF5B8DB8);
-      if (lower.contains('ferry'))      return const Color(0xFF0369A1);
+      if (lower.contains('ferry') || lower.contains('water taxi')) {
+        return const Color(0xFF0369A1);
+      }
       if (lower.contains('yacht') || lower.contains('sailing')) {
         return const Color(0xFF0891B2);
       }
