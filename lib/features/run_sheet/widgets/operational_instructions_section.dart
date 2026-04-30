@@ -62,6 +62,19 @@ class _OperationalInstructionsSectionState
   }
 
   @override
+  void didUpdateWidget(OperationalInstructionsSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Suggestions arrive asynchronously after initState; transition to
+    // suggestAvailable only when the phase is still idle and no instructions exist.
+    if (oldWidget.suggestions == null &&
+        widget.suggestions != null &&
+        !widget.item.hasInstructions &&
+        _phase == _InstructionPhase.idle) {
+      setState(() => _phase = _InstructionPhase.suggestAvailable);
+    }
+  }
+
+  @override
   void dispose() {
     _opCtrl.dispose();
     _conCtrl.dispose();
