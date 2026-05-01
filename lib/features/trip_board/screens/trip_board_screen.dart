@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
@@ -18,6 +17,7 @@ import '../../../shared/widgets/user_avatar.dart';
 import '../../../core/supabase/app_db.dart';
 import '../providers/board_provider.dart';
 import '../../../features/intelligence/widgets/trip_intelligence_panel.dart';
+import '../../../features/budget/providers/budget_provider.dart';
 import '../../../features/itinerary/providers/itinerary_provider.dart';
 import '../../../features/trip_components/screens/trip_components_screen.dart';
 import '../../../features/health/screens/trip_health_screen.dart';
@@ -38,7 +38,12 @@ class TripBoardScreen extends StatefulWidget {
   /// updates immediately without requiring a manual refresh.
   final TripProvider? tripProvider;
 
-  const TripBoardScreen({super.key, required this.trip, this.initialTaskId, this.tripProvider});
+  const TripBoardScreen({
+    super.key,
+    required this.trip,
+    this.initialTaskId,
+    this.tripProvider,
+  });
 
   @override
   State<TripBoardScreen> createState() => _TripBoardScreenState();
@@ -46,32 +51,52 @@ class TripBoardScreen extends StatefulWidget {
 
 class _TripBoardScreenState extends State<TripBoardScreen>
     with SingleTickerProviderStateMixin {
-  late final TabController     _tabController;
-  late final BoardProvider     _provider;
+  late final TabController _tabController;
+  late final BoardProvider _provider;
   late final ItineraryProvider _itineraryProvider;
+  late final BudgetProvider _budgetProvider;
 
   /// Mutable local copy of the trip — updated when the user saves edits.
   late Trip _currentTrip;
 
-  static const _tabs = ['Board', 'Timeline', 'Map', 'Itinerary', 'Components', 'Budget', 'Documents', 'Intelligence', 'Client View', 'Health'];
+  static const _tabs = [
+    'Board',
+    'Timeline',
+    'Map',
+    'Itinerary',
+    'Components',
+    'Budget',
+    'Documents',
+    'Intelligence',
+    'Client View',
+    'Health',
+  ];
 
   @override
   void initState() {
     super.initState();
     _currentTrip = widget.trip;
-    _tabController = TabController(length: _tabs.length, vsync: this); // 10 tabs
+    _tabController = TabController(
+      length: _tabs.length,
+      vsync: this,
+    ); // 10 tabs
     _provider = BoardProvider(
       widget.trip,
-      repository:        AppRepositories.instance?.tasks,
+      repository: AppRepositories.instance?.tasks,
       subtaskRepository: AppRepositories.instance?.subtasks,
-      teamId:            AppRepositories.instance?.currentTeamId,
-      currentUserId:     AppRepositories.instance?.currentUserId,
-      initialTaskId:     widget.initialTaskId,
+      teamId: AppRepositories.instance?.currentTeamId,
+      currentUserId: AppRepositories.instance?.currentUserId,
+      initialTaskId: widget.initialTaskId,
     );
     _itineraryProvider = ItineraryProvider(
       widget.trip,
       repository: AppRepositories.instance?.itinerary,
-      teamId:     AppRepositories.instance?.currentTeamId,
+      teamId: AppRepositories.instance?.currentTeamId,
+    );
+    _budgetProvider = BudgetProvider.forTrip(
+      widget.trip.id,
+      repository: AppRepositories.instance?.budget,
+      teamId: AppRepositories.instance?.currentTeamId ?? '',
     );
   }
 
@@ -80,13 +105,17 @@ class _TripBoardScreenState extends State<TripBoardScreen>
     _tabController.dispose();
     _provider.dispose();
     _itineraryProvider.dispose();
+    _budgetProvider.dispose();
     super.dispose();
   }
 
   Future<void> _openEditTrip(BuildContext context) async {
     final updated = await Navigator.of(context).push<Trip>(
       MaterialPageRoute(
-        builder: (_) => EditTripScreen(trip: _currentTrip, tripProvider: widget.tripProvider),
+        builder: (_) => EditTripScreen(
+          trip: _currentTrip,
+          tripProvider: widget.tripProvider,
+        ),
       ),
     );
     if (updated != null && mounted) {
@@ -97,7 +126,11 @@ class _TripBoardScreenState extends State<TripBoardScreen>
   Future<void> _onRecalculate(BuildContext context) async {
     if (_currentTrip.startDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Trip has no start date — cannot recalculate schedule.')),
+        const SnackBar(
+          content: Text(
+            'Trip has no start date — cannot recalculate schedule.',
+          ),
+        ),
       );
       return;
     }
@@ -134,13 +167,13 @@ class _TripBoardScreenState extends State<TripBoardScreen>
         );
         return;
       }
-      final start    = analysis.earliestStartDate;
+      final start = analysis.earliestStartDate;
       final deadline = analysis.planningDeadline;
       final msg = analysis.hasWarnings
           ? analysis.warnings.first
           : 'Schedule updated — ${analysis.tasks.length} tasks rescheduled. '
-            'Planning: ${_fmtDate(start)} → ${_fmtDate(deadline)}  ·  '
-            '${analysis.timelineDurationDays} days  ·  ${analysis.totalEffortDays} task-days';
+                'Planning: ${_fmtDate(start)} → ${_fmtDate(deadline)}  ·  '
+                '${analysis.timelineDurationDays} days  ·  ${analysis.totalEffortDays} task-days';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(msg),
@@ -156,22 +189,36 @@ class _TripBoardScreenState extends State<TripBoardScreen>
       debugPrint('[Recalculate] error: $e');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not recalculate schedule. Please try again.')),
+        const SnackBar(
+          content: Text('Could not recalculate schedule. Please try again.'),
+        ),
       );
     }
   }
 
   static String _fmtDate(DateTime? d) {
     if (d == null) return '—';
-    const m = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const m = [
+      '',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
     return '${m[d.month]} ${d.day}';
   }
 
   void _openRunSheet(BuildContext context) {
     Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => RunSheetScreen(trip: widget.trip),
-      ),
+      MaterialPageRoute(builder: (_) => RunSheetScreen(trip: widget.trip)),
     );
   }
 
@@ -212,7 +259,9 @@ class _TripBoardScreenState extends State<TripBoardScreen>
       if (!mounted) return;
       // ignore: use_build_context_synchronously
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not delete trip. Please try again.')),
+        const SnackBar(
+          content: Text('Could not delete trip. Please try again.'),
+        ),
       );
     }
   }
@@ -248,11 +297,27 @@ class _TripBoardScreenState extends State<TripBoardScreen>
                             _tabController.animateTo(6), // Intelligence tab
                         onRecalculate: () => _onRecalculate(context),
                       ),
-                      TimelineScreen(trip: widget.trip, provider: _provider), // Timeline
-                      TripMapScreen(trip: widget.trip, provider: _itineraryProvider), // Map
-                      ItineraryScreen(trip: widget.trip, provider: _itineraryProvider),
-                      TripComponentsScreen(trip: widget.trip, itineraryProvider: _itineraryProvider),
-                      TripBudgetScreen(trip: widget.trip),
+                      TimelineScreen(
+                        trip: widget.trip,
+                        provider: _provider,
+                      ), // Timeline
+                      TripMapScreen(
+                        trip: widget.trip,
+                        provider: _itineraryProvider,
+                      ), // Map
+                      ItineraryScreen(
+                        trip: widget.trip,
+                        provider: _itineraryProvider,
+                      ),
+                      TripComponentsScreen(
+                        trip: widget.trip,
+                        itineraryProvider: _itineraryProvider,
+                        budgetProvider:    _budgetProvider,
+                      ),
+                      TripBudgetScreen(
+                        trip: widget.trip,
+                        budgetProvider: _budgetProvider,
+                      ),
                       TripDocumentsScreen(trip: widget.trip),
                       TripIntelligencePanel(
                         trip: widget.trip,
@@ -349,11 +414,20 @@ class _TripHeader extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.arrow_back_rounded, size: 16, color: AppColors.textSecondary),
+                Icon(
+                  Icons.arrow_back_rounded,
+                  size: 16,
+                  color: AppColors.textSecondary,
+                ),
                 const SizedBox(width: 4),
                 Text('Trips', style: AppTextStyles.bodySmall),
                 Text(' / ', style: AppTextStyles.bodySmall),
-                Text(trip.name, style: AppTextStyles.bodySmall.copyWith(color: AppColors.textPrimary)),
+                Text(
+                  trip.name,
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.textPrimary,
+                  ),
+                ),
               ],
             ),
           ),
@@ -363,21 +437,27 @@ class _TripHeader extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Expanded(child: Text(trip.name, style: AppTextStyles.displayMedium)),
+              Expanded(
+                child: Text(trip.name, style: AppTextStyles.displayMedium),
+              ),
               TripStatusChip(status: trip.status),
               const SizedBox(width: AppSpacing.sm),
               PopupMenuButton<String>(
                 onSelected: (value) {
-                  if (value == 'edit')      onEdit();
+                  if (value == 'edit') onEdit();
                   if (value == 'run_sheet') onRunSheet();
-                  if (value == 'delete')    onDelete();
+                  if (value == 'delete') onDelete();
                 },
                 itemBuilder: (_) => [
                   const PopupMenuItem(
                     value: 'edit',
                     child: Row(
                       children: [
-                        Icon(Icons.edit_outlined, size: 16, color: AppColors.textSecondary),
+                        Icon(
+                          Icons.edit_outlined,
+                          size: 16,
+                          color: AppColors.textSecondary,
+                        ),
                         SizedBox(width: 8),
                         Text('Edit Trip'),
                       ],
@@ -387,7 +467,11 @@ class _TripHeader extends StatelessWidget {
                     value: 'run_sheet',
                     child: Row(
                       children: [
-                        Icon(Icons.assignment_outlined, size: 16, color: AppColors.textSecondary),
+                        Icon(
+                          Icons.assignment_outlined,
+                          size: 16,
+                          color: AppColors.textSecondary,
+                        ),
                         SizedBox(width: 8),
                         Text('Run Sheet'),
                       ],
@@ -398,9 +482,16 @@ class _TripHeader extends StatelessWidget {
                     value: 'delete',
                     child: Row(
                       children: [
-                        Icon(Icons.delete_outline_rounded, size: 16, color: Colors.red),
+                        Icon(
+                          Icons.delete_outline_rounded,
+                          size: 16,
+                          color: Colors.red,
+                        ),
                         SizedBox(width: 8),
-                        Text('Delete trip', style: TextStyle(color: Colors.red)),
+                        Text(
+                          'Delete trip',
+                          style: TextStyle(color: Colors.red),
+                        ),
                       ],
                     ),
                   ),
@@ -408,8 +499,15 @@ class _TripHeader extends StatelessWidget {
                 child: Container(
                   width: 32,
                   height: 32,
-                  decoration: BoxDecoration(color: AppColors.surfaceAlt, borderRadius: BorderRadius.circular(6)),
-                  child: const Icon(Icons.more_horiz_rounded, size: 16, color: AppColors.textSecondary),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceAlt,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: const Icon(
+                    Icons.more_horiz_rounded,
+                    size: 16,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
               ),
             ],
@@ -421,10 +519,19 @@ class _TripHeader extends StatelessWidget {
             spacing: AppSpacing.lg,
             runSpacing: 6,
             children: [
-              _MetaItem(icon: Icons.person_outline_rounded,   label: trip.clientName),
-              _MetaItem(icon: Icons.calendar_today_outlined,  label: dateStr),
-              _MetaItem(icon: Icons.location_on_outlined,     label: trip.destinationSummary),
-              _MetaItem(icon: Icons.people_outline_rounded,   label: '${trip.guestCount} guests'),
+              _MetaItem(
+                icon: Icons.person_outline_rounded,
+                label: trip.clientName,
+              ),
+              _MetaItem(icon: Icons.calendar_today_outlined, label: dateStr),
+              _MetaItem(
+                icon: Icons.location_on_outlined,
+                label: trip.destinationSummary,
+              ),
+              _MetaItem(
+                icon: Icons.people_outline_rounded,
+                label: '${trip.guestCount} guests',
+              ),
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -477,14 +584,18 @@ class _BoardTabBar extends StatelessWidget {
             controller: controller,
             isScrollable: true,
             tabAlignment: TabAlignment.start,
-            labelStyle:            AppTextStyles.bodySmall.copyWith(fontWeight: FontWeight.w600),
-            unselectedLabelStyle:  AppTextStyles.bodySmall,
-            labelColor:            AppColors.accent,
-            unselectedLabelColor:  AppColors.textSecondary,
-            indicatorColor:        AppColors.accent,
-            indicatorWeight:       2,
-            dividerColor:          Colors.transparent,
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.pagePaddingH),
+            labelStyle: AppTextStyles.bodySmall.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+            unselectedLabelStyle: AppTextStyles.bodySmall,
+            labelColor: AppColors.accent,
+            unselectedLabelColor: AppColors.textSecondary,
+            indicatorColor: AppColors.accent,
+            indicatorWeight: 2,
+            dividerColor: Colors.transparent,
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.pagePaddingH,
+            ),
             tabs: tabs.map((t) => Tab(text: t, height: 42)).toList(),
           ),
         ],
@@ -499,7 +610,11 @@ class _BoardTab extends StatelessWidget {
   final BoardProvider provider;
   final VoidCallback? onAiAssist;
   final VoidCallback? onRecalculate;
-  const _BoardTab({required this.provider, this.onAiAssist, this.onRecalculate});
+  const _BoardTab({
+    required this.provider,
+    this.onAiAssist,
+    this.onRecalculate,
+  });
 
   static const double _totalWidth = BoardColumns.totalWidth;
 
@@ -507,7 +622,11 @@ class _BoardTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        _BoardToolbar(onAiAssist: onAiAssist, onRecalculate: onRecalculate, provider: provider),
+        _BoardToolbar(
+          onAiAssist: onAiAssist,
+          onRecalculate: onRecalculate,
+          provider: provider,
+        ),
         Expanded(
           child: ListenableBuilder(
             listenable: provider,
@@ -523,12 +642,14 @@ class _BoardTab extends StatelessWidget {
                       children: [
                         const BoardTableHeader(),
                         const Divider(height: 1, color: AppColors.border),
-                        ...provider.groups.map((g) => BoardGroupWidget(
-                              key: ValueKey(g.id),
-                              group: g,
-                              provider: provider,
-                              selectedTaskId: selectedId,
-                            )),
+                        ...provider.groups.map(
+                          (g) => BoardGroupWidget(
+                            key: ValueKey(g.id),
+                            group: g,
+                            provider: provider,
+                            selectedTaskId: selectedId,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -548,7 +669,11 @@ class _BoardToolbar extends StatelessWidget {
   final BoardProvider provider;
   final VoidCallback? onAiAssist;
   final VoidCallback? onRecalculate;
-  const _BoardToolbar({required this.provider, this.onAiAssist, this.onRecalculate});
+  const _BoardToolbar({
+    required this.provider,
+    this.onAiAssist,
+    this.onRecalculate,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -563,11 +688,11 @@ class _BoardToolbar extends StatelessWidget {
       ),
       child: Row(
         children: [
-          _ToolbarBtn(icon: Icons.filter_list_rounded,  label: 'Filter'),
+          _ToolbarBtn(icon: Icons.filter_list_rounded, label: 'Filter'),
           const SizedBox(width: AppSpacing.sm),
-          _ToolbarBtn(icon: Icons.group_outlined,        label: 'Group by'),
+          _ToolbarBtn(icon: Icons.group_outlined, label: 'Group by'),
           const SizedBox(width: AppSpacing.sm),
-          _ToolbarBtn(icon: Icons.sort_rounded,          label: 'Sort'),
+          _ToolbarBtn(icon: Icons.sort_rounded, label: 'Sort'),
           const Spacer(),
           // Recalculate Schedule button
           if (onRecalculate != null) ...[
@@ -578,11 +703,16 @@ class _BoardToolbar extends StatelessWidget {
                 return GestureDetector(
                   onTap: busy ? null : onRecalculate,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFFF0FDF4),
                       borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: const Color(0xFF16A34A).withAlpha(60)),
+                      border: Border.all(
+                        color: const Color(0xFF16A34A).withAlpha(60),
+                      ),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -597,11 +727,17 @@ class _BoardToolbar extends StatelessWidget {
                             ),
                           )
                         else
-                          const Icon(Icons.refresh_rounded, size: 13, color: Color(0xFF16A34A)),
+                          const Icon(
+                            Icons.refresh_rounded,
+                            size: 13,
+                            color: Color(0xFF16A34A),
+                          ),
                         const SizedBox(width: 5),
                         Text(
                           busy ? 'Recalculating…' : 'Recalculate Schedule',
-                          style: AppTextStyles.labelMedium.copyWith(color: const Color(0xFF16A34A)),
+                          style: AppTextStyles.labelMedium.copyWith(
+                            color: const Color(0xFF16A34A),
+                          ),
                         ),
                       ],
                     ),
@@ -615,22 +751,32 @@ class _BoardToolbar extends StatelessWidget {
             GestureDetector(
               onTap: onAiAssist,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFF5F3FF),
                   borderRadius: BorderRadius.circular(6),
                   border: Border.all(
-                      color: const Color(0xFF7C3AED).withAlpha(60)),
+                    color: const Color(0xFF7C3AED).withAlpha(60),
+                  ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.auto_awesome_rounded,
-                        size: 13, color: Color(0xFF7C3AED)),
+                    const Icon(
+                      Icons.auto_awesome_rounded,
+                      size: 13,
+                      color: Color(0xFF7C3AED),
+                    ),
                     const SizedBox(width: 5),
-                    Text('AI Assist',
-                        style: AppTextStyles.labelMedium.copyWith(
-                            color: const Color(0xFF7C3AED))),
+                    Text(
+                      'AI Assist',
+                      style: AppTextStyles.labelMedium.copyWith(
+                        color: const Color(0xFF7C3AED),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -642,7 +788,12 @@ class _BoardToolbar extends StatelessWidget {
             children: [
               const Icon(Icons.add, size: 15, color: AppColors.accent),
               const SizedBox(width: 4),
-              Text('Add Group', style: AppTextStyles.labelMedium.copyWith(color: AppColors.accent)),
+              Text(
+                'Add Group',
+                style: AppTextStyles.labelMedium.copyWith(
+                  color: AppColors.accent,
+                ),
+              ),
             ],
           ),
         ],
@@ -676,4 +827,3 @@ class _ToolbarBtn extends StatelessWidget {
     );
   }
 }
-

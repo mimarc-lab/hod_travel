@@ -19,7 +19,8 @@ import '../widgets/cost_status_chip.dart';
 /// Uses AutomaticKeepAliveClientMixin to preserve state across tab switches.
 class TripBudgetScreen extends StatefulWidget {
   final Trip trip;
-  const TripBudgetScreen({super.key, required this.trip});
+  final BudgetProvider? budgetProvider;
+  const TripBudgetScreen({super.key, required this.trip, this.budgetProvider});
 
   @override
   State<TripBudgetScreen> createState() => _TripBudgetScreenState();
@@ -33,16 +34,23 @@ class _TripBudgetScreenState extends State<TripBudgetScreen>
   @override
   bool get wantKeepAlive => true;
 
+  bool _ownsProvider = false;
+
   @override
   void initState() {
     super.initState();
     final repos = AppRepositories.instance;
     final teamId = repos?.currentTeamId ?? '';
-    _provider = BudgetProvider.forTrip(
-      widget.trip.id,
-      repository: repos?.budget,
-      teamId:     teamId,
-    );
+    if (widget.budgetProvider != null) {
+      _provider = widget.budgetProvider!;
+    } else {
+      _provider = BudgetProvider.forTrip(
+        widget.trip.id,
+        repository: repos?.budget,
+        teamId:     teamId,
+      );
+      _ownsProvider = true;
+    }
     _loadSuppliers(repos?.suppliers, teamId);
     _provider.addListener(_onProviderChange);
   }
@@ -73,7 +81,7 @@ class _TripBudgetScreenState extends State<TripBudgetScreen>
   @override
   void dispose() {
     _provider.removeListener(_onProviderChange);
-    _provider.dispose();
+    if (_ownsProvider) _provider.dispose();
     super.dispose();
   }
 

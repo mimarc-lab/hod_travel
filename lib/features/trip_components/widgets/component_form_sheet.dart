@@ -12,6 +12,7 @@ import '../../../features/ai_suggestions/services/ai_config.dart';
 import '../../../features/ai_suggestions/services/ai_provider.dart';
 import '../../../features/documents/widgets/linked_documents_section.dart';
 import '../../../features/itinerary/providers/itinerary_provider.dart';
+import '../../../features/budget/providers/budget_provider.dart';
 import '../../../features/suppliers/providers/supplier_provider.dart';
 import '../../../features/suppliers/widgets/supplier_editor.dart';
 import '../providers/components_provider.dart';
@@ -24,6 +25,7 @@ Future<void> showComponentFormSheet(
   required ComponentsProvider provider,
   TripComponent? existing,
   ItineraryProvider? itineraryProvider,
+  BudgetProvider? budgetProvider,
 }) {
   return showModalBottomSheet(
     context: context,
@@ -34,6 +36,7 @@ Future<void> showComponentFormSheet(
       provider:          provider,
       existing:          existing,
       itineraryProvider: itineraryProvider,
+      budgetProvider:    budgetProvider,
     ),
   );
 }
@@ -116,12 +119,14 @@ class _ComponentFormSheet extends StatefulWidget {
   final ComponentsProvider provider;
   final TripComponent?     existing;
   final ItineraryProvider? itineraryProvider;
+  final BudgetProvider?    budgetProvider;
 
   const _ComponentFormSheet({
     required this.trip,
     required this.provider,
     this.existing,
     this.itineraryProvider,
+    this.budgetProvider,
   });
 
   @override
@@ -438,6 +443,10 @@ class _ComponentFormSheetState extends State<_ComponentFormSheet> {
         if (updatedItinItem != null) {
           widget.itineraryProvider?.patchItem(updatedItinItem);
         }
+        // Budget realtime filter doesn't fire for UPDATE events unless the
+        // table has REPLICA IDENTITY FULL. Force a reload so the budget tab
+        // reflects net cost / deposit changes immediately.
+        widget.budgetProvider?.reload();
       }
     } else {
       saved = await widget.provider.addComponent(component);
