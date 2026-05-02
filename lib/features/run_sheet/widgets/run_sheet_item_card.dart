@@ -254,7 +254,7 @@ class _CardBody extends StatelessWidget {
           // ── Booking details (from linked TripComponent) ───────────────
           if (bookingRows.isNotEmpty) ...[
             _BookingDetailsBlock(rows: bookingRows),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
           ],
 
           // Contacts — always shown when present
@@ -556,44 +556,50 @@ class _BookingDetailsBlock extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color:        AppColors.surfaceAlt,
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(8),
         border:       Border.all(color: AppColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Header
           Padding(
-            padding: const EdgeInsets.fromLTRB(10, 8, 10, 4),
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
             child: Text(
               'BOOKING DETAILS',
               style: AppTextStyles.overline.copyWith(
                 color:         AppColors.textMuted,
-                letterSpacing: 0.8,
+                letterSpacing: 1.0,
               ),
             ),
           ),
           const Divider(height: 1, color: AppColors.divider),
+
+          // Rows
           for (int i = 0; i < rows.length; i++) ...[
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SizedBox(
-                    width: 130,
+                    width: 140,
                     child: Text(
                       rows[i].key,
-                      style: AppTextStyles.labelSmall
-                          .copyWith(color: AppColors.textMuted),
+                      style: AppTextStyles.labelSmall.copyWith(
+                        color:  AppColors.textMuted,
+                        height: 1.4,
+                      ),
                     ),
                   ),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       rows[i].value,
                       style: AppTextStyles.bodySmall.copyWith(
                         color:      AppColors.textPrimary,
                         fontWeight: FontWeight.w500,
-                        height:     1.3,
+                        height:     1.4,
                       ),
                     ),
                   ),

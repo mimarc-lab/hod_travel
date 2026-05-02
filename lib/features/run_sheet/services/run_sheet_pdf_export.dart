@@ -478,7 +478,7 @@ class RunSheetPdfExport {
               final rows = buildComponentBookingRows(component);
               if (rows.isEmpty) return pw.SizedBox();
               return pw.Container(
-                margin:     const pw.EdgeInsets.only(top: 10),
+                margin:     const pw.EdgeInsets.only(top: 14),
                 decoration: pw.BoxDecoration(
                   color:        const PdfColor.fromInt(0xFFF8F7F5),
                   border:       pw.Border.all(color: _border, width: 0.5),
@@ -487,31 +487,35 @@ class RunSheetPdfExport {
                 child: pw.Column(
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
+                    // Header row
                     pw.Padding(
-                      padding: const pw.EdgeInsets.fromLTRB(10, 7, 10, 4),
+                      padding: const pw.EdgeInsets.fromLTRB(12, 9, 12, 7),
                       child: pw.Text('BOOKING DETAILS',
                           style: pw.TextStyle(
-                            font: fontBold, fontSize: 7, color: _muted,
-                            letterSpacing: 1)),
+                            font: fontBold, fontSize: 7.5, color: _muted,
+                            letterSpacing: 1.2)),
                     ),
                     pw.Container(height: 0.5, color: _border),
                     for (int i = 0; i < rows.length; i++) ...[
                       pw.Padding(
                         padding: const pw.EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 5),
+                            horizontal: 12, vertical: 7),
                         child: pw.Row(
                           crossAxisAlignment: pw.CrossAxisAlignment.start,
                           children: [
                             pw.SizedBox(
-                              width: 100,
+                              width: 110,
                               child: pw.Text(rows[i].key,
                                   style: pw.TextStyle(
-                                    font: font, fontSize: 8, color: _muted)),
+                                    font: font, fontSize: 8.5, color: _muted,
+                                    lineSpacing: 1.5)),
                             ),
+                            pw.SizedBox(width: 8),
                             pw.Expanded(
                               child: pw.Text(rows[i].value,
                                   style: pw.TextStyle(
-                                    font: fontBold, fontSize: 8.5, color: _ink)),
+                                    font: fontBold, fontSize: 9, color: _ink,
+                                    lineSpacing: 1.5)),
                             ),
                           ],
                         ),

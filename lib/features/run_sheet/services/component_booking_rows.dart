@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart' show TimeOfDay, DayPeriod;
 import 'package:intl/intl.dart';
 import '../../../data/models/trip_component_model.dart';
 
@@ -18,12 +19,16 @@ List<BookingRow> buildComponentBookingRows(TripComponent c) {
   switch (c.componentType) {
     case ComponentType.accommodation:
       if (c.startDate != null) {
-        final t = c.startTime?.isNotEmpty == true ? '  ·  ${c.startTime}' : '';
-        add('Check-in', '${fmtComponentDate(c.startDate!)}$t');
+        final t = _fmtTimeStr(c.startTime);
+        add('Check-in', t != null
+            ? '${fmtComponentDate(c.startDate!)}  ·  $t'
+            : fmtComponentDate(c.startDate!));
       }
       if (c.endDate != null) {
-        final t = c.endTime?.isNotEmpty == true ? '  ·  ${c.endTime}' : '';
-        add('Check-out', '${fmtComponentDate(c.endDate!)}$t');
+        final t = _fmtTimeStr(c.endTime);
+        add('Check-out', t != null
+            ? '${fmtComponentDate(c.endDate!)}  ·  $t'
+            : fmtComponentDate(c.endDate!));
       }
       add('Booking Reference',    c.supplierBookingReference);
       add('Confirmation Number',  c.confirmationNumber);
@@ -35,8 +40,10 @@ List<BookingRow> buildComponentBookingRows(TripComponent c) {
 
     case ComponentType.dining:
       if (c.startDate != null) {
-        final t = c.startTime?.isNotEmpty == true ? '  ·  ${c.startTime}' : '';
-        add('Date & Time', '${fmtComponentDate(c.startDate!)}$t');
+        final t = _fmtTimeStr(c.startTime);
+        add('Date & Time', t != null
+            ? '${fmtComponentDate(c.startDate!)}  ·  $t'
+            : fmtComponentDate(c.startDate!));
       }
       add('Reservation Name',  d['reservation_name'] as String?);
       add('Meal Type',         d['meal_type']        as String?);
@@ -47,9 +54,11 @@ List<BookingRow> buildComponentBookingRows(TripComponent c) {
 
     case ComponentType.transport:
       if (c.startDate != null) add('Date', fmtComponentDate(c.startDate!));
-      if (c.startTime?.isNotEmpty == true) {
-        final end = c.endTime?.isNotEmpty == true ? ' – ${c.endTime}' : '';
-        add('Departure / Arrival', '${c.startTime}$end');
+      final startFmt = _fmtTimeStr(c.startTime);
+      if (startFmt != null) {
+        final endFmt = _fmtTimeStr(c.endTime);
+        add('Departure / Arrival',
+            endFmt != null ? '$startFmt – $endFmt' : startFmt);
       }
       add('Transport Type',      d['transport_type']      as String?);
       add('Carrier',             d['carrier']             as String?);
@@ -66,8 +75,10 @@ List<BookingRow> buildComponentBookingRows(TripComponent c) {
 
     case ComponentType.experience:
       if (c.startDate != null) {
-        final t = c.startTime?.isNotEmpty == true ? '  ·  ${c.startTime}' : '';
-        add('Date & Time', '${fmtComponentDate(c.startDate!)}$t');
+        final t = _fmtTimeStr(c.startTime);
+        add('Date & Time', t != null
+            ? '${fmtComponentDate(c.startDate!)}  ·  $t'
+            : fmtComponentDate(c.startDate!));
       }
       final dur = d['duration_hours'];
       if (dur != null) add('Duration', '$dur hrs');
@@ -105,3 +116,19 @@ List<BookingRow> buildComponentBookingRows(TripComponent c) {
 }
 
 String fmtComponentDate(DateTime d) => DateFormat('EEE, d MMM yyyy').format(d);
+
+/// Converts a stored "HH:MM" or "HH:MM:SS" string to "h:mm am/pm".
+/// Returns null when the input is null, empty, or unparseable.
+String? _fmtTimeStr(String? raw) {
+  if (raw == null || raw.isEmpty) return null;
+  final parts = raw.split(':');
+  if (parts.length < 2) return null;
+  final h = int.tryParse(parts[0]);
+  final m = int.tryParse(parts[1]);
+  if (h == null || m == null) return null;
+  final tod    = TimeOfDay(hour: h, minute: m);
+  final hh     = tod.hourOfPeriod == 0 ? 12 : tod.hourOfPeriod;
+  final mm     = m.toString().padLeft(2, '0');
+  final period = tod.period == DayPeriod.am ? 'am' : 'pm';
+  return '$hh:$mm $period';
+}
