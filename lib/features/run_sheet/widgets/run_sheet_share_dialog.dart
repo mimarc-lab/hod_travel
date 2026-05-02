@@ -8,6 +8,7 @@ import '../../../data/models/itinerary_models.dart';
 import '../../../data/models/run_sheet_item.dart';
 import '../../../data/models/run_sheet_share_token.dart';
 import '../../../data/models/run_sheet_view_mode.dart';
+import '../../../data/models/trip_component_model.dart';
 import '../services/run_sheet_pdf_export.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -89,11 +90,26 @@ class _RunSheetShareDialogState extends State<RunSheetShareDialog> {
   Future<void> _exportPdf() async {
     setState(() { _isExportingPdf = true; _error = null; });
     try {
+      // Pre-load all components for this trip so the PDF can show booking details
+      Map<String, TripComponent> componentsMap = {};
+      try {
+        final repo = AppRepositories.instance?.components;
+        if (repo != null) {
+          final all = await repo.fetchForTrip(widget.tripId);
+          for (final c in all) {
+            if (c.itineraryItemId != null) {
+              componentsMap[c.itineraryItemId!] = c;
+            }
+          }
+        }
+      } catch (_) {}
+
       await RunSheetPdfExport.share(
-        tripName: widget.tripName,
-        allItems: widget.allItems,
-        days:     widget.days,
-        viewMode: _selectedMode,
+        tripName:   widget.tripName,
+        allItems:   widget.allItems,
+        days:       widget.days,
+        viewMode:   _selectedMode,
+        components: componentsMap,
       );
     } catch (_) {
       setState(() { _error = 'Could not generate PDF. Please try again.'; });

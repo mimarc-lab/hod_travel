@@ -2,16 +2,19 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
+import '../../../core/supabase/app_db.dart';
 import '../../../data/models/itinerary_models.dart';
 import '../../../data/models/run_sheet_instruction_template.dart';
 import '../../../data/models/run_sheet_item.dart';
+import '../../../data/models/trip_component_model.dart';
 import '../providers/run_sheet_provider.dart';
+import '../services/component_booking_rows.dart';
 import '../services/run_sheet_view_mode.dart';
 import 'run_sheet_contact_block.dart';
 import 'run_sheet_item_detail.dart';
 import 'run_sheet_status_chip.dart';
 
-class RunSheetItemCard extends StatelessWidget {
+class RunSheetItemCard extends StatefulWidget {
   final RunSheetItem     item;
   final RunSheetProvider provider;
 
@@ -22,57 +25,94 @@ class RunSheetItemCard extends StatelessWidget {
   });
 
   @override
+  State<RunSheetItemCard> createState() => _RunSheetItemCardState();
+}
+
+class _RunSheetItemCardState extends State<RunSheetItemCard> {
+  TripComponent? _component;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadComponent();
+  }
+
+  @override
+  void didUpdateWidget(RunSheetItemCard old) {
+    super.didUpdateWidget(old);
+    if (old.item.itineraryItemId != widget.item.itineraryItemId) {
+      _component = null;
+      _loadComponent();
+    }
+  }
+
+  Future<void> _loadComponent() async {
+    final id = widget.item.itineraryItemId;
+    if (id == null) return;
+    final repo = AppRepositories.instance?.components;
+    if (repo == null) return;
+    try {
+      final c = await repo.fetchByItineraryItemId(id);
+      if (mounted && c != null) setState(() => _component = c);
+    } catch (_) {}
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final type       = item.type;
-    final isComplete = item.status == RunSheetStatus.completed;
+    final item        = widget.item;
+    final type        = item.type;
+    final isComplete  = item.status == RunSheetStatus.completed;
     final isCancelled = item.status == RunSheetStatus.cancelled;
-    final dimmed     = isComplete || isCancelled;
+    final dimmed      = isComplete || isCancelled;
 
     return GestureDetector(
-      onTap: () => showRunSheetItemDetail(context, item: item, provider: provider),
+      onTap: () => showRunSheetItemDetail(
+          context, item: item, provider: widget.provider),
       child: Opacity(
         opacity: dimmed ? 0.55 : 1.0,
         child: Container(
-        decoration: BoxDecoration(
-          color:        AppColors.surface,
-          borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-          border:       Border.all(
-            color: item.status == RunSheetStatus.issueFlagged
-                ? const Color(0xFFFCA5A5)
-                : item.status == RunSheetStatus.delayed
-                    ? const Color(0xFFFDE68A)
-                    : AppColors.border,
-          ),
-          boxShadow: const [
-            BoxShadow(
-              color:      AppColors.shadow,
-              blurRadius: 4,
-              offset:     Offset(0, 1),
+          decoration: BoxDecoration(
+            color:        AppColors.surface,
+            borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+            border:       Border.all(
+              color: item.status == RunSheetStatus.issueFlagged
+                  ? const Color(0xFFFCA5A5)
+                  : item.status == RunSheetStatus.delayed
+                      ? const Color(0xFFFDE68A)
+                      : AppColors.border,
             ),
-          ],
-        ),
-        clipBehavior: Clip.hardEdge,
-        child: IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Left accent strip
-              Container(width: 3, color: type.color),
-              // Content
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _CardHeader(item: item, provider: provider),
-                    _CardBody(item: item, viewMode: provider.viewMode),
-                  ],
-                ),
+            boxShadow: const [
+              BoxShadow(
+                color:      AppColors.shadow,
+                blurRadius: 4,
+                offset:     Offset(0, 1),
               ),
             ],
           ),
+          clipBehavior: Clip.hardEdge,
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Container(width: 3, color: type.color),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _CardHeader(item: item, provider: widget.provider),
+                      _CardBody(
+                        item:      item,
+                        viewMode:  widget.provider.viewMode,
+                        component: _component,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
-    ),
     );
   }
 }
@@ -154,7 +194,12 @@ class _CardHeader extends StatelessWidget {
 class _CardBody extends StatelessWidget {
   final RunSheetItem     item;
   final RunSheetViewMode viewMode;
-  const _CardBody({required this.item, required this.viewMode});
+  final TripComponent?   component;
+  const _CardBody({
+    required this.item,
+    required this.viewMode,
+    this.component,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -162,6 +207,11 @@ class _CardBody extends StatelessWidget {
     final showLogistics = RunSheetRoleFilter.showLogisticsNotes(viewMode);
     final showTransport = RunSheetRoleFilter.showTransportNotes(viewMode);
     final showGuide     = RunSheetRoleFilter.showGuideNotes(viewMode);
+
+    // Build booking rows once so we can check emptiness
+    final bookingRows = component != null
+        ? buildComponentBookingRows(component!)
+        : <BookingRow>[];
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
@@ -198,6 +248,12 @@ class _CardBody extends StatelessWidget {
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
             ),
+            const SizedBox(height: 8),
+          ],
+
+          // ── Booking details (from linked TripComponent) ───────────────
+          if (bookingRows.isNotEmpty) ...[
+            _BookingDetailsBlock(rows: bookingRows),
             const SizedBox(height: 8),
           ],
 
@@ -485,6 +541,70 @@ class _InstructionsGroup extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+// ── Booking details block (compact card version) ──────────────────────────────
+
+class _BookingDetailsBlock extends StatelessWidget {
+  final List<BookingRow> rows;
+  const _BookingDetailsBlock({required this.rows});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color:        AppColors.surfaceAlt,
+        borderRadius: BorderRadius.circular(6),
+        border:       Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(10, 8, 10, 4),
+            child: Text(
+              'BOOKING DETAILS',
+              style: AppTextStyles.overline.copyWith(
+                color:         AppColors.textMuted,
+                letterSpacing: 0.8,
+              ),
+            ),
+          ),
+          const Divider(height: 1, color: AppColors.divider),
+          for (int i = 0; i < rows.length; i++) ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    width: 130,
+                    child: Text(
+                      rows[i].key,
+                      style: AppTextStyles.labelSmall
+                          .copyWith(color: AppColors.textMuted),
+                    ),
+                  ),
+                  Expanded(
+                    child: Text(
+                      rows[i].value,
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color:      AppColors.textPrimary,
+                        fontWeight: FontWeight.w500,
+                        height:     1.3,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (i < rows.length - 1)
+              const Divider(height: 1, color: AppColors.divider),
+          ],
+        ],
+      ),
     );
   }
 }

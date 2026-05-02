@@ -7,6 +7,8 @@ import 'package:printing/printing.dart';
 import '../../../data/models/itinerary_models.dart';
 import '../../../data/models/run_sheet_item.dart';
 import '../../../data/models/run_sheet_view_mode.dart';
+import '../../../data/models/trip_component_model.dart';
+import 'component_booking_rows.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // RunSheetPdfExport
@@ -69,13 +71,15 @@ class RunSheetPdfExport {
     required List<RunSheetItem> allItems,
     required List<TripDay>      days,
     required RunSheetViewMode   viewMode,
+    Map<String, TripComponent>  components = const {},
   }) async {
     final items = _filterByRole(allItems, viewMode);
     final bytes = await _build(
-      tripName: tripName,
-      items:    items,
-      days:     days,
-      viewMode: viewMode,
+      tripName:   tripName,
+      items:      items,
+      days:       days,
+      viewMode:   viewMode,
+      components: components,
     );
     final filename = '${_sanitize(tripName)}_${viewMode.dbValue}_run_sheet.pdf';
     await Printing.layoutPdf(
@@ -91,6 +95,7 @@ class RunSheetPdfExport {
     required List<RunSheetItem> items,
     required List<TripDay>      days,
     required RunSheetViewMode   viewMode,
+    Map<String, TripComponent>  components = const {},
   }) async {
     final doc = pw.Document(
       title:   '$tripName — Run Sheet',
@@ -145,15 +150,16 @@ class RunSheetPdfExport {
       if (dayItems == null || dayItems.isEmpty) continue;
 
       body.addAll(_buildDaySection(
-        day:          day,
-        items:        dayItems,
-        font:         font,
-        fontBold:     fontBold,
-        fontLight:    fontLight,
-        showOps:      showOps,
+        day:           day,
+        items:         dayItems,
+        font:          font,
+        fontBold:      fontBold,
+        fontLight:     fontLight,
+        showOps:       showOps,
         showLogistics: showLogistics,
         showTransport: showTransport,
-        showGuide:    showGuide,
+        showGuide:     showGuide,
+        components:    components,
       ));
     }
 
@@ -357,6 +363,7 @@ class RunSheetPdfExport {
     required bool               showLogistics,
     required bool               showTransport,
     required bool               showGuide,
+    Map<String, TripComponent>  components = const {},
   }) {
     final dateStr = day.date != null ? _dateLong.format(day.date!) : '';
 
@@ -390,6 +397,9 @@ class RunSheetPdfExport {
           showLogistics: showLogistics,
           showTransport: showTransport,
           showGuide:     showGuide,
+          component:     item.itineraryItemId != null
+              ? components[item.itineraryItemId]
+              : null,
         ),
         pw.SizedBox(height: 32),
       ],
@@ -407,6 +417,7 @@ class RunSheetPdfExport {
     required bool         showLogistics,
     required bool         showTransport,
     required bool         showGuide,
+    TripComponent?        component,
   }) {
     final timeStr = _formatTimeRange(item.startTime, item.endTime)
         ?? _timeBlockLabel(item.timeBlock);
@@ -459,6 +470,59 @@ class RunSheetPdfExport {
             pw.Text(item.description!,
                 style: pw.TextStyle(
                   font: font, fontSize: 10, color: _ink, height: 1.5)),
+          ],
+
+          // Booking details (from linked TripComponent)
+          if (component != null) ...[
+            () {
+              final rows = buildComponentBookingRows(component);
+              if (rows.isEmpty) return pw.SizedBox();
+              return pw.Container(
+                margin:     const pw.EdgeInsets.only(top: 10),
+                decoration: pw.BoxDecoration(
+                  color:        const PdfColor.fromInt(0xFFF8F7F5),
+                  border:       pw.Border.all(color: _border, width: 0.5),
+                  borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
+                ),
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.fromLTRB(10, 7, 10, 4),
+                      child: pw.Text('BOOKING DETAILS',
+                          style: pw.TextStyle(
+                            font: fontBold, fontSize: 7, color: _muted,
+                            letterSpacing: 1)),
+                    ),
+                    pw.Container(height: 0.5, color: _border),
+                    for (int i = 0; i < rows.length; i++) ...[
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 5),
+                        child: pw.Row(
+                          crossAxisAlignment: pw.CrossAxisAlignment.start,
+                          children: [
+                            pw.SizedBox(
+                              width: 100,
+                              child: pw.Text(rows[i].key,
+                                  style: pw.TextStyle(
+                                    font: font, fontSize: 8, color: _muted)),
+                            ),
+                            pw.Expanded(
+                              child: pw.Text(rows[i].value,
+                                  style: pw.TextStyle(
+                                    font: fontBold, fontSize: 8.5, color: _ink)),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (i < rows.length - 1)
+                        pw.Container(height: 0.3, color: _border),
+                    ],
+                  ],
+                ),
+              );
+            }(),
           ],
 
           // Contacts + responsible
