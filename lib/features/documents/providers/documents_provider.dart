@@ -25,8 +25,9 @@ class DocumentsProvider extends ChangeNotifier {
     required this.tripId,
     this.teamId,
     this.repository,
+    bool autoLoad = true,
   }) {
-    _load();
+    if (autoLoad) _load();
   }
 
   // ── Getters ────────────────────────────────────────────────────────────────

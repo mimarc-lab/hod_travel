@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
@@ -50,6 +51,7 @@ class _LinkedDocumentsSectionState extends State<LinkedDocumentsSection> {
       tripId:     widget.tripId,
       teamId:     repos?.currentTeamId,
       repository: repos?.documents,
+      autoLoad:   false,
     );
     _loadForContext();
   }
@@ -277,7 +279,8 @@ class _LinkedDocRow extends StatelessWidget {
 
           // Open link
           GestureDetector(
-            onTap: () => debugPrint('[LinkedDocs] open: ${doc.fileUrl}'),
+            onTap: () => launchUrl(Uri.parse(doc.fileUrl),
+                mode: LaunchMode.externalApplication),
             child: const Icon(Icons.open_in_new_rounded,
                 size: 14, color: AppColors.textMuted),
           ),
