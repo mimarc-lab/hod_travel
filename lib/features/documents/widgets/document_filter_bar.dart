@@ -87,6 +87,7 @@ class DocumentFilterBar extends StatelessWidget {
       },
     );
   }
+}
 
 class _FilterChip extends StatelessWidget {
   final String     label;
