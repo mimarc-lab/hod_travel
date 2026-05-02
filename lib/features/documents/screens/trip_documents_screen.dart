@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
@@ -6,15 +7,11 @@ import '../../../core/supabase/app_db.dart';
 import '../../../data/models/trip_document.dart';
 import '../../../data/models/trip_model.dart';
 import '../providers/documents_provider.dart';
-import '../widgets/document_card.dart';
 import '../widgets/document_filter_bar.dart';
 import '../widgets/document_upload_sheet.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TripDocumentsScreen
-//
-// Full-page document library for a trip — searchable, filterable list with
-// upload, edit, archive, and status-transition actions.
 // ─────────────────────────────────────────────────────────────────────────────
 
 class TripDocumentsScreen extends StatefulWidget {
@@ -28,6 +25,7 @@ class TripDocumentsScreen extends StatefulWidget {
 class _TripDocumentsScreenState extends State<TripDocumentsScreen>
     with AutomaticKeepAliveClientMixin {
   late final DocumentsProvider _provider;
+  final _searchCtrl = TextEditingController();
 
   @override
   bool get wantKeepAlive => true;
@@ -46,6 +44,7 @@ class _TripDocumentsScreenState extends State<TripDocumentsScreen>
   @override
   void dispose() {
     _provider.dispose();
+    _searchCtrl.dispose();
     super.dispose();
   }
 
@@ -67,16 +66,14 @@ class _TripDocumentsScreenState extends State<TripDocumentsScreen>
       context: context,
       builder: (_) => AlertDialog(
         title:   const Text('Archive document?'),
-        content: Text(
-            '"${doc.title}" will be archived and hidden from the list.'),
+        content: Text('"${doc.title}" will be archived and hidden from the list.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
             child: const Text('Cancel'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(
-                backgroundColor: AppColors.textMuted),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.textMuted),
             onPressed: () => Navigator.of(context).pop(true),
             child: const Text('Archive'),
           ),
@@ -92,14 +89,19 @@ class _TripDocumentsScreenState extends State<TripDocumentsScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Toolbar
+        // Toolbar — title + counter + search + add
         _Toolbar(
-          onAdd:     _openUpload,
-          onRefresh: _provider.reload,
-          provider:  _provider,
+          onAdd:      _openUpload,
+          onRefresh:  _provider.reload,
+          provider:   _provider,
+          searchCtrl: _searchCtrl,
+          onSearch:   (v) {
+            setState(() {});
+            _provider.setSearchQuery(v);
+          },
         ),
 
-        // Filter bar
+        // Filter chips only (search moved to toolbar)
         DocumentFilterBar(provider: _provider),
 
         const Divider(height: 1, color: AppColors.divider),
@@ -116,8 +118,8 @@ class _TripDocumentsScreenState extends State<TripDocumentsScreen>
 
               if (_provider.error != null) {
                 return _ErrorState(
-                  message:   _provider.error!,
-                  onRetry:   () {
+                  message: _provider.error!,
+                  onRetry: () {
                     _provider.clearError();
                     _provider.reload();
                   },
@@ -131,7 +133,7 @@ class _TripDocumentsScreenState extends State<TripDocumentsScreen>
                   hasFilter: _provider.filterType   != null ||
                              _provider.filterStatus != null ||
                              _provider.searchQuery.isNotEmpty,
-                  onAdd:    _openUpload,
+                  onAdd: _openUpload,
                 );
               }
 
@@ -139,19 +141,26 @@ class _TripDocumentsScreenState extends State<TripDocumentsScreen>
 
               return RefreshIndicator(
                 onRefresh: _provider.reload,
-                child: ListView.builder(
-                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-                  itemCount: docs.length,
-                  itemBuilder: (_, i) => DocumentCard(
-                    key:            ValueKey(docs[i].id),
-                    doc:            docs[i],
-                    onEdit:         () => _openEdit(docs[i]),
-                    onArchive:      () => _archive(docs[i]),
-                    onMarkReviewed: () =>
-                        _provider.markReviewed(docs[i], userId),
-                    onMarkApproved: () =>
-                        _provider.markApproved(docs[i], userId),
-                  ),
+                child: Column(
+                  children: [
+                    const _TableHeader(),
+                    const Divider(height: 1, color: AppColors.divider),
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: docs.length,
+                        itemBuilder: (_, i) => _DocumentTableRow(
+                          key:            ValueKey(docs[i].id),
+                          doc:            docs[i],
+                          onEdit:         () => _openEdit(docs[i]),
+                          onArchive:      () => _archive(docs[i]),
+                          onMarkReviewed: () =>
+                              _provider.markReviewed(docs[i], userId),
+                          onMarkApproved: () =>
+                              _provider.markApproved(docs[i], userId),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               );
             },
@@ -162,16 +171,21 @@ class _TripDocumentsScreenState extends State<TripDocumentsScreen>
   }
 }
 
-// ── Toolbar ───────────────────────────────────────────────────────────────────
+// ── Toolbar (inline search) ───────────────────────────────────────────────────
 
 class _Toolbar extends StatelessWidget {
-  final VoidCallback         onAdd;
-  final Future<void> Function() onRefresh;
-  final DocumentsProvider    provider;
+  final VoidCallback              onAdd;
+  final Future<void> Function()   onRefresh;
+  final DocumentsProvider         provider;
+  final TextEditingController     searchCtrl;
+  final ValueChanged<String>      onSearch;
+
   const _Toolbar({
     required this.onAdd,
     required this.onRefresh,
     required this.provider,
+    required this.searchCtrl,
+    required this.onSearch,
   });
 
   @override
@@ -187,6 +201,7 @@ class _Toolbar extends StatelessWidget {
       ),
       child: Row(
         children: [
+          // Title + counter
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -203,11 +218,60 @@ class _Toolbar extends StatelessWidget {
               ),
             ],
           ),
-          const Spacer(),
+
+          const SizedBox(width: AppSpacing.lg),
+
+          // Search box — grows to fill space
+          Expanded(
+            child: SizedBox(
+              height: 38,
+              child: TextFormField(
+                controller: searchCtrl,
+                decoration: InputDecoration(
+                  hintText:  'Search documents…',
+                  hintStyle: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.textMuted),
+                  prefixIcon: const Icon(Icons.search_rounded,
+                      size: 16, color: AppColors.textMuted),
+                  suffixIcon: searchCtrl.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.close_rounded,
+                              size: 14, color: AppColors.textMuted),
+                          onPressed: () {
+                            searchCtrl.clear();
+                            onSearch('');
+                          },
+                        )
+                      : null,
+                  filled:        true,
+                  fillColor:     AppColors.surfaceAlt,
+                  contentPadding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md, vertical: 0),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
+                    borderSide:   const BorderSide(color: AppColors.border),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
+                    borderSide:   const BorderSide(color: AppColors.border),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
+                    borderSide:   const BorderSide(color: AppColors.accent),
+                  ),
+                ),
+                style:     AppTextStyles.bodyMedium,
+                onChanged: onSearch,
+              ),
+            ),
+          ),
+
+          const SizedBox(width: AppSpacing.sm),
+
           IconButton(
             onPressed: onRefresh,
-            icon:  const Icon(Icons.refresh_rounded, size: 18),
-            color: AppColors.textSecondary,
+            icon:    const Icon(Icons.refresh_rounded, size: 18),
+            color:   AppColors.textSecondary,
             tooltip: 'Refresh',
           ),
           const SizedBox(width: AppSpacing.xs),
@@ -224,6 +288,372 @@ class _Toolbar extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+// ── Table header ──────────────────────────────────────────────────────────────
+
+class _TableHeader extends StatelessWidget {
+  const _TableHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: AppColors.surfaceAlt,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.pagePaddingH,
+        vertical:   10,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 7,
+            child: Text('DOCUMENT', style: _headerStyle),
+          ),
+          SizedBox(
+            width: 140,
+            child: Text('TYPE', style: _headerStyle),
+          ),
+          SizedBox(
+            width: 100,
+            child: Text('STATUS', style: _headerStyle),
+          ),
+          SizedBox(
+            width: 130,
+            child: Text('EXPIRY', style: _headerStyle),
+          ),
+          SizedBox(
+            width: 70,
+            child: Text('SIZE', style: _headerStyle),
+          ),
+          const SizedBox(width: 32), // client visible icon
+          const SizedBox(width: 32), // action menu
+        ],
+      ),
+    );
+  }
+
+  static final _headerStyle = AppTextStyles.overline.copyWith(
+    color:         AppColors.textMuted,
+    letterSpacing: 0.8,
+  );
+}
+
+// ── Table row ─────────────────────────────────────────────────────────────────
+
+class _DocumentTableRow extends StatelessWidget {
+  final TripDocument  doc;
+  final VoidCallback? onEdit;
+  final VoidCallback? onArchive;
+  final VoidCallback? onMarkReviewed;
+  final VoidCallback? onMarkApproved;
+
+  const _DocumentTableRow({
+    super.key,
+    required this.doc,
+    this.onEdit,
+    this.onArchive,
+    this.onMarkReviewed,
+    this.onMarkApproved,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isExpired      = doc.isExpired;
+    final isExpiringSoon = doc.isExpiringSoon;
+    final typeColor      = doc.documentType.color;
+
+    return Container(
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: const BorderSide(color: AppColors.divider),
+          left: BorderSide(
+            color: isExpired
+                ? const Color(0xFFDC2626)
+                : isExpiringSoon
+                    ? const Color(0xFFD97706)
+                    : typeColor,
+            width: 3,
+          ),
+        ),
+        color: isExpired
+            ? const Color(0xFFFEF2F2)
+            : isExpiringSoon
+                ? const Color(0xFFFFFBEB)
+                : null,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onEdit,
+          hoverColor:     AppColors.surfaceAlt,
+          highlightColor: Colors.transparent,
+          splashColor:    Colors.transparent,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.pagePaddingH,
+              vertical:   AppSpacing.md,
+            ),
+            child: Row(
+              children: [
+                // Title + file name
+                Expanded(
+                  flex: 7,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        doc.title,
+                        style: AppTextStyles.labelMedium.copyWith(
+                            fontWeight: FontWeight.w600),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (doc.fileName?.isNotEmpty ?? false) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          doc.fileName!,
+                          style: AppTextStyles.labelSmall.copyWith(
+                              color: AppColors.textMuted),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+
+                // Type badge
+                SizedBox(
+                  width: 140,
+                  child: _TypeBadge(type: doc.documentType),
+                ),
+
+                // Status chip
+                SizedBox(
+                  width: 100,
+                  child: _StatusChip(status: doc.status),
+                ),
+
+                // Expiry date
+                SizedBox(
+                  width: 130,
+                  child: doc.expiryDate != null
+                      ? Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              isExpired
+                                  ? Icons.error_outline_rounded
+                                  : isExpiringSoon
+                                      ? Icons.warning_amber_rounded
+                                      : Icons.event_outlined,
+                              size: 12,
+                              color: isExpired
+                                  ? const Color(0xFFDC2626)
+                                  : isExpiringSoon
+                                      ? const Color(0xFFD97706)
+                                      : AppColors.textMuted,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              DateFormat('d MMM yyyy')
+                                  .format(doc.expiryDate!),
+                              style: AppTextStyles.labelSmall.copyWith(
+                                color: isExpired
+                                    ? const Color(0xFFDC2626)
+                                    : isExpiringSoon
+                                        ? const Color(0xFFD97706)
+                                        : AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        )
+                      : Text('—',
+                          style: AppTextStyles.labelSmall.copyWith(
+                              color: AppColors.textMuted)),
+                ),
+
+                // File size
+                SizedBox(
+                  width: 70,
+                  child: Text(
+                    doc.fileSizeLabel.isNotEmpty ? doc.fileSizeLabel : '—',
+                    style: AppTextStyles.labelSmall.copyWith(
+                        color: AppColors.textMuted),
+                  ),
+                ),
+
+                // Client visible indicator
+                SizedBox(
+                  width: 32,
+                  child: doc.isClientVisible
+                      ? const Tooltip(
+                          message: 'Client visible',
+                          child: Icon(Icons.visibility_outlined,
+                              size: 14, color: AppColors.accent),
+                        )
+                      : const SizedBox.shrink(),
+                ),
+
+                // Action menu
+                SizedBox(
+                  width: 32,
+                  child: _ActionMenu(
+                    doc:            doc,
+                    onEdit:         onEdit,
+                    onArchive:      onArchive,
+                    onMarkReviewed: onMarkReviewed,
+                    onMarkApproved: onMarkApproved,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Shared badge/chip widgets ─────────────────────────────────────────────────
+
+class _TypeBadge extends StatelessWidget {
+  final DocumentType type;
+  const _TypeBadge({required this.type});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(type.icon, size: 12, color: type.color),
+        const SizedBox(width: 5),
+        Flexible(
+          child: Text(
+            type.label,
+            style: AppTextStyles.labelSmall.copyWith(
+              color: type.color,
+              fontWeight: FontWeight.w500,
+            ),
+            maxLines:  1,
+            overflow:  TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _StatusChip extends StatelessWidget {
+  final DocumentStatus status;
+  const _StatusChip({required this.status});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color:        status.bgColor,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        status.label,
+        style: AppTextStyles.labelSmall.copyWith(
+          color:      status.color,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+}
+
+// ── Action menu ───────────────────────────────────────────────────────────────
+
+class _ActionMenu extends StatelessWidget {
+  final TripDocument  doc;
+  final VoidCallback? onEdit;
+  final VoidCallback? onArchive;
+  final VoidCallback? onMarkReviewed;
+  final VoidCallback? onMarkApproved;
+
+  const _ActionMenu({
+    required this.doc,
+    this.onEdit,
+    this.onArchive,
+    this.onMarkReviewed,
+    this.onMarkApproved,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<String>(
+      onSelected: (v) {
+        if (v == 'edit')     onEdit?.call();
+        if (v == 'archive')  onArchive?.call();
+        if (v == 'reviewed') onMarkReviewed?.call();
+        if (v == 'approved') onMarkApproved?.call();
+        if (v == 'open')     debugPrint('[Doc] open: ${doc.fileUrl}');
+      },
+      itemBuilder: (_) => [
+        const PopupMenuItem(
+          value: 'open',
+          child: Row(children: [
+            Icon(Icons.open_in_new_rounded,
+                size: 15, color: AppColors.textSecondary),
+            SizedBox(width: 8),
+            Text('Open / Download'),
+          ]),
+        ),
+        if (onEdit != null)
+          const PopupMenuItem(
+            value: 'edit',
+            child: Row(children: [
+              Icon(Icons.edit_outlined,
+                  size: 15, color: AppColors.textSecondary),
+              SizedBox(width: 8),
+              Text('Edit'),
+            ]),
+          ),
+        if (onMarkReviewed != null &&
+            doc.status == DocumentStatus.uploaded)
+          const PopupMenuItem(
+            value: 'reviewed',
+            child: Row(children: [
+              Icon(Icons.rate_review_outlined,
+                  size: 15, color: AppColors.textSecondary),
+              SizedBox(width: 8),
+              Text('Mark Reviewed'),
+            ]),
+          ),
+        if (onMarkApproved != null &&
+            doc.status != DocumentStatus.approved)
+          const PopupMenuItem(
+            value: 'approved',
+            child: Row(children: [
+              Icon(Icons.check_circle_outline_rounded,
+                  size: 15, color: Color(0xFF16A34A)),
+              SizedBox(width: 8),
+              Text('Mark Approved',
+                  style: TextStyle(color: Color(0xFF16A34A))),
+            ]),
+          ),
+        const PopupMenuDivider(),
+        if (onArchive != null)
+          const PopupMenuItem(
+            value: 'archive',
+            child: Row(children: [
+              Icon(Icons.archive_outlined,
+                  size: 15, color: AppColors.textMuted),
+              SizedBox(width: 8),
+              Text('Archive',
+                  style: TextStyle(color: AppColors.textMuted)),
+            ]),
+          ),
+      ],
+      child: const Icon(Icons.more_horiz_rounded,
+          size: 16, color: AppColors.textMuted),
     );
   }
 }
