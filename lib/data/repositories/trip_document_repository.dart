@@ -13,6 +13,11 @@ abstract class TripDocumentRepository {
   Future<List<TripDocument>> fetchForCostItem(String costItemId);
   Future<List<TripDocument>> fetchForRunSheetItem(String runSheetItemId);
 
+  /// Fetch docs for a cost item AND for the trip component that owns it
+  /// (looks up trip_components WHERE cost_item_id = costItemId).
+  /// Results are merged and deduplicated by id.
+  Future<List<TripDocument>> fetchForCostItemOrLinkedComponent(String costItemId);
+
   Future<TripDocument> create(TripDocument doc, String teamId);
   Future<TripDocument> update(TripDocument doc);
 
@@ -148,6 +153,47 @@ class SupabaseTripDocumentRepository implements TripDocumentRepository {
         return (rows as List)
             .map((r) => _fromRow(r as Map<String, dynamic>))
             .toList();
+      });
+
+  @override
+  Future<List<TripDocument>> fetchForCostItemOrLinkedComponent(
+      String costItemId) =>
+      guardDb(() async {
+        // 1. Docs directly on the cost item
+        final costItemRows = await _client
+            .from(_kTable)
+            .select()
+            .eq('cost_item_id', costItemId)
+            .neq('status', DocumentStatus.archived.dbValue)
+            .order('uploaded_at', ascending: false);
+        final docs = (costItemRows as List)
+            .map((r) => _fromRow(r as Map<String, dynamic>))
+            .toList();
+
+        // 2. Reverse-lookup: find the component that owns this cost item
+        try {
+          final compRows = await _client
+              .from('trip_components')
+              .select('id')
+              .eq('cost_item_id', costItemId)
+              .limit(1);
+          if ((compRows as List).isNotEmpty) {
+            final componentId = compRows.first['id'] as String;
+            final compDocRows = await _client
+                .from(_kTable)
+                .select()
+                .eq('component_id', componentId)
+                .neq('status', DocumentStatus.archived.dbValue)
+                .order('uploaded_at', ascending: false);
+            final seen = {for (final d in docs) d.id};
+            for (final r in compDocRows as List) {
+              final d = _fromRow(r as Map<String, dynamic>);
+              if (!seen.contains(d.id)) docs.add(d);
+            }
+          }
+        } catch (_) {}
+
+        return docs;
       });
 
   @override

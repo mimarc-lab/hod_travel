@@ -1117,9 +1117,10 @@ class _ComponentFormSheetState extends State<_ComponentFormSheet> {
             _sectionHeader('Documents'),
             _fieldGap(),
             LinkedDocumentsSection(
-              key:         ValueKey('docs_${widget.existing!.id}'),
-              tripId:      widget.trip.id,
-              componentId: widget.existing!.id,
+              key:                ValueKey('docs_${widget.existing!.id}'),
+              tripId:             widget.trip.id,
+              componentId:        widget.existing!.id,
+              alsoLinkCostItemId: widget.existing!.costItemId,
             ),
           ],
 

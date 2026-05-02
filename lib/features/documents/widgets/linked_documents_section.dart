@@ -23,6 +23,9 @@ class LinkedDocumentsSection extends StatefulWidget {
   final String? componentId;
   final String? costItemId;
   final String? runSheetItemId;
+  /// When uploading from a component editor, also stamp this costItemId on
+  /// new documents so they appear in the linked budget cost item editor too.
+  final String? alsoLinkCostItemId;
 
   const LinkedDocumentsSection({
     super.key,
@@ -30,6 +33,7 @@ class LinkedDocumentsSection extends StatefulWidget {
     this.componentId,
     this.costItemId,
     this.runSheetItemId,
+    this.alsoLinkCostItemId,
   });
 
   @override
@@ -69,14 +73,14 @@ class _LinkedDocumentsSectionState extends State<LinkedDocumentsSection> {
       if (widget.componentId != null) {
         docs = await _repo!.fetchForComponent(widget.componentId!);
       } else if (widget.costItemId != null) {
-        docs = await _repo!.fetchForCostItem(widget.costItemId!);
+        // Also includes docs from the component that owns this cost item
+        docs = await _repo!.fetchForCostItemOrLinkedComponent(widget.costItemId!);
       } else if (widget.runSheetItemId != null) {
         docs = await _repo!.fetchForRunSheetItem(widget.runSheetItemId!);
       } else {
         return;
       }
       if (mounted && _provider != null) {
-        // Directly seed the provider's list for this context
         _provider!.seedDocuments(docs);
       }
     } catch (_) {}
@@ -89,9 +93,13 @@ class _LinkedDocumentsSectionState extends State<LinkedDocumentsSection> {
       tripId:               widget.tripId,
       provider:             _provider!,
       presetComponentId:    widget.componentId,
-      presetCostItemId:     widget.costItemId,
+      // When in component context, also stamp the linked cost item id so the
+      // doc shows up in the budget editor without needing re-upload.
+      presetCostItemId:     widget.costItemId ?? widget.alsoLinkCostItemId,
       presetRunSheetItemId: widget.runSheetItemId,
     );
+    // Reload to pick up the newly saved document
+    _loadForContext();
   }
 
   void _openEditSheet(TripDocument doc) async {
@@ -102,6 +110,7 @@ class _LinkedDocumentsSectionState extends State<LinkedDocumentsSection> {
       provider: _provider!,
       existing: doc,
     );
+    _loadForContext();
   }
 
   @override
