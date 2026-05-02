@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../data/models/trip_component_model.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/supabase/app_db.dart';
@@ -125,6 +127,9 @@ class _ItemDetailSheetState extends State<_ItemDetailSheet> {
                   children: [
                     // Overview
                     _OverviewSection(item: _item),
+
+                    // Booking / component details (loaded from linked TripComponent)
+                    _ComponentDetailsSection(runSheetItemId: _item.id),
 
                     if (_item.hasContacts) ...[
                       const SizedBox(height: AppSpacing.base),
@@ -491,6 +496,211 @@ class _DetailSectionLabel extends StatelessWidget {
     );
   }
 }
+
+// ── Component booking details ─────────────────────────────────────────────────
+
+class _ComponentDetailsSection extends StatefulWidget {
+  final String runSheetItemId;
+  const _ComponentDetailsSection({required this.runSheetItemId});
+
+  @override
+  State<_ComponentDetailsSection> createState() =>
+      _ComponentDetailsSectionState();
+}
+
+class _ComponentDetailsSectionState extends State<_ComponentDetailsSection> {
+  TripComponent? _component;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final repo = AppRepositories.instance?.components;
+    if (repo == null) return;
+    try {
+      final c = await repo.fetchByRunSheetItemId(widget.runSheetItemId);
+      if (mounted && c != null) setState(() => _component = c);
+    } catch (_) {}
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = _component;
+    if (c == null) return const SizedBox.shrink();
+
+    final rows = _buildRows(c);
+    if (rows.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: AppSpacing.base),
+        const _DetailSectionLabel(label: 'BOOKING DETAILS'),
+        const SizedBox(height: AppSpacing.sm),
+        Container(
+          decoration: BoxDecoration(
+            color:        AppColors.surfaceAlt,
+            borderRadius: BorderRadius.circular(8),
+            border:       Border.all(color: AppColors.border),
+          ),
+          child: Column(
+            children: [
+              for (int i = 0; i < rows.length; i++) ...[
+                _FieldRow(label: rows[i].key, value: rows[i].value),
+                if (i < rows.length - 1)
+                  const Divider(height: 1, color: AppColors.divider),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  List<({String key, String value})> _buildRows(TripComponent c) {
+    final rows = <({String key, String value})>[];
+    final d = c.detailsJson;
+
+    void add(String label, String? value) {
+      if (value != null && value.trim().isNotEmpty) {
+        rows.add((key: label, value: value.trim()));
+      }
+    }
+
+    switch (c.componentType) {
+      case ComponentType.accommodation:
+        if (c.startDate != null) {
+          final t = c.startTime?.isNotEmpty == true ? '  ·  ${c.startTime}' : '';
+          add('Check-in', '${_fmtDate(c.startDate!)}$t');
+        }
+        if (c.endDate != null) {
+          final t = c.endTime?.isNotEmpty == true ? '  ·  ${c.endTime}' : '';
+          add('Check-out', '${_fmtDate(c.endDate!)}$t');
+        }
+        add('Booking Reference',   c.supplierBookingReference);
+        add('Confirmation Number', c.confirmationNumber);
+        add('Room / Villa Type',   d['room_type'] as String?);
+        add('Room Number',         d['room_number'] as String?);
+        add('Bed Configuration',   d['bed_configuration'] as String?);
+        if (d['breakfast_included'] == true) add('Breakfast', 'Included');
+        add('Check-in Instructions', d['check_in_instructions'] as String?);
+
+      case ComponentType.dining:
+        if (c.startDate != null) {
+          final t = c.startTime?.isNotEmpty == true ? '  ·  ${c.startTime}' : '';
+          add('Date & Time', '${_fmtDate(c.startDate!)}$t');
+        }
+        add('Reservation Name', d['reservation_name'] as String?);
+        add('Meal Type',        d['meal_type']        as String?);
+        add('Dress Code',       d['dress_code']       as String?);
+        add('Table Preference', d['table_preference'] as String?);
+        add('Dietary Notes',    d['dietary_notes']    as String?);
+        add('Booking Reference', c.supplierBookingReference);
+
+      case ComponentType.transport:
+        if (c.startDate != null) add('Date', _fmtDate(c.startDate!));
+        if (c.startTime?.isNotEmpty == true) {
+          final end = c.endTime?.isNotEmpty == true ? ' – ${c.endTime}' : '';
+          add('Departure / Arrival', '${c.startTime}$end');
+        }
+        add('Transport Type',     d['transport_type']     as String?);
+        add('Carrier',            d['carrier']            as String?);
+        add('Flight / Train No.', d['flight_number']      as String?);
+        add('Class of Service',   d['class_of_service']   as String?);
+        add('Departure Terminal', d['departure_terminal'] as String?);
+        add('Arrival Location',   d['arrival_location']   as String?);
+        add('Seat Number',        d['seat_number']        as String?);
+        add('Driver',             d['driver_name']        as String?);
+        add('Driver Phone',       d['driver_phone']       as String?);
+        add('Vehicle',            d['vehicle_description'] as String?);
+        add('Booking Reference',  c.supplierBookingReference);
+        add('Confirmation Number', c.confirmationNumber);
+
+      case ComponentType.experience:
+        if (c.startDate != null) {
+          final t = c.startTime?.isNotEmpty == true ? '  ·  ${c.startTime}' : '';
+          add('Date & Time', '${_fmtDate(c.startDate!)}$t');
+        }
+        final dur = d['duration_hours'];
+        if (dur != null) add('Duration', '$dur hrs');
+        final grp = d['group_size'];
+        if (grp != null) add('Group Size', '$grp pax');
+        add('Difficulty Level',   d['difficulty_level']   as String?);
+        add('Equipment Provided', d['equipment_provided'] as String?);
+        add('What to Bring',      d['what_to_bring']      as String?);
+        add('Booking Reference',  c.supplierBookingReference);
+
+      case ComponentType.guide:
+        if (c.startDate != null) add('Date', _fmtDate(c.startDate!));
+        add('Speciality',     d['guide_speciality'] as String?);
+        add('Languages',      d['languages']        as String?);
+        add('License / Cert', d['guide_license']    as String?);
+        if (d['vehicle_included'] == true) add('Vehicle', 'Included');
+
+      case ComponentType.specialArrangement:
+        add('Arrangement Type', d['arrangement_type'] as String?);
+        add('Details',          d['special_notes']    as String?);
+
+      case ComponentType.other:
+        break;
+    }
+
+    // Common fields for all types
+    if (c.primaryContactName?.isNotEmpty == true) {
+      final phone = c.primaryContactPhone?.isNotEmpty == true
+          ? '  ·  ${c.primaryContactPhone}'
+          : '';
+      add('Primary Contact', '${c.primaryContactName}$phone');
+    }
+    add('Internal Notes', c.notesInternal);
+
+    return rows;
+  }
+
+  static String _fmtDate(DateTime d) =>
+      DateFormat('EEE, d MMM yyyy').format(d);
+}
+
+class _FieldRow extends StatelessWidget {
+  final String label;
+  final String value;
+  const _FieldRow({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 148,
+            child: Text(
+              label,
+              style: AppTextStyles.labelSmall
+                  .copyWith(color: AppColors.textMuted),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: AppTextStyles.bodySmall.copyWith(
+                color:      AppColors.textPrimary,
+                fontWeight: FontWeight.w500,
+                height:     1.4,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 String _fmtTime(TimeOfDay t) {
   final h = t.hourOfPeriod == 0 ? 12 : t.hourOfPeriod;
