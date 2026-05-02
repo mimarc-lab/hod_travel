@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
@@ -153,8 +152,12 @@ class _TimeRow extends StatelessWidget {
   final ItineraryItem item;
   const _TimeRow({required this.item});
 
-  String _fmt(TimeOfDay t) =>
-      DateFormat.jm().format(DateTime(2000, 1, 1, t.hour, t.minute));
+  String _fmt(TimeOfDay t) {
+    final h = t.hourOfPeriod == 0 ? 12 : t.hourOfPeriod;
+    final m = t.minute.toString().padLeft(2, '0');
+    final p = t.period == DayPeriod.am ? 'am' : 'pm';
+    return '$h:$m $p';
+  }
 
   @override
   Widget build(BuildContext context) {

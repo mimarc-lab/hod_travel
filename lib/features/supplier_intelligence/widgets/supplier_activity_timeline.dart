@@ -67,7 +67,7 @@ class _TimelineEntry extends StatelessWidget {
     final icon      = _iconFor(record.sourceType);
     final title     = _titleFor(record);
     final subtitle  = _subtitleFor(record);
-    final dateLabel = DateFormat('d MMM yyyy · HH:mm').format(record.createdAt.toLocal());
+    final dateLabel = DateFormat('d MMM yyyy · h:mm a').format(record.createdAt.toLocal());
 
     return IntrinsicHeight(
       child: Row(

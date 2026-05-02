@@ -190,9 +190,24 @@ class ComponentCard extends StatelessWidget {
   }
 
   String _formatTimeRange(TripComponent c) {
-    final start = c.startTime ?? '';
-    final end   = c.endTime;
+    final start = _fmt12(c.startTime);
+    final end   = c.endTime != null ? _fmt12(c.endTime) : null;
     return end != null ? '$start – $end' : start;
+  }
+
+  /// Converts a stored "HH:MM" string to "h:mm AM/PM".
+  String _fmt12(String? raw) {
+    if (raw == null || raw.isEmpty) return '';
+    final parts = raw.split(':');
+    if (parts.length < 2) return raw;
+    final h = int.tryParse(parts[0]);
+    final m = int.tryParse(parts[1]);
+    if (h == null || m == null) return raw;
+    final tod    = TimeOfDay(hour: h, minute: m);
+    final hh     = tod.hourOfPeriod == 0 ? 12 : tod.hourOfPeriod;
+    final mm     = m.toString().padLeft(2, '0');
+    final period = tod.period == DayPeriod.am ? 'AM' : 'PM';
+    return '$hh:$mm $period';
   }
 }
 
