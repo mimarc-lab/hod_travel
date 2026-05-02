@@ -129,7 +129,9 @@ class _ItemDetailSheetState extends State<_ItemDetailSheet> {
                     _OverviewSection(item: _item),
 
                     // Booking / component details (loaded from linked TripComponent)
-                    _ComponentDetailsSection(runSheetItemId: _item.id),
+                    if (_item.itineraryItemId != null)
+                      _ComponentDetailsSection(
+                          itineraryItemId: _item.itineraryItemId!),
 
                     if (_item.hasContacts) ...[
                       const SizedBox(height: AppSpacing.base),
@@ -500,8 +502,8 @@ class _DetailSectionLabel extends StatelessWidget {
 // ── Component booking details ─────────────────────────────────────────────────
 
 class _ComponentDetailsSection extends StatefulWidget {
-  final String runSheetItemId;
-  const _ComponentDetailsSection({required this.runSheetItemId});
+  final String itineraryItemId;
+  const _ComponentDetailsSection({required this.itineraryItemId});
 
   @override
   State<_ComponentDetailsSection> createState() =>
@@ -521,7 +523,7 @@ class _ComponentDetailsSectionState extends State<_ComponentDetailsSection> {
     final repo = AppRepositories.instance?.components;
     if (repo == null) return;
     try {
-      final c = await repo.fetchByRunSheetItemId(widget.runSheetItemId);
+      final c = await repo.fetchByItineraryItemId(widget.itineraryItemId);
       if (mounted && c != null) setState(() => _component = c);
     } catch (_) {}
   }

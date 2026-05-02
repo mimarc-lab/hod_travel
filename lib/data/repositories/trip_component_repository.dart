@@ -9,6 +9,7 @@ import '../models/trip_component_model.dart';
 abstract class TripComponentRepository {
   Future<List<TripComponent>> fetchForTrip(String tripId);
   Future<TripComponent?> fetchByRunSheetItemId(String runSheetItemId);
+  Future<TripComponent?> fetchByItineraryItemId(String itineraryItemId);
   Future<TripComponent> create(TripComponent component, String teamId);
   Future<TripComponent> update(TripComponent component);
   Future<void> delete(String id);
@@ -126,6 +127,17 @@ class SupabaseTripComponentRepository implements TripComponentRepository {
         .from('trip_components')
         .select(_kSelect)
         .eq('run_sheet_item_id', runSheetItemId)
+        .limit(1);
+    if ((rows as List).isEmpty) return null;
+    return _fromRow(rows.first as Map<String, dynamic>);
+  }
+
+  @override
+  Future<TripComponent?> fetchByItineraryItemId(String itineraryItemId) async {
+    final rows = await _client
+        .from('trip_components')
+        .select(_kSelect)
+        .eq('itinerary_item_id', itineraryItemId)
         .limit(1);
     if ((rows as List).isEmpty) return null;
     return _fromRow(rows.first as Map<String, dynamic>);
