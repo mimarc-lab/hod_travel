@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
@@ -327,6 +328,10 @@ class _TableHeader extends StatelessWidget {
             width: 70,
             child: Text('SIZE', style: _headerStyle),
           ),
+          SizedBox(
+            width: 160,
+            child: Text('LINK', style: _headerStyle),
+          ),
           const SizedBox(width: 32), // client visible icon
           const SizedBox(width: 32), // action menu
         ],
@@ -485,6 +490,41 @@ class _DocumentTableRow extends StatelessWidget {
                   ),
                 ),
 
+                // Link
+                SizedBox(
+                  width: 160,
+                  child: doc.fileUrl.isNotEmpty
+                      ? GestureDetector(
+                          onTap: () => launchUrl(
+                            Uri.parse(doc.fileUrl),
+                            mode: LaunchMode.externalApplication,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.open_in_new_rounded,
+                                  size: 12, color: AppColors.accent),
+                              const SizedBox(width: 4),
+                              Flexible(
+                                child: Text(
+                                  doc.fileUrl,
+                                  style: AppTextStyles.labelSmall.copyWith(
+                                    color: AppColors.accent,
+                                    decoration: TextDecoration.underline,
+                                    decorationColor: AppColors.accent,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : Text('—',
+                          style: AppTextStyles.labelSmall
+                              .copyWith(color: AppColors.textMuted)),
+                ),
+
                 // Client visible indicator
                 SizedBox(
                   width: 32,
@@ -594,7 +634,9 @@ class _ActionMenu extends StatelessWidget {
         if (v == 'archive')  onArchive?.call();
         if (v == 'reviewed') onMarkReviewed?.call();
         if (v == 'approved') onMarkApproved?.call();
-        if (v == 'open')     debugPrint('[Doc] open: ${doc.fileUrl}');
+        if (v == 'open' && doc.fileUrl.isNotEmpty)
+          launchUrl(Uri.parse(doc.fileUrl),
+              mode: LaunchMode.externalApplication);
       },
       itemBuilder: (_) => [
         const PopupMenuItem(
