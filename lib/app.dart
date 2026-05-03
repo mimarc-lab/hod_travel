@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'core/constants/app_colors.dart';
@@ -5,6 +6,7 @@ import 'core/services/role_service.dart';
 import 'core/supabase/app_db.dart';
 import 'features/auth/providers/auth_provider.dart';
 import 'features/auth/widgets/auth_gate.dart';
+import 'features/client_view/client_share_screen.dart';
 import 'features/notifications/providers/notification_provider.dart';
 
 class HODApp extends StatefulWidget {
@@ -65,6 +67,19 @@ class _HODAppState extends State<HODApp> {
 
   @override
   Widget build(BuildContext context) {
+    // Detect public share route on web — bypass auth entirely.
+    if (kIsWeb) {
+      final segments = Uri.base.pathSegments;
+      if (segments.length >= 2 && segments[0] == 'share') {
+        return MaterialApp(
+          title:                    'HOD Travel',
+          debugShowCheckedModeBanner: false,
+          theme:                    _buildTheme(),
+          home:                     ClientShareScreen(token: segments[1]),
+        );
+      }
+    }
+
     return RoleScope(
       roleService: _roleService,
       child: MaterialApp(

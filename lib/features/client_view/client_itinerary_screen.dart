@@ -24,8 +24,13 @@ import 'widgets/refined_trip_header.dart';
 
 class ClientItineraryScreen extends StatefulWidget {
   final Trip trip;
+  final bool isPublicView;
 
-  const ClientItineraryScreen({super.key, required this.trip});
+  const ClientItineraryScreen({
+    super.key,
+    required this.trip,
+    this.isPublicView = false,
+  });
 
   @override
   State<ClientItineraryScreen> createState() => _ClientItineraryScreenState();
@@ -147,12 +152,13 @@ class _ClientItineraryScreenState extends State<ClientItineraryScreen> {
 
     return Column(
       children: [
-        // Staff-only toolbar — not visible to the client
-        _StaffToolbar(
-          onShare:     _share,
-          onExportPdf: _exporting ? null : _exportPdf,
-          exporting:   _exporting,
-        ),
+        // Staff-only toolbar — hidden in public share view
+        if (!widget.isPublicView)
+          _StaffToolbar(
+            onShare:     _share,
+            onExportPdf: _exporting ? null : _exportPdf,
+            exporting:   _exporting,
+          ),
 
         // Client presentation surface
         Expanded(
