@@ -7,6 +7,7 @@ import '../../data/repositories/enrichment_repository.dart';
 import '../../data/repositories/itinerary_repository.dart';
 import '../../data/repositories/notification_repository.dart';
 import '../../data/repositories/profile_repository.dart';
+import '../../data/repositories/supplier_media_repository.dart';
 import '../../data/repositories/supplier_repository.dart';
 import '../../data/repositories/subtask_repository.dart';
 import '../../data/repositories/task_repository.dart';
@@ -70,8 +71,9 @@ class AppRepositories {
   final TripComponentRepository components;
 
   // ── Suppliers ─────────────────────────────────────────────────────────────
-  final SupplierRepository suppliers;
-  final EnrichmentRepository enrichments;
+  final SupplierRepository      suppliers;
+  final EnrichmentRepository    enrichments;
+  final SupplierMediaRepository supplierMedia;
 
   // ── Finance ────────────────────────────────────────────────────────────────
   final BudgetRepository budget;
@@ -118,6 +120,7 @@ class AppRepositories {
     required this.components,
     required this.suppliers,
     required this.enrichments,
+    required this.supplierMedia,
     required this.budget,
     required this.signatureExperiences,
     required this.aiSuggestions,
@@ -154,8 +157,9 @@ class AppRepositories {
       itinerary:    SupabaseItineraryRepository(client),
       templates:    SupabaseTripTemplateRepository(client),
       components:   SupabaseTripComponentRepository(client),
-      suppliers:    SupabaseSupplierRepository(client),
-      enrichments:  SupabaseEnrichmentRepository(client),
+      suppliers:     SupabaseSupplierRepository(client),
+      enrichments:   SupabaseEnrichmentRepository(client),
+      supplierMedia: SupabaseSupplierMediaRepository(client),
       budget:               SupabaseBudgetRepository(client),
       signatureExperiences: SupabaseSignatureExperienceRepository(client),
       aiSuggestions:        SupabaseAiSuggestionRepository(client),

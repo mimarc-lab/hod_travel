@@ -1,82 +1,48 @@
 -- =============================================================================
--- Supabase Storage — trip-documents bucket
--- Run AFTER creating the bucket in Dashboard → Storage → New bucket
--- Bucket name: trip-documents   (private, not public)
+-- Supabase Storage — supplier-media bucket policies
+--
+-- Run in Supabase SQL editor AFTER creating the bucket:
+--   Storage > New bucket > Name: supplier-media > Public: false
+--
+-- Path structure: {team_id}/{supplier_id}/{media_id}/{filename}.webp
 -- =============================================================================
 
--- ── Create bucket (if using SQL rather than the dashboard) ───────────────────
-
-INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-VALUES (
-  'trip-documents',
-  'trip-documents',
-  false,   -- private: signed URLs required for access
-  52428800, -- 50 MB per file
-  ARRAY[
-    'application/pdf',
-    'image/jpeg',
-    'image/png',
-    'image/webp',
-    'application/msword',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'application/vnd.ms-excel',
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    'text/plain',
-    'text/csv'
-  ]
-)
-ON CONFLICT (id) DO NOTHING;
-
--- =============================================================================
--- Storage policies
--- Path convention: {team_id}/{trip_id}/{doc_id}/{file_name}
--- Policy: authenticated user must belong to the team_id in the path prefix.
--- =============================================================================
-
--- ── SELECT (download) ─────────────────────────────────────────────────────────
-
-CREATE POLICY "team_members_can_download"
-  ON storage.objects FOR SELECT
+-- SELECT (download)
+CREATE POLICY "team members can read supplier media"
+  ON storage.objects FOR SELECT TO authenticated
   USING (
-    bucket_id = 'trip-documents'
+    bucket_id = 'supplier-media'
     AND (storage.foldername(name))[1] IN (
-      SELECT team_id::text FROM team_members
-      WHERE user_id = auth.uid()
+      SELECT team_id::TEXT FROM public.team_members WHERE user_id = auth.uid()
     )
   );
 
--- ── INSERT (upload) ──────────────────────────────────────────────────────────
-
-CREATE POLICY "team_members_can_upload"
-  ON storage.objects FOR INSERT
+-- INSERT (upload)
+CREATE POLICY "team members can upload supplier media"
+  ON storage.objects FOR INSERT TO authenticated
   WITH CHECK (
-    bucket_id = 'trip-documents'
+    bucket_id = 'supplier-media'
     AND (storage.foldername(name))[1] IN (
-      SELECT team_id::text FROM team_members
-      WHERE user_id = auth.uid()
+      SELECT team_id::TEXT FROM public.team_members WHERE user_id = auth.uid()
     )
   );
 
--- ── UPDATE (replace file) ────────────────────────────────────────────────────
-
-CREATE POLICY "team_members_can_replace"
-  ON storage.objects FOR UPDATE
+-- UPDATE (replace / upsert)
+CREATE POLICY "team members can update supplier media"
+  ON storage.objects FOR UPDATE TO authenticated
   USING (
-    bucket_id = 'trip-documents'
+    bucket_id = 'supplier-media'
     AND (storage.foldername(name))[1] IN (
-      SELECT team_id::text FROM team_members
-      WHERE user_id = auth.uid()
+      SELECT team_id::TEXT FROM public.team_members WHERE user_id = auth.uid()
     )
   );
 
--- ── DELETE (remove file) ─────────────────────────────────────────────────────
-
-CREATE POLICY "team_members_can_delete_files"
-  ON storage.objects FOR DELETE
+-- DELETE
+CREATE POLICY "team members can delete supplier media"
+  ON storage.objects FOR DELETE TO authenticated
   USING (
-    bucket_id = 'trip-documents'
+    bucket_id = 'supplier-media'
     AND (storage.foldername(name))[1] IN (
-      SELECT team_id::text FROM team_members
-      WHERE user_id = auth.uid()
+      SELECT team_id::TEXT FROM public.team_members WHERE user_id = auth.uid()
     )
   );

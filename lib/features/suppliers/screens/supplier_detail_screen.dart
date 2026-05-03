@@ -12,6 +12,7 @@ import '../providers/supplier_provider.dart';
 import '../widgets/supplier_badges.dart';
 import '../widgets/supplier_editor.dart';
 import '../widgets/supplier_linked_records.dart';
+import '../widgets/supplier_media_section.dart';
 
 /// Full-page supplier profile screen.
 /// Pushed via Navigator from the supplier list.
@@ -79,7 +80,12 @@ class _SupplierDetailScreenState extends State<SupplierDetailScreen> {
                           const SizedBox(height: AppSpacing.xl),
                         ],
 
-                        _AttachmentsPlaceholder(),
+                        if (AppRepositories.instance?.supplierMedia != null)
+                          SupplierMediaSection(
+                            supplierId: supplier.id,
+                            teamId:     AppRepositories.instance?.currentTeamId ?? '',
+                            repository: AppRepositories.instance!.supplierMedia,
+                          ),
                         const SizedBox(height: AppSpacing.xl),
 
                         SupplierLinkedRecords(supplierName: supplier.name),
@@ -457,73 +463,6 @@ class _TagChip extends StatelessWidget {
       child: Text(tag,
           style: AppTextStyles.labelSmall.copyWith(
               color: AppColors.textSecondary)),
-    );
-  }
-}
-
-// ── Attachments placeholder ───────────────────────────────────────────────────
-
-class _AttachmentsPlaceholder extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('ATTACHMENTS', style: AppTextStyles.overline),
-        const SizedBox(height: AppSpacing.sm),
-        _SectionCard(
-          children: [
-            _AttachmentRow(icon: Icons.picture_as_pdf_outlined,
-                name: 'Contract_2025.pdf', size: '340 KB'),
-            const Divider(height: 1, color: AppColors.divider),
-            _AttachmentRow(icon: Icons.image_outlined,
-                name: 'Property_photos.zip', size: '8.2 MB'),
-            const Divider(height: 1, color: AppColors.divider),
-            const SizedBox(height: AppSpacing.sm),
-            Row(
-              children: [
-                Icon(Icons.upload_outlined, size: 14, color: AppColors.textMuted),
-                const SizedBox(width: 6),
-                Text('Upload file',
-                    style: AppTextStyles.labelSmall.copyWith(
-                        color: AppColors.textMuted)),
-                Text(' — placeholder only',
-                    style: AppTextStyles.labelSmall.copyWith(
-                        color: AppColors.textMuted,
-                        fontStyle: FontStyle.italic)),
-              ],
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-class _AttachmentRow extends StatelessWidget {
-  final IconData icon;
-  final String name;
-  final String size;
-  const _AttachmentRow({required this.icon, required this.name, required this.size});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-      child: Row(
-        children: [
-          Icon(icon, size: 16, color: AppColors.textMuted),
-          const SizedBox(width: AppSpacing.sm),
-          Expanded(
-            child: Text(name,
-                style: AppTextStyles.labelSmall.copyWith(
-                    color: AppColors.textSecondary)),
-          ),
-          Text(size,
-              style: AppTextStyles.labelSmall.copyWith(
-                  color: AppColors.textMuted)),
-        ],
-      ),
     );
   }
 }
