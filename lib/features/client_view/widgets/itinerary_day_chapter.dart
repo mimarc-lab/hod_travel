@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../../../data/models/client_media_item.dart';
 import '../../../data/models/itinerary_models.dart';
 import '../client_view_theme.dart';
 import 'refined_itinerary_item_block.dart';
@@ -21,15 +22,17 @@ import 'refined_itinerary_item_block.dart';
 // ─────────────────────────────────────────────────────────────────────────────
 
 class ItineraryDayChapter extends StatelessWidget {
-  final TripDay day;
-  final List<ItineraryItem> items;
-  final bool wide;
+  final TripDay                            day;
+  final List<ItineraryItem>               items;
+  final bool                              wide;
+  final Map<String, List<ClientMediaItem>> mediaByItemId;
 
   const ItineraryDayChapter({
     super.key,
     required this.day,
     required this.items,
     required this.wide,
+    this.mediaByItemId = const {},
   });
 
   @override
@@ -61,7 +64,7 @@ class ItineraryDayChapter extends StatelessWidget {
           ),
           child: items.isEmpty
               ? _EmptyDay()
-              : _ItemList(items: items),
+              : _ItemList(items: items, mediaByItemId: mediaByItemId),
         ),
       ],
     );
@@ -122,14 +125,13 @@ class _ChapterHeading extends StatelessWidget {
 // ── Item list ─────────────────────────────────────────────────────────────────
 
 class _ItemList extends StatelessWidget {
-  final List<ItineraryItem> items;
-  const _ItemList({required this.items});
+  final List<ItineraryItem>               items;
+  final Map<String, List<ClientMediaItem>> mediaByItemId;
+  const _ItemList({required this.items, this.mediaByItemId = const {}});
 
   @override
   Widget build(BuildContext context) {
-    // Sort: all-day items first, then by time block order, then by start time
-    final sorted = List<ItineraryItem>.from(items)
-      ..sort(_itemSortOrder);
+    final sorted = List<ItineraryItem>.from(items)..sort(_itemSortOrder);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -140,8 +142,9 @@ class _ItemList extends StatelessWidget {
               bottom: i < sorted.length - 1 ? ClientViewTheme.itemSpacing : 0,
             ),
             child: RefinedItineraryItemBlock(
-              item:       sorted[i],
+              item:        sorted[i],
               showTopRule: i > 0,
+              media:       mediaByItemId[sorted[i].id] ?? const [],
             ),
           ),
       ],

@@ -3,12 +3,15 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_spacing.dart';
 import '../../core/constants/app_text_styles.dart';
 import '../../core/supabase/app_db.dart';
+import '../../data/models/client_media_item.dart';
 import '../../data/models/itinerary_models.dart';
 import '../../data/models/trip_model.dart';
 import 'client_view_theme.dart';
+import 'services/client_media_presenter.dart';
 import 'services/client_safe_content_mapper.dart';
 import 'services/pdf_export_service.dart';
 import 'services/share_link_service.dart';
+import 'widgets/client_hero_media.dart';
 import 'widgets/itinerary_day_chapter.dart';
 import 'widgets/refined_trip_header.dart';
 
@@ -33,6 +36,8 @@ class _ClientItineraryScreenState extends State<ClientItineraryScreen>
     with AutomaticKeepAliveClientMixin {
   List<TripDay> _days = [];
   Map<String, List<ItineraryItem>> _itemsByDayId = {};
+  Map<String, List<ClientMediaItem>> _mediaByItemId = {};
+  ClientMediaItem? _tripHeroMedia;
   bool _loading    = true;
   bool _exporting  = false;
 
@@ -62,8 +67,34 @@ class _ClientItineraryScreenState extends State<ClientItineraryScreen>
           _loading      = false;
         });
       }
+      // Load media in background — failure is non-fatal
+      _loadMedia(items);
     } catch (_) {
       if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _loadMedia(Map<String, List<ItineraryItem>> itemsByDayId) async {
+    final repos = AppRepositories.instance;
+    if (repos?.componentMedia == null || repos?.components == null) return;
+    try {
+      final mediaByItemId = await ClientMediaPresenter.loadForTrip(
+        tripId:        widget.trip.id,
+        componentRepo: repos!.components,
+        mediaRepo:     repos.componentMedia,
+      );
+      final allItems =
+          itemsByDayId.values.expand((list) => list).toList();
+      final tripHero =
+          ClientMediaPresenter.selectTripHero(mediaByItemId, allItems);
+      if (mounted) {
+        setState(() {
+          _mediaByItemId = mediaByItemId;
+          _tripHeroMedia  = tripHero;
+        });
+      }
+    } catch (_) {
+      // Media loading failure is non-fatal — itinerary remains readable
     }
   }
 
@@ -143,6 +174,17 @@ class _ClientItineraryScreenState extends State<ClientItineraryScreen>
             color: ClientViewTheme.pageBg,
             child: CustomScrollView(
               slivers: [
+                // Cinematic trip hero image (loads after itinerary)
+                if (_tripHeroMedia != null)
+                  SliverToBoxAdapter(
+                    child: ClientHeroMedia(
+                      hero:     _tripHeroMedia!,
+                      allItems: _mediaByItemId.values
+                          .expand((l) => l)
+                          .toList(),
+                    ),
+                  ),
+
                 // Refined trip header — no stats strip
                 SliverToBoxAdapter(
                   child: RefinedTripHeader(trip: widget.trip),
@@ -166,10 +208,11 @@ class _ClientItineraryScreenState extends State<ClientItineraryScreen>
                           _itemsByDayId[day.id] ?? [],
                         );
                         return ItineraryDayChapter(
-                          key:   ValueKey(day.id),
-                          day:   day,
-                          items: clientItems,
-                          wide:  wide,
+                          key:          ValueKey(day.id),
+                          day:          day,
+                          items:        clientItems,
+                          wide:         wide,
+                          mediaByItemId: _mediaByItemId,
                         );
                       },
                       childCount: _days.length,

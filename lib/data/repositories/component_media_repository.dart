@@ -32,6 +32,11 @@ abstract class ComponentMediaRepository {
 
   /// Batch-updates display_order. [orderedIds] is the desired sequence.
   Future<void> reorder(String componentId, List<String> orderedIds);
+
+  /// Fetches all client-visible media for a set of component IDs in one query.
+  /// Used by ClientMediaPresenter to load the full trip's media efficiently.
+  Future<List<ComponentMedia>> fetchClientVisibleForComponents(
+      List<String> componentIds);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -177,5 +182,24 @@ class SupabaseComponentMediaRepository implements ComponentMediaRepository {
               .update({'display_order': i})
               .eq('id', orderedIds[i]);
         }
+      });
+
+  @override
+  Future<List<ComponentMedia>> fetchClientVisibleForComponents(
+      List<String> componentIds) =>
+      guardDb(() async {
+        if (componentIds.isEmpty) return <ComponentMedia>[];
+        final rows = await _client
+            .from(_kTable)
+            .select('*, supplier_media(*)')
+            .inFilter('component_id', componentIds)
+            .eq('is_visible', true)
+            .order('is_hero',       ascending: false)
+            .order('display_order', ascending: true, nullsFirst: false)
+            .order('created_at',    ascending: true);
+        return (rows as List)
+            .map((r) => _fromRow(r as Map<String, dynamic>))
+            .where((cm) => cm.media?.isActive ?? false)
+            .toList();
       });
 }

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import '../../../data/models/client_media_item.dart';
 import '../../../data/models/itinerary_models.dart';
 import '../client_view_theme.dart';
 import '../services/itinerary_copy_formatter.dart';
 import 'accommodation_feature_section.dart';
+import 'client_gallery_section.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // RefinedItineraryItemBlock
@@ -21,31 +23,38 @@ import 'accommodation_feature_section.dart';
 // ─────────────────────────────────────────────────────────────────────────────
 
 class RefinedItineraryItemBlock extends StatelessWidget {
-  final ItineraryItem item;
-  final bool showTopRule;
+  final ItineraryItem         item;
+  final bool                  showTopRule;
+  final List<ClientMediaItem> media;
 
   const RefinedItineraryItemBlock({
     super.key,
     required this.item,
     this.showTopRule = true,
+    this.media       = const [],
   });
 
   @override
   Widget build(BuildContext context) {
     if (item.type == ItemType.hotel) {
-      return AccommodationFeatureSection(item: item);
+      return AccommodationFeatureSection(item: item, media: media);
     }
-    return _StandardBlock(item: item, showTopRule: showTopRule);
+    return _StandardBlock(item: item, showTopRule: showTopRule, media: media);
   }
 }
 
 // ── Standard block (non-accommodation) ───────────────────────────────────────
 
 class _StandardBlock extends StatelessWidget {
-  final ItineraryItem item;
-  final bool showTopRule;
+  final ItineraryItem         item;
+  final bool                  showTopRule;
+  final List<ClientMediaItem> media;
 
-  const _StandardBlock({required this.item, required this.showTopRule});
+  const _StandardBlock({
+    required this.item,
+    required this.showTopRule,
+    this.media = const [],
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -106,6 +115,10 @@ class _StandardBlock extends StatelessWidget {
                   style: ClientViewTheme.itemMeta,
                 ),
               ],
+
+              // Media gallery (only when media exists)
+              if (media.isNotEmpty)
+                ClientGallerySection(items: media),
             ],
           ),
         ),

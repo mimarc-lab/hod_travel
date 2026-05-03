@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import '../../../data/models/client_media_item.dart';
 import '../../../data/models/itinerary_models.dart';
 import '../client_view_theme.dart';
 import '../services/itinerary_copy_formatter.dart';
+import 'client_gallery_section.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // AccommodationFeatureSection
@@ -18,9 +20,14 @@ import '../services/itinerary_copy_formatter.dart';
 // ─────────────────────────────────────────────────────────────────────────────
 
 class AccommodationFeatureSection extends StatelessWidget {
-  final ItineraryItem item;
+  final ItineraryItem         item;
+  final List<ClientMediaItem> media;
 
-  const AccommodationFeatureSection({super.key, required this.item});
+  const AccommodationFeatureSection({
+    super.key,
+    required this.item,
+    this.media = const [],
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -71,6 +78,10 @@ class AccommodationFeatureSection extends StatelessWidget {
             const SizedBox(height: 12),
             Text(location, style: ClientViewTheme.accomFeatures),
           ],
+
+          // Media gallery (only when media exists)
+          if (media.isNotEmpty)
+            ClientGallerySection(items: media),
 
           const SizedBox(height: ClientViewTheme.accomTopPad),
 
