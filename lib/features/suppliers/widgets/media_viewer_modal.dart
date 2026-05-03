@@ -145,6 +145,9 @@ class _TopBar extends StatelessWidget {
   }
 }
 
+String _authUrl(String url) =>
+    url.replaceFirst('/object/public/', '/object/authenticated/');
+
 Map<String, String> _storageHeaders() {
   final token = Supabase.instance.client.auth.currentSession?.accessToken;
   return token != null ? {'Authorization': 'Bearer $token'} : {};
@@ -167,7 +170,7 @@ class _Page extends StatelessWidget {
           if (preview.isNotEmpty)
             InteractiveViewer(
               child: Image.network(
-                preview,
+                _authUrl(preview),
                 headers:      _storageHeaders(),
                 fit:          BoxFit.contain,
                 errorBuilder: (_, _, _) => const _Broken(),

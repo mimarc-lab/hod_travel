@@ -105,7 +105,11 @@ class _MediaCardState extends State<MediaCard>
   }
 }
 
-// Returns auth headers so Image.network can access private Supabase Storage.
+// Rewrites /object/public/ → /object/authenticated/ and adds Bearer token
+// so Image.network can load files from a private Supabase Storage bucket.
+String _authUrl(String url) =>
+    url.replaceFirst('/object/public/', '/object/authenticated/');
+
 Map<String, String> _storageHeaders() {
   final token = Supabase.instance.client.auth.currentSession?.accessToken;
   return token != null ? {'Authorization': 'Bearer $token'} : {};
@@ -129,9 +133,9 @@ class _MediaPreview extends StatelessWidget {
       curve:    Curves.easeOutCubic,
       child: hasPreview
           ? Image.network(
-              previewUrl,
-              headers:     _storageHeaders(),
-              fit:         BoxFit.cover,
+              _authUrl(previewUrl),
+              headers:      _storageHeaders(),
+              fit:          BoxFit.cover,
               errorBuilder: (_, _, _) => _Placeholder(isVideo: media.isVideo),
             )
           : _Placeholder(isVideo: media.isVideo),
