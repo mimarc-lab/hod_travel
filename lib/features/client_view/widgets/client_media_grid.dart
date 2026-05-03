@@ -7,13 +7,14 @@ import 'client_media_viewer_modal.dart';
 // ─────────────────────────────────────────────────────────────────────────────
 // ClientMediaGrid
 //
-// Editorial image grid for a component's selected media. Renders on wide
-// screens (≥ 600 px). For narrow screens use ClientMediaCarousel instead.
+// Editorial image grid for wide screens (≥ 600 px).
 //
-// Layout:
-//   1 item  → single full-width image
-//   2 items → side by side, equal width
-//   3+      → hero full-width on top row, remaining items in a 3-col grid
+// Layout rules:
+//   1 item  → full-width 16/9, full-res
+//   2 items → side-by-side 4/3, full-res
+//   3 items → full-width 16/9 hero + two 3/2 below, full-res
+//   4+      → full-width 16/9 hero + three thumbnails below;
+//             last tile shows "+N" overlay when items > 4
 // ─────────────────────────────────────────────────────────────────────────────
 
 class ClientMediaGrid extends StatelessWidget {
@@ -24,39 +25,49 @@ class ClientMediaGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (items.isEmpty) return const SizedBox.shrink();
-    if (items.length == 1) return _SingleImage(item: items.first, allItems: items);
+
+    if (items.length == 1) {
+      return _HeroTile(item: items[0], allItems: items, index: 0, ratio: 16 / 9);
+    }
+
     if (items.length == 2) {
       return Row(
         children: [
-          Expanded(child: _Thumb(item: items[0], allItems: items, index: 0, aspectRatio: 4/3)),
+          Expanded(child: _ThumbTile(item: items[0], allItems: items, index: 0, ratio: 4 / 3, fullRes: true)),
           const SizedBox(width: 4),
-          Expanded(child: _Thumb(item: items[1], allItems: items, index: 1, aspectRatio: 4/3)),
+          Expanded(child: _ThumbTile(item: items[1], allItems: items, index: 1, ratio: 4 / 3, fullRes: true)),
         ],
       );
     }
 
-    // 3+ items: hero full-width, rest in a 3-col grid
-    final hero = items.first;
-    final rest = items.skip(1).toList();
+    // 3+: hero on top, up to 3 supporting tiles below
+    final supporting = items.skip(1).take(3).toList();
+    final overflow   = items.length - 4; // >0 when more than 4 total
 
     return Column(
       children: [
-        _Thumb(item: hero, allItems: items, index: 0, aspectRatio: 16/7),
+        _HeroTile(item: items[0], allItems: items, index: 0, ratio: 16 / 9),
         const SizedBox(height: 4),
-        Wrap(
-          spacing:     4,
-          runSpacing:  4,
+        Row(
           children: [
-            for (int i = 0; i < rest.length; i++)
-              SizedBox(
-                width: (MediaQuery.sizeOf(context).width - 80 - 8) / 3,
-                child: _Thumb(
-                  item:        rest[i],
-                  allItems:    items,
-                  index:       i + 1,
-                  aspectRatio: 1.0,
-                ),
+            for (int i = 0; i < supporting.length; i++) ...[
+              if (i > 0) const SizedBox(width: 4),
+              Expanded(
+                child: (overflow > 0 && i == supporting.length - 1)
+                    ? _OverflowTile(
+                        item:     supporting[i],
+                        allItems: items,
+                        index:    i + 1,
+                        overflow: overflow + 1,
+                      )
+                    : _ThumbTile(
+                        item:     supporting[i],
+                        allItems: items,
+                        index:    i + 1,
+                        ratio:    4 / 3,
+                      ),
               ),
+            ],
           ],
         ),
       ],
@@ -64,21 +75,29 @@ class ClientMediaGrid extends StatelessWidget {
   }
 }
 
-// ── Single full-width image ───────────────────────────────────────────────────
+// ── Hero tile — full-res, no play overlay ─────────────────────────────────────
 
-class _SingleImage extends StatelessWidget {
+class _HeroTile extends StatelessWidget {
   final ClientMediaItem       item;
   final List<ClientMediaItem> allItems;
-  const _SingleImage({required this.item, required this.allItems});
+  final int                   index;
+  final double                ratio;
+
+  const _HeroTile({
+    required this.item,
+    required this.allItems,
+    required this.index,
+    required this.ratio,
+  });
 
   @override
   Widget build(BuildContext context) => GestureDetector(
-        onTap: () => showClientMediaViewer(context, items: allItems, initialIndex: 0),
+        onTap: () => showClientMediaViewer(context, items: allItems, initialIndex: index),
         child: AspectRatio(
-          aspectRatio: 16 / 7,
+          aspectRatio: ratio,
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: _NetImage(item: item),
+            borderRadius: BorderRadius.circular(6),
+            child: _NetImage(item: item, fullRes: true),
           ),
         ),
       );
@@ -86,35 +105,82 @@ class _SingleImage extends StatelessWidget {
 
 // ── Thumbnail tile ────────────────────────────────────────────────────────────
 
-class _Thumb extends StatelessWidget {
+class _ThumbTile extends StatelessWidget {
   final ClientMediaItem       item;
   final List<ClientMediaItem> allItems;
   final int                   index;
-  final double                aspectRatio;
-  const _Thumb({
+  final double                ratio;
+  final bool                  fullRes;
+
+  const _ThumbTile({
     required this.item,
     required this.allItems,
     required this.index,
-    required this.aspectRatio,
+    required this.ratio,
+    this.fullRes = false,
   });
 
   @override
   Widget build(BuildContext context) => GestureDetector(
-        onTap: () => showClientMediaViewer(
-            context, items: allItems, initialIndex: index),
+        onTap: () => showClientMediaViewer(context, items: allItems, initialIndex: index),
         child: AspectRatio(
-          aspectRatio: aspectRatio,
+          aspectRatio: ratio,
           child: ClipRRect(
             borderRadius: BorderRadius.circular(4),
             child: Stack(
               fit: StackFit.expand,
               children: [
-                _NetImage(item: item),
+                _NetImage(item: item, fullRes: fullRes),
                 if (item.isVideo)
                   const Center(
                     child: Icon(Icons.play_circle_filled_rounded,
                         size: 32, color: Colors.white70),
                   ),
+              ],
+            ),
+          ),
+        ),
+      );
+}
+
+// ── Overflow tile (+N overlay on last visible thumbnail) ──────────────────────
+
+class _OverflowTile extends StatelessWidget {
+  final ClientMediaItem       item;
+  final List<ClientMediaItem> allItems;
+  final int                   index;
+  final int                   overflow;
+
+  const _OverflowTile({
+    required this.item,
+    required this.allItems,
+    required this.index,
+    required this.overflow,
+  });
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+        onTap: () => showClientMediaViewer(context, items: allItems, initialIndex: index),
+        child: AspectRatio(
+          aspectRatio: 4 / 3,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                _NetImage(item: item, fullRes: false),
+                Container(color: Colors.black.withAlpha(130)),
+                Center(
+                  child: Text(
+                    '+$overflow',
+                    style: const TextStyle(
+                      color:         Colors.white,
+                      fontSize:      24,
+                      fontWeight:    FontWeight.w300,
+                      letterSpacing: 1.5,
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
@@ -131,14 +197,16 @@ Map<String, String> _storageHeaders() {
 
 class _NetImage extends StatelessWidget {
   final ClientMediaItem item;
-  const _NetImage({required this.item});
+  final bool            fullRes;
+  const _NetImage({required this.item, this.fullRes = false});
 
   @override
   Widget build(BuildContext context) => Image.network(
-        item.thumbnailUrl,
-        headers:      _storageHeaders(),
-        fit:          BoxFit.cover,
-        errorBuilder: (_, _, _) => const ColoredBox(color: Color(0xFFECEBE8)),
+        fullRes ? item.displayUrl : item.thumbnailUrl,
+        headers:       _storageHeaders(),
+        fit:           BoxFit.cover,
+        filterQuality: FilterQuality.medium,
+        errorBuilder:  (_, _, _) => const ColoredBox(color: Color(0xFFECEBE8)),
       );
 }
 
