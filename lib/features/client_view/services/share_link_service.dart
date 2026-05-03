@@ -8,7 +8,7 @@ import 'package:flutter/services.dart';
 /// serve via an unauthenticated Edge Function or RLS public policy.
 class ShareLinkService {
   /// Replace with your deployed web app domain.
-  static const String _baseUrl = 'https://app.hodtravel.com';
+  static const String _baseUrl = 'https://hod-travel.vercel.app';
 
   /// Encodes a trip ID into a URL-safe token.
   static String generateToken(String tripId) {
