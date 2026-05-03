@@ -4,7 +4,6 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
 import '../../data/repositories/trip_repository.dart';
 import 'client_itinerary_screen.dart';
-import 'services/share_link_service.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ClientShareScreen
@@ -37,12 +36,11 @@ class _ClientShareScreenState extends State<ClientShareScreen> {
     try {
       final client = Supabase.instance.client;
 
-      // 1 — Validate token (extract UUID from slugged segment if needed)
-      final uuid = ShareLinkService.extractToken(widget.token);
+      // 1 — Validate token (look up by slug column)
       final tokenRow = await client
           .from('share_tokens')
           .select('trip_id, expires_at')
-          .eq('id', uuid)
+          .eq('slug', widget.token)
           .maybeSingle();
 
       if (tokenRow == null) {
