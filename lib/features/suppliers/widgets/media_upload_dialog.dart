@@ -82,8 +82,9 @@ class _DialogState extends State<_Dialog> with SingleTickerProviderStateMixin {
 
   Future<void> _pickImage() async {
     final r = await FilePicker.platform.pickFiles(
-      type:     FileType.image,
-      withData: true,
+      type:             FileType.custom,
+      allowedExtensions: ['jpg', 'jpeg', 'png'],
+      withData:         true,
     );
     if (r != null && r.files.isNotEmpty) {
       final f = r.files.first;
@@ -336,6 +337,7 @@ class _ImageTab extends StatelessWidget {
             : _PickZone(
                 icon:  Icons.add_photo_alternate_outlined,
                 label: 'Click to select image',
+                hint:  'JPG or PNG · max 10 MB',
               ),
       ),
     );
@@ -430,8 +432,9 @@ class _VideoTab extends StatelessWidget {
 class _PickZone extends StatelessWidget {
   final IconData icon;
   final String   label;
+  final String?  hint;
   final Color?   tint;
-  const _PickZone({required this.icon, required this.label, this.tint});
+  const _PickZone({required this.icon, required this.label, this.hint, this.tint});
 
   @override
   Widget build(BuildContext context) {
@@ -450,6 +453,12 @@ class _PickZone extends StatelessWidget {
             const SizedBox(height: 8),
             Text(label,
                 style: AppTextStyles.labelSmall.copyWith(color: color)),
+            if (hint != null) ...[
+              const SizedBox(height: 3),
+              Text(hint!,
+                  style: AppTextStyles.labelSmall.copyWith(
+                      color: AppColors.textMuted, fontSize: 10)),
+            ],
           ],
         ),
       ),

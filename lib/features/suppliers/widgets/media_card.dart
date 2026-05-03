@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../data/models/supplier_media.dart';
@@ -104,6 +105,12 @@ class _MediaCardState extends State<MediaCard>
   }
 }
 
+// Returns auth headers so Image.network can access private Supabase Storage.
+Map<String, String> _storageHeaders() {
+  final token = Supabase.instance.client.auth.currentSession?.accessToken;
+  return token != null ? {'Authorization': 'Bearer $token'} : {};
+}
+
 // ── Image / video preview ─────────────────────────────────────────────────────
 
 class _MediaPreview extends StatelessWidget {
@@ -123,6 +130,7 @@ class _MediaPreview extends StatelessWidget {
       child: hasPreview
           ? Image.network(
               previewUrl,
+              headers:     _storageHeaders(),
               fit:         BoxFit.cover,
               errorBuilder: (_, _, _) => _Placeholder(isVideo: media.isVideo),
             )

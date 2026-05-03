@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../data/models/supplier_media.dart';
@@ -144,6 +145,11 @@ class _TopBar extends StatelessWidget {
   }
 }
 
+Map<String, String> _storageHeaders() {
+  final token = Supabase.instance.client.auth.currentSession?.accessToken;
+  return token != null ? {'Authorization': 'Bearer $token'} : {};
+}
+
 // ── Single page ───────────────────────────────────────────────────────────────
 
 class _Page extends StatelessWidget {
@@ -162,6 +168,7 @@ class _Page extends StatelessWidget {
             InteractiveViewer(
               child: Image.network(
                 preview,
+                headers:      _storageHeaders(),
                 fit:          BoxFit.contain,
                 errorBuilder: (_, _, _) => const _Broken(),
               ),

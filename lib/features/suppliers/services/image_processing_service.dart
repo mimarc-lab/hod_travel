@@ -37,7 +37,7 @@ ProcessedImage _processInIsolate(_ProcessInput input) {
   const thumbQuality = 65;
 
   final image = img.decodeImage(input.bytes);
-  if (image == null) throw Exception('Unable to decode image.');
+  if (image == null) throw Exception('Unable to decode image. Please upload a JPG or PNG file.');
 
   // Resize main image (only downscale — never upscale)
   final img.Image main = image.width > maxWidth
