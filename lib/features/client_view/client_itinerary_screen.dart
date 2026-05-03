@@ -11,7 +11,6 @@ import 'services/client_media_presenter.dart';
 import 'services/client_safe_content_mapper.dart';
 import 'services/pdf_export_service.dart';
 import 'services/share_link_service.dart';
-import 'widgets/client_hero_media.dart';
 import 'widgets/itinerary_day_chapter.dart';
 import 'widgets/refined_trip_header.dart';
 
@@ -32,17 +31,12 @@ class ClientItineraryScreen extends StatefulWidget {
   State<ClientItineraryScreen> createState() => _ClientItineraryScreenState();
 }
 
-class _ClientItineraryScreenState extends State<ClientItineraryScreen>
-    with AutomaticKeepAliveClientMixin {
+class _ClientItineraryScreenState extends State<ClientItineraryScreen> {
   List<TripDay> _days = [];
   Map<String, List<ItineraryItem>> _itemsByDayId = {};
   Map<String, List<ClientMediaItem>> _mediaByItemId = {};
-  ClientMediaItem? _tripHeroMedia;
   bool _loading    = true;
   bool _exporting  = false;
-
-  @override
-  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -83,15 +77,8 @@ class _ClientItineraryScreenState extends State<ClientItineraryScreen>
         componentRepo: repos!.components,
         mediaRepo:     repos.componentMedia,
       );
-      final allItems =
-          itemsByDayId.values.expand((list) => list).toList();
-      final tripHero =
-          ClientMediaPresenter.selectTripHero(mediaByItemId, allItems);
       if (mounted) {
-        setState(() {
-          _mediaByItemId = mediaByItemId;
-          _tripHeroMedia  = tripHero;
-        });
+        setState(() => _mediaByItemId = mediaByItemId);
       }
     } catch (_) {
       // Media loading failure is non-fatal — itinerary remains readable
@@ -150,7 +137,6 @@ class _ClientItineraryScreenState extends State<ClientItineraryScreen>
 
   @override
   Widget build(BuildContext context) {
-    super.build(context);
     final wide = MediaQuery.sizeOf(context).width >= 900;
 
     if (_loading) {
@@ -174,17 +160,6 @@ class _ClientItineraryScreenState extends State<ClientItineraryScreen>
             color: ClientViewTheme.pageBg,
             child: CustomScrollView(
               slivers: [
-                // Cinematic trip hero image (loads after itinerary)
-                if (_tripHeroMedia != null)
-                  SliverToBoxAdapter(
-                    child: ClientHeroMedia(
-                      hero:     _tripHeroMedia!,
-                      allItems: _mediaByItemId.values
-                          .expand((l) => l)
-                          .toList(),
-                    ),
-                  ),
-
                 // Refined trip header — no stats strip
                 SliverToBoxAdapter(
                   child: RefinedTripHeader(trip: widget.trip),
