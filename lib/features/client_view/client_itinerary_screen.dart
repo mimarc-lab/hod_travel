@@ -94,7 +94,10 @@ class _ClientItineraryScreenState extends State<ClientItineraryScreen> {
 
   Future<void> _share() async {
     try {
-      final url = await ShareLinkService.copyToClipboard(widget.trip.id);
+      final url = await ShareLinkService.copyToClipboard(
+        widget.trip.id,
+        tripName: widget.trip.name,
+      );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
