@@ -12,22 +12,16 @@ CREATE POLICY "anon can read valid share tokens" ON public.share_tokens
 CREATE POLICY "team members can create share tokens" ON public.share_tokens
   FOR INSERT TO authenticated
   WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM public.team_members tm
-      WHERE tm.user_id = auth.uid()
-        AND tm.team_id = (SELECT team_id FROM public.trips WHERE id = trip_id)
-    )
+    (SELECT team_id FROM public.trips WHERE id = trip_id)
+    IN (SELECT team_id FROM public.team_members WHERE user_id = auth.uid())
   );
 
 -- Team members can delete tokens for their trips.
 CREATE POLICY "team members can delete share tokens" ON public.share_tokens
   FOR DELETE TO authenticated
   USING (
-    EXISTS (
-      SELECT 1 FROM public.team_members tm
-      WHERE tm.user_id = auth.uid()
-        AND tm.team_id = (SELECT team_id FROM public.trips WHERE id = trip_id)
-    )
+    (SELECT team_id FROM public.trips WHERE id = trip_id)
+    IN (SELECT team_id FROM public.team_members WHERE user_id = auth.uid())
   );
 
 -- ─────────────────────────────────────────────────────────────────────────────
