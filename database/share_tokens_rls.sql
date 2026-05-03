@@ -8,6 +8,11 @@ CREATE POLICY "anon can read valid share tokens" ON public.share_tokens
   FOR SELECT TO anon
   USING (expires_at IS NULL OR expires_at > NOW());
 
+-- Authenticated users can read all share tokens (needed for insert+select to work).
+CREATE POLICY "authenticated can read share tokens" ON public.share_tokens
+  FOR SELECT TO authenticated
+  USING (true);
+
 -- Any authenticated user can create a share token.
 -- The TO authenticated clause already enforces auth; trip_id FK enforces validity.
 CREATE POLICY "authenticated can insert share tokens" ON public.share_tokens
