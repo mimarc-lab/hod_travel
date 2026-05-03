@@ -59,6 +59,9 @@ class _TripBoardScreenState extends State<TripBoardScreen>
   /// Mutable local copy of the trip — updated when the user saves edits.
   late Trip _currentTrip;
 
+  static const _clientViewIndex = 8;
+  bool _isClientView = false;
+
   static const _tabs = [
     'Board',
     'Timeline',
@@ -79,7 +82,13 @@ class _TripBoardScreenState extends State<TripBoardScreen>
     _tabController = TabController(
       length: _tabs.length,
       vsync: this,
-    ); // 10 tabs
+    );
+    _tabController.addListener(() {
+      final onClient = _tabController.index == _clientViewIndex;
+      if (onClient != _isClientView) {
+        setState(() => _isClientView = onClient);
+      }
+    });
     _provider = BoardProvider(
       widget.trip,
       repository: AppRepositories.instance?.tasks,
@@ -272,15 +281,17 @@ class _TripBoardScreenState extends State<TripBoardScreen>
       backgroundColor: AppColors.background,
       body: Column(
         children: [
-          _TripHeader(
-            trip: _currentTrip,
-            onBack: () => Navigator.of(context).pop(),
-            onEdit: () => _openEditTrip(context),
-            onDelete: () => _deleteTrip(context),
-            onRunSheet: () => _openRunSheet(context),
-          ),
+          if (!_isClientView)
+            _TripHeader(
+              trip: _currentTrip,
+              onBack: () => Navigator.of(context).pop(),
+              onEdit: () => _openEditTrip(context),
+              onDelete: () => _deleteTrip(context),
+              onRunSheet: () => _openRunSheet(context),
+            ),
           _BoardTabBar(controller: _tabController, tabs: _tabs),
-          PlanningTimelineBanner(trip: _currentTrip, provider: _provider),
+          if (!_isClientView)
+            PlanningTimelineBanner(trip: _currentTrip, provider: _provider),
           Expanded(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
