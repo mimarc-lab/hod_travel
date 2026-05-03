@@ -93,23 +93,33 @@ class _ClientItineraryScreenState extends State<ClientItineraryScreen> {
   // ── Actions ───────────────────────────────────────────────────────────────────
 
   Future<void> _share() async {
-    final url = await ShareLinkService.copyToClipboard(widget.trip.id);
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.check_circle_outline_rounded,
-                size: 16, color: Colors.white),
-            const SizedBox(width: 8),
-            Expanded(child: Text('Link copied — $url')),
-          ],
+    try {
+      final url = await ShareLinkService.copyToClipboard(widget.trip.id);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle_outline_rounded,
+                  size: 16, color: Colors.white),
+              const SizedBox(width: 8),
+              Expanded(child: Text('Link copied — $url')),
+            ],
+          ),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: const Color(0xFF1E2028),
+          duration: const Duration(seconds: 4),
         ),
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: const Color(0xFF1E2028),
-        duration: const Duration(seconds: 4),
-      ),
-    );
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Could not create share link: $e'),
+          backgroundColor: Colors.red.shade700,
+        ),
+      );
+    }
   }
 
   Future<void> _exportPdf() async {
