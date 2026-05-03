@@ -18,6 +18,7 @@ import '../../../features/suppliers/widgets/supplier_editor.dart';
 import '../providers/components_provider.dart';
 import '../services/component_title_suggestion_service.dart';
 import 'component_linking_dialog.dart';
+import 'component_media_section.dart';
 
 Future<void> showComponentFormSheet(
   BuildContext context, {
@@ -1121,6 +1122,23 @@ class _ComponentFormSheetState extends State<_ComponentFormSheet> {
               tripId:             widget.trip.id,
               componentId:        widget.existing!.id,
               alsoLinkCostItemId: widget.existing!.costItemId,
+            ),
+          ],
+
+          // ── Selected Media (edit mode only) ──────────────────────────────
+          if (_isEditing &&
+              widget.existing?.id != null &&
+              AppRepositories.instance?.componentMedia != null &&
+              AppRepositories.instance?.supplierMedia != null) ...[
+            _sectionDivider(),
+            _fieldGap(),
+            ComponentMediaSection(
+              key:                ValueKey('media_${widget.existing!.id}'),
+              componentId:        widget.existing!.id,
+              teamId:             AppRepositories.instance?.currentTeamId ?? '',
+              supplierId:         _supplierId,
+              componentMediaRepo: AppRepositories.instance!.componentMedia,
+              supplierMediaRepo:  AppRepositories.instance!.supplierMedia,
             ),
           ],
 
