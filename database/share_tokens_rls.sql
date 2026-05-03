@@ -8,13 +8,10 @@ CREATE POLICY "anon can read valid share tokens" ON public.share_tokens
   FOR SELECT TO anon
   USING (expires_at IS NULL OR expires_at > NOW());
 
--- Authenticated team members can create tokens for their trips.
-CREATE POLICY "team members can create share tokens" ON public.share_tokens
+-- Authenticated users can create share tokens attributed to themselves.
+CREATE POLICY "authenticated users can create share tokens" ON public.share_tokens
   FOR INSERT TO authenticated
-  WITH CHECK (
-    (SELECT team_id FROM public.trips WHERE id = trip_id)
-    IN (SELECT team_id FROM public.team_members WHERE user_id = auth.uid())
-  );
+  WITH CHECK (created_by = auth.uid());
 
 -- Team members can delete tokens for their trips.
 CREATE POLICY "team members can delete share tokens" ON public.share_tokens
