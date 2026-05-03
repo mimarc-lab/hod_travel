@@ -12,9 +12,8 @@ import 'client_media_viewer_modal.dart';
 // Layout rules:
 //   1 item  → full-width 16/9, full-res
 //   2 items → side-by-side 4/3, full-res
-//   3 items → full-width 16/9 hero + two 3/2 below, full-res
-//   4+      → full-width 16/9 hero + three thumbnails below;
-//             last tile shows "+N" overlay when items > 4
+//   3+      → magazine: tall hero LEFT (4/3, flex-3) + supporting column RIGHT
+//             (flex-2, up to 3 images stacked, last shows +N when overflow)
 // ─────────────────────────────────────────────────────────────────────────────
 
 class ClientMediaGrid extends StatelessWidget {
@@ -27,7 +26,9 @@ class ClientMediaGrid extends StatelessWidget {
     if (items.isEmpty) return const SizedBox.shrink();
 
     if (items.length == 1) {
-      return _HeroTile(item: items[0], allItems: items, index: 0, ratio: 16 / 9);
+      return _HeroTile(
+        item: items[0], allItems: items, index: 0, ratio: 16 / 9,
+      );
     }
 
     if (items.length == 2) {
@@ -40,42 +41,58 @@ class ClientMediaGrid extends StatelessWidget {
       );
     }
 
-    // 3+: hero on top, up to 3 supporting tiles below
+    // 3+ items: magazine layout — hero left, stack right
     final supporting = items.skip(1).take(3).toList();
     final overflow   = items.length - 4; // >0 when more than 4 total
 
-    return Column(
-      children: [
-        _HeroTile(item: items[0], allItems: items, index: 0, ratio: 16 / 9),
-        const SizedBox(height: 4),
-        Row(
-          children: [
-            for (int i = 0; i < supporting.length; i++) ...[
-              if (i > 0) const SizedBox(width: 4),
-              Expanded(
-                child: (overflow > 0 && i == supporting.length - 1)
-                    ? _OverflowTile(
-                        item:     supporting[i],
-                        allItems: items,
-                        index:    i + 1,
-                        overflow: overflow + 1,
-                      )
-                    : _ThumbTile(
-                        item:     supporting[i],
-                        allItems: items,
-                        index:    i + 1,
-                        ratio:    4 / 3,
-                      ),
-              ),
-            ],
-          ],
-        ),
-      ],
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // ── Left: tall hero ──────────────────────────────────────────────
+          Expanded(
+            flex: 3,
+            child: _HeroTile(
+              item: items[0], allItems: items, index: 0, ratio: 4 / 3,
+            ),
+          ),
+
+          const SizedBox(width: 4),
+
+          // ── Right: supporting images stacked ─────────────────────────────
+          Expanded(
+            flex: 2,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (int i = 0; i < supporting.length; i++) ...[
+                  if (i > 0) const SizedBox(height: 4),
+                  Expanded(
+                    child: (overflow > 0 && i == supporting.length - 1)
+                        ? _OverflowTile(
+                            item:     supporting[i],
+                            allItems: items,
+                            index:    i + 1,
+                            overflow: overflow + 1,
+                          )
+                        : _ThumbTile(
+                            item:     supporting[i],
+                            allItems: items,
+                            index:    i + 1,
+                            ratio:    1.0,
+                          ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
 
-// ── Hero tile — full-res, no play overlay ─────────────────────────────────────
+// ── Hero tile — full-res ───────────────────────────────────────────────────────
 
 class _HeroTile extends StatelessWidget {
   final ClientMediaItem       item;
@@ -143,7 +160,7 @@ class _ThumbTile extends StatelessWidget {
       );
 }
 
-// ── Overflow tile (+N overlay on last visible thumbnail) ──────────────────────
+// ── Overflow tile (+N overlay) ────────────────────────────────────────────────
 
 class _OverflowTile extends StatelessWidget {
   final ClientMediaItem       item;
@@ -161,28 +178,25 @@ class _OverflowTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) => GestureDetector(
         onTap: () => showClientMediaViewer(context, items: allItems, initialIndex: index),
-        child: AspectRatio(
-          aspectRatio: 4 / 3,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                _NetImage(item: item, fullRes: false),
-                Container(color: Colors.black.withAlpha(130)),
-                Center(
-                  child: Text(
-                    '+$overflow',
-                    style: const TextStyle(
-                      color:         Colors.white,
-                      fontSize:      24,
-                      fontWeight:    FontWeight.w300,
-                      letterSpacing: 1.5,
-                    ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              _NetImage(item: item, fullRes: false),
+              Container(color: Colors.black.withAlpha(130)),
+              Center(
+                child: Text(
+                  '+$overflow',
+                  style: const TextStyle(
+                    color:         Colors.white,
+                    fontSize:      24,
+                    fontWeight:    FontWeight.w300,
+                    letterSpacing: 1.5,
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       );
