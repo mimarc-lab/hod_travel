@@ -95,14 +95,13 @@ class _RightGrid extends StatelessWidget {
           item:     item,
           allItems: items,
           index:    itemIndex,
-          overflow: overflow + 1, // +1 includes the overlaid image itself
+          overflow: overflow + 1,
         );
       }
-      return _ThumbTile(
+      return _GridCell(
         item:     item,
         allItems: items,
         index:    itemIndex,
-        ratio:    1.0,
       );
     }
 
@@ -213,6 +212,42 @@ class _ThumbTile extends StatelessWidget {
       );
 }
 
+// ── Grid cell — fills available space, no aspect ratio ───────────────────────
+// Used inside _RightGrid where Expanded already controls the height.
+
+class _GridCell extends StatelessWidget {
+  final ClientMediaItem       item;
+  final List<ClientMediaItem> allItems;
+  final int                   index;
+
+  const _GridCell({
+    required this.item,
+    required this.allItems,
+    required this.index,
+  });
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+        onTap: () => showClientMediaViewer(context, items: allItems, initialIndex: index),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: SizedBox.expand(
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                _NetImage(item: item, fullRes: false),
+                if (item.isVideo)
+                  const Center(
+                    child: Icon(Icons.play_circle_filled_rounded,
+                        size: 28, color: Colors.white70),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      );
+}
+
 // ── Overflow tile (+N badge) ──────────────────────────────────────────────────
 
 class _OverflowTile extends StatelessWidget {
@@ -233,23 +268,25 @@ class _OverflowTile extends StatelessWidget {
         onTap: () => showClientMediaViewer(context, items: allItems, initialIndex: index),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(4),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              _NetImage(item: item, fullRes: false),
-              Container(color: Colors.black.withAlpha(140)),
-              Center(
-                child: Text(
-                  '+$overflow',
-                  style: const TextStyle(
-                    color:         Colors.white,
-                    fontSize:      26,
-                    fontWeight:    FontWeight.w300,
-                    letterSpacing: 1.5,
+          child: SizedBox.expand(
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                _NetImage(item: item, fullRes: false),
+                Container(color: Colors.black.withAlpha(140)),
+                Center(
+                  child: Text(
+                    '+$overflow',
+                    style: const TextStyle(
+                      color:         Colors.white,
+                      fontSize:      26,
+                      fontWeight:    FontWeight.w300,
+                      letterSpacing: 1.5,
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       );
