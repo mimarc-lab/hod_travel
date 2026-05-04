@@ -9,11 +9,17 @@ import 'client_media_viewer_modal.dart';
 //
 // Editorial image grid for wide screens (≥ 600 px).
 //
-// Layout rules:
-//   1 item  → full-width 16/9, full-res
-//   2 items → side-by-side 4/3, full-res
-//   3+      → magazine: tall hero LEFT (4/3, flex-3) + supporting column RIGHT
-//             (flex-2, up to 3 images stacked, last shows +N when overflow)
+// Layout:
+//   1 item  → full-width 16/9
+//   2 items → side-by-side 4/3
+//   3-4     → hero LEFT + 2×1 or 2×2 grid RIGHT
+//   5+      → hero LEFT + 2×2 grid RIGHT, bottom-right tile shows +N badge
+//
+//   ┌─────────────────────┬─────────┬─────────┐
+//   │                     │  [1]    │  [2]    │
+//   │       hero [0]      ├─────────┼─────────┤
+//   │                     │  [3]    │  [4]+N  │
+//   └─────────────────────┴─────────┴─────────┘
 // ─────────────────────────────────────────────────────────────────────────────
 
 class ClientMediaGrid extends StatelessWidget {
@@ -26,9 +32,7 @@ class ClientMediaGrid extends StatelessWidget {
     if (items.isEmpty) return const SizedBox.shrink();
 
     if (items.length == 1) {
-      return _HeroTile(
-        item: items[0], allItems: items, index: 0, ratio: 16 / 9,
-      );
+      return _HeroTile(item: items[0], allItems: items, index: 0, ratio: 16 / 9);
     }
 
     if (items.length == 2) {
@@ -41,15 +45,12 @@ class ClientMediaGrid extends StatelessWidget {
       );
     }
 
-    // 3+ items: magazine layout — hero left, stack right
-    final supporting = items.skip(1).take(3).toList();
-    final overflow   = items.length - 4; // >0 when more than 4 total
-
+    // 3+ → hero + right grid
     return IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // ── Left: tall hero ──────────────────────────────────────────────
+          // ── Hero ──────────────────────────────────────────────────────────
           Expanded(
             flex: 3,
             child: _HeroTile(
@@ -59,32 +60,10 @@ class ClientMediaGrid extends StatelessWidget {
 
           const SizedBox(width: 4),
 
-          // ── Right: supporting images stacked ─────────────────────────────
+          // ── Right 2×2 grid ─────────────────────────────────────────────
           Expanded(
             flex: 2,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                for (int i = 0; i < supporting.length; i++) ...[
-                  if (i > 0) const SizedBox(height: 4),
-                  Expanded(
-                    child: (overflow > 0 && i == supporting.length - 1)
-                        ? _OverflowTile(
-                            item:     supporting[i],
-                            allItems: items,
-                            index:    i + 1,
-                            overflow: overflow + 1,
-                          )
-                        : _ThumbTile(
-                            item:     supporting[i],
-                            allItems: items,
-                            index:    i + 1,
-                            ratio:    1.0,
-                          ),
-                  ),
-                ],
-              ],
-            ),
+            child: _RightGrid(items: items),
           ),
         ],
       ),
@@ -92,7 +71,81 @@ class ClientMediaGrid extends StatelessWidget {
   }
 }
 
-// ── Hero tile — full-res ───────────────────────────────────────────────────────
+// ── Right 2×2 grid ────────────────────────────────────────────────────────────
+// Shows up to 4 images (indices 1-4). Last slot shows +N when items > 5.
+
+class _RightGrid extends StatelessWidget {
+  final List<ClientMediaItem> items;
+  const _RightGrid({required this.items});
+
+  @override
+  Widget build(BuildContext context) {
+    // Slots to fill: indices 1-4 (up to 4 thumbnails)
+    final slots    = items.skip(1).take(4).toList();
+    final overflow = items.length - 5; // images hidden beyond the 5 visible
+
+    Widget cell(int slotIndex) {
+      final itemIndex = slotIndex + 1; // actual index in items list
+      final item      = slots[slotIndex];
+      final isLast    = slotIndex == slots.length - 1;
+      final showBadge = isLast && overflow > 0;
+
+      if (showBadge) {
+        return _OverflowTile(
+          item:     item,
+          allItems: items,
+          index:    itemIndex,
+          overflow: overflow + 1, // +1 includes the overlaid image itself
+        );
+      }
+      return _ThumbTile(
+        item:     item,
+        allItems: items,
+        index:    itemIndex,
+        ratio:    1.0,
+      );
+    }
+
+    // Build rows: top row always present, bottom row only when ≥ 3 items
+    final hasBottom = slots.length > 2;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Top row
+        Expanded(
+          child: Row(
+            children: [
+              Expanded(child: cell(0)),
+              if (slots.length > 1) ...[
+                const SizedBox(width: 4),
+                Expanded(child: cell(1)),
+              ],
+            ],
+          ),
+        ),
+
+        // Bottom row
+        if (hasBottom) ...[
+          const SizedBox(height: 4),
+          Expanded(
+            child: Row(
+              children: [
+                Expanded(child: cell(2)),
+                if (slots.length > 3) ...[
+                  const SizedBox(width: 4),
+                  Expanded(child: cell(3)),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+// ── Hero tile ─────────────────────────────────────────────────────────────────
 
 class _HeroTile extends StatelessWidget {
   final ClientMediaItem       item;
@@ -151,7 +204,7 @@ class _ThumbTile extends StatelessWidget {
                 if (item.isVideo)
                   const Center(
                     child: Icon(Icons.play_circle_filled_rounded,
-                        size: 32, color: Colors.white70),
+                        size: 28, color: Colors.white70),
                   ),
               ],
             ),
@@ -160,7 +213,7 @@ class _ThumbTile extends StatelessWidget {
       );
 }
 
-// ── Overflow tile (+N overlay) ────────────────────────────────────────────────
+// ── Overflow tile (+N badge) ──────────────────────────────────────────────────
 
 class _OverflowTile extends StatelessWidget {
   final ClientMediaItem       item;
@@ -184,13 +237,13 @@ class _OverflowTile extends StatelessWidget {
             fit: StackFit.expand,
             children: [
               _NetImage(item: item, fullRes: false),
-              Container(color: Colors.black.withAlpha(130)),
+              Container(color: Colors.black.withAlpha(140)),
               Center(
                 child: Text(
                   '+$overflow',
                   style: const TextStyle(
                     color:         Colors.white,
-                    fontSize:      24,
+                    fontSize:      26,
                     fontWeight:    FontWeight.w300,
                     letterSpacing: 1.5,
                   ),
@@ -224,7 +277,7 @@ class _NetImage extends StatelessWidget {
       );
 }
 
-// ── Caption row ───────────────────────────────────────────────────────────────
+// ── Caption ───────────────────────────────────────────────────────────────────
 
 class ClientMediaCaption extends StatelessWidget {
   final String text;
