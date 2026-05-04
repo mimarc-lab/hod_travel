@@ -64,6 +64,12 @@ class _ItemDetailSheetState extends State<_ItemDetailSheet> {
     });
   }
 
+  Future<SuggestedInstructions?> _refreshSuggestions() async {
+    final s = await _templateService.suggestFor(_item.type.dbValue);
+    if (mounted) setState(() => _suggestions = s);
+    return s;
+  }
+
   Future<void> _saveInstructions(
     String? operational,
     String? contingency,
@@ -142,10 +148,11 @@ class _ItemDetailSheetState extends State<_ItemDetailSheet> {
 
                     const SizedBox(height: AppSpacing.base),
                     OperationalInstructionsSection(
-                      key:         ValueKey(_item.id),
-                      item:        _item,
-                      suggestions: _suggestions,
-                      onSave:      _saveInstructions,
+                      key:                  ValueKey(_item.id),
+                      item:                 _item,
+                      suggestions:          _suggestions,
+                      onSave:               _saveInstructions,
+                      onRefreshSuggestions: _refreshSuggestions,
                     ),
 
                     // Notes section

@@ -19,7 +19,7 @@ import '../../../data/models/run_sheet_item.dart';
 enum _InstructionPhase { idle, suggestAvailable, editing, saving }
 
 class OperationalInstructionsSection extends StatefulWidget {
-  final RunSheetItem          item;
+  final RunSheetItem           item;
   final SuggestedInstructions? suggestions;
 
   /// Called with (operational, contingency, escalation, source) when user saves.
@@ -30,11 +30,17 @@ class OperationalInstructionsSection extends StatefulWidget {
     InstructionsSource source,
   ) onSave;
 
+  /// Re-fetches suggestions from DB. Used for the refresh button in the
+  /// suggestion banner and the "↻ Template" re-apply button when instructions
+  /// already exist.
+  final Future<SuggestedInstructions?> Function()? onRefreshSuggestions;
+
   const OperationalInstructionsSection({
     super.key,
     required this.item,
     required this.suggestions,
     required this.onSave,
+    this.onRefreshSuggestions,
   });
 
   @override
@@ -96,6 +102,22 @@ class _OperationalInstructionsSectionState
     setState(() => _phase = _InstructionPhase.editing);
   }
 
+  /// Re-fetches suggestions from DB.
+  /// • If the item has no instructions: the parent setState updates
+  ///   widget.suggestions so the banner text refreshes automatically.
+  /// • If the item already has instructions (re-apply): opens the edit
+  ///   form pre-filled with the fresh template text.
+  Future<void> _handleRefresh() async {
+    final fresh = await widget.onRefreshSuggestions?.call();
+    if (!mounted) return;
+    if (fresh != null && widget.item.hasInstructions) {
+      _opCtrl.text  = fresh.operational;
+      _conCtrl.text = fresh.contingency;
+      _escCtrl.text = fresh.escalation;
+      setState(() => _phase = _InstructionPhase.editing);
+    }
+  }
+
   Future<void> _approve() async {
     setState(() => _phase = _InstructionPhase.saving);
     try {
@@ -138,9 +160,12 @@ class _OperationalInstructionsSectionState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _SectionHeader(
-          hasInstructions: widget.item.hasInstructions,
-          phase:           _phase,
-          onEdit:          _startEditManual,
+          hasInstructions:  widget.item.hasInstructions,
+          phase:            _phase,
+          onEdit:           _startEditManual,
+          onReapplyTemplate: widget.onRefreshSuggestions != null
+              ? _handleRefresh
+              : null,
         ),
         const SizedBox(height: AppSpacing.sm),
 
@@ -150,6 +175,9 @@ class _OperationalInstructionsSectionState
             onApprove:   _approve,
             onEditFirst: _startEditWithSuggestions,
             onDismiss:   () => setState(() => _phase = _InstructionPhase.idle),
+            onRefresh:   widget.onRefreshSuggestions != null
+                ? _handleRefresh
+                : null,
           )
         else if (_phase == _InstructionPhase.editing ||
                  _phase == _InstructionPhase.saving)
@@ -174,10 +202,13 @@ class _SectionHeader extends StatelessWidget {
   final bool               hasInstructions;
   final _InstructionPhase  phase;
   final VoidCallback        onEdit;
+  final Future<void> Function()? onReapplyTemplate;
+
   const _SectionHeader({
     required this.hasInstructions,
     required this.phase,
     required this.onEdit,
+    this.onReapplyTemplate,
   });
 
   @override
@@ -189,7 +220,19 @@ class _SectionHeader extends StatelessWidget {
         Text('INSTRUCTIONS',
             style: AppTextStyles.overline.copyWith(letterSpacing: 1.2)),
         const Spacer(),
-        if (phase == _InstructionPhase.idle && hasInstructions)
+        if (phase == _InstructionPhase.idle && hasInstructions) ...[
+          if (onReapplyTemplate != null) ...[
+            GestureDetector(
+              onTap: onReapplyTemplate,
+              child: Text(
+                '↻ Template',
+                style: AppTextStyles.labelSmall.copyWith(
+                  color: AppColors.textMuted,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+          ],
           GestureDetector(
             onTap: onEdit,
             child: Text(
@@ -200,6 +243,7 @@ class _SectionHeader extends StatelessWidget {
               ),
             ),
           ),
+        ],
         if (phase == _InstructionPhase.idle && !hasInstructions)
           GestureDetector(
             onTap: onEdit,
@@ -218,16 +262,18 @@ class _SectionHeader extends StatelessWidget {
 // ── Suggestion banner ──────────────────────────────────────────────────────
 
 class _SuggestionBanner extends StatelessWidget {
-  final SuggestedInstructions suggestions;
-  final VoidCallback onApprove;
-  final VoidCallback onEditFirst;
-  final VoidCallback onDismiss;
+  final SuggestedInstructions    suggestions;
+  final VoidCallback             onApprove;
+  final VoidCallback             onEditFirst;
+  final VoidCallback             onDismiss;
+  final Future<void> Function()? onRefresh;
 
   const _SuggestionBanner({
     required this.suggestions,
     required this.onApprove,
     required this.onEditFirst,
     required this.onDismiss,
+    this.onRefresh,
   });
 
   @override
@@ -253,6 +299,14 @@ class _SuggestionBanner extends StatelessWidget {
                     .copyWith(color: const Color(0xFF0F766E)),
               ),
               const Spacer(),
+              if (onRefresh != null) ...[
+                GestureDetector(
+                  onTap: onRefresh,
+                  child: const Icon(Icons.refresh_rounded,
+                      size: 14, color: Color(0xFF6B7280)),
+                ),
+                const SizedBox(width: 8),
+              ],
               GestureDetector(
                 onTap: onDismiss,
                 child: const Icon(Icons.close_rounded,
