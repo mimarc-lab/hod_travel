@@ -16,8 +16,8 @@ import '../services/run_sheet_pdf_export.dart';
 //
 // Lets the trip director generate role-scoped shareable links.
 // Steps:
-//   1. Select a role (Driver / Guide / Operations / Director)
-//   2. (Optional) Set an expiry
+//   1. Select a role (Driver / Guide / Operations / Director) — dropdown
+//   2. (Optional) Set an expiry — dropdown
 //   3. Generate → token created in Supabase, link copied to clipboard
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -40,9 +40,9 @@ class RunSheetShareDialog extends StatefulWidget {
 }
 
 class _RunSheetShareDialogState extends State<RunSheetShareDialog> {
-  RunSheetViewMode _selectedMode = RunSheetViewMode.driver;
+  RunSheetViewMode _selectedMode   = RunSheetViewMode.driver;
   _Expiry          _selectedExpiry = _Expiry.never;
-  bool             _isGenerating = false;
+  bool             _isGenerating   = false;
   bool             _isExportingPdf = false;
   RunSheetShareToken? _generated;
   String?          _error;
@@ -89,7 +89,6 @@ class _RunSheetShareDialogState extends State<RunSheetShareDialog> {
   Future<void> _exportPdf() async {
     setState(() { _isExportingPdf = true; _error = null; });
     try {
-      // Pre-load all components for this trip so the PDF can show booking details
       Map<String, TripComponent> componentsMap = {};
       try {
         final repo = AppRepositories.instance?.components;
@@ -158,28 +157,45 @@ class _RunSheetShareDialogState extends State<RunSheetShareDialog> {
               ),
               const SizedBox(height: AppSpacing.lg),
 
-              // Role selector
-              Text('Select role', style: AppTextStyles.labelSmall),
-              const SizedBox(height: 8),
-              _RoleGrid(
-                selected: _selectedMode,
-                onSelected: (m) => setState(() {
-                  _selectedMode = m;
-                  _generated    = null;
-                  _error        = null;
-                }),
-              ),
-              const SizedBox(height: AppSpacing.base),
-
-              // Expiry selector
-              Text('Link expires', style: AppTextStyles.labelSmall),
-              const SizedBox(height: 8),
-              _ExpiryRow(
-                selected: _selectedExpiry,
-                onSelected: (e) => setState(() {
-                  _selectedExpiry = e;
-                  _generated      = null;
-                }),
+              // Role + Expiry dropdowns side by side
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    flex: 3,
+                    child: _LabeledDropdown<RunSheetViewMode>(
+                      label:   'Role',
+                      value:   _selectedMode,
+                      items:   RunSheetViewMode.values,
+                      builder: (m) => _roleItem(m),
+                      onChanged: (m) {
+                        if (m == null) return;
+                        setState(() {
+                          _selectedMode = m;
+                          _generated    = null;
+                          _error        = null;
+                        });
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    flex: 2,
+                    child: _LabeledDropdown<_Expiry>(
+                      label:   'Expires',
+                      value:   _selectedExpiry,
+                      items:   _Expiry.values,
+                      builder: (e) => _expiryItem(e),
+                      onChanged: (e) {
+                        if (e == null) return;
+                        setState(() {
+                          _selectedExpiry = e;
+                          _generated      = null;
+                        });
+                      },
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: AppSpacing.lg),
 
@@ -211,8 +227,8 @@ class _RunSheetShareDialogState extends State<RunSheetShareDialog> {
               // Generated link
               if (_generated != null) ...[
                 _GeneratedLinkCard(
-                  link: _linkFor(_generated!),
-                  mode: _generated!.viewMode,
+                  link:      _linkFor(_generated!),
+                  mode:      _generated!.viewMode,
                   expiresAt: _generated!.expiresAt,
                 ),
                 const SizedBox(height: AppSpacing.base),
@@ -232,8 +248,7 @@ class _RunSheetShareDialogState extends State<RunSheetShareDialog> {
                   ),
                   icon: _isGenerating
                       ? const SizedBox(
-                          width: 14,
-                          height: 14,
+                          width: 14, height: 14,
                           child: CircularProgressIndicator(
                               strokeWidth: 2, color: Colors.white),
                         )
@@ -255,11 +270,9 @@ class _RunSheetShareDialogState extends State<RunSheetShareDialog> {
                   const Expanded(child: Divider()),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 10),
-                    child: Text(
-                      'or',
-                      style: AppTextStyles.labelSmall
-                          .copyWith(color: AppColors.textMuted),
-                    ),
+                    child: Text('or',
+                        style: AppTextStyles.labelSmall
+                            .copyWith(color: AppColors.textMuted)),
                   ),
                   const Expanded(child: Divider()),
                 ],
@@ -279,9 +292,8 @@ class _RunSheetShareDialogState extends State<RunSheetShareDialog> {
                         borderRadius: BorderRadius.circular(8)),
                   ),
                   icon: _isExportingPdf
-                      ? SizedBox(
-                          width: 14,
-                          height: 14,
+                      ? const SizedBox(
+                          width: 14, height: 14,
                           child: CircularProgressIndicator(
                               strokeWidth: 2,
                               color: AppColors.textSecondary),
@@ -290,8 +302,7 @@ class _RunSheetShareDialogState extends State<RunSheetShareDialog> {
                   label: Text(
                     _isExportingPdf ? 'Generating PDF…' : 'Export PDF',
                     style: AppTextStyles.labelSmall.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+                        fontWeight: FontWeight.w600),
                   ),
                 ),
               ),
@@ -301,110 +312,80 @@ class _RunSheetShareDialogState extends State<RunSheetShareDialog> {
       ),
     );
   }
+
+  // ── Dropdown item builders ──────────────────────────────────────────────────
+
+  DropdownMenuItem<RunSheetViewMode> _roleItem(RunSheetViewMode m) =>
+      DropdownMenuItem(
+        value: m,
+        child: Row(
+          children: [
+            Icon(m.icon, size: 14, color: m.color),
+            const SizedBox(width: 8),
+            Text(m.label,
+                style: AppTextStyles.bodySmall.copyWith(color: m.color)),
+          ],
+        ),
+      );
+
+  DropdownMenuItem<_Expiry> _expiryItem(_Expiry e) => DropdownMenuItem(
+        value: e,
+        child: Text(e.label, style: AppTextStyles.bodySmall),
+      );
 }
 
-// ── Role selector grid ────────────────────────────────────────────────────────
+// ── Reusable labeled dropdown ─────────────────────────────────────────────────
 
-class _RoleGrid extends StatelessWidget {
-  final RunSheetViewMode            selected;
-  final ValueChanged<RunSheetViewMode> onSelected;
+class _LabeledDropdown<T> extends StatelessWidget {
+  final String                         label;
+  final T                              value;
+  final List<T>                        items;
+  final DropdownMenuItem<T> Function(T) builder;
+  final ValueChanged<T?>               onChanged;
 
-  const _RoleGrid({required this.selected, required this.onSelected});
-
-  static const _modes = RunSheetViewMode.values;
-
-  @override
-  Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: _modes.map((m) => _RoleCard(
-        mode:     m,
-        isActive: m == selected,
-        onTap:    () => onSelected(m),
-      )).toList(),
-    );
-  }
-}
-
-class _RoleCard extends StatelessWidget {
-  final RunSheetViewMode mode;
-  final bool             isActive;
-  final VoidCallback     onTap;
-
-  const _RoleCard({
-    required this.mode,
-    required this.isActive,
-    required this.onTap,
+  const _LabeledDropdown({
+    required this.label,
+    required this.value,
+    required this.items,
+    required this.builder,
+    required this.onChanged,
   });
 
   @override
   Widget build(BuildContext context) {
-    final color = mode.color;
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 120),
-        width: 210,
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color:        isActive ? color.withAlpha(15) : AppColors.surfaceAlt,
-          borderRadius: BorderRadius.circular(8),
-          border:       Border.all(
-            color: isActive ? color.withAlpha(100) : AppColors.border,
-            width: isActive ? 1.5 : 1,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: AppTextStyles.labelSmall),
+        const SizedBox(height: 6),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          decoration: BoxDecoration(
+            color:        AppColors.surfaceAlt,
+            borderRadius: BorderRadius.circular(8),
+            border:       Border.all(color: AppColors.border),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<T>(
+              value:       value,
+              isExpanded:  true,
+              icon: const Icon(Icons.keyboard_arrow_down_rounded,
+                  size: 16, color: AppColors.textSecondary),
+              style:       AppTextStyles.bodySmall
+                  .copyWith(color: AppColors.textPrimary),
+              dropdownColor: AppColors.surface,
+              borderRadius: BorderRadius.circular(8),
+              items:       items.map(builder).toList(),
+              onChanged:   onChanged,
+            ),
           ),
         ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color:        isActive
-                    ? color.withAlpha(20)
-                    : AppColors.border.withAlpha(60),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Icon(
-                mode.icon,
-                size: 14,
-                color: isActive ? color : AppColors.textSecondary,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    mode.label,
-                    style: AppTextStyles.labelSmall.copyWith(
-                      color:      isActive ? color : AppColors.textPrimary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  Text(
-                    mode.accessScope,
-                    style: AppTextStyles.overline.copyWith(
-                      color: isActive
-                          ? color.withAlpha(160)
-                          : AppColors.textMuted,
-                      letterSpacing: 0.2,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (isActive)
-              Icon(Icons.check_circle_rounded, size: 14, color: color),
-          ],
-        ),
-      ),
+      ],
     );
   }
 }
 
-// ── Expiry selector ───────────────────────────────────────────────────────────
+// ── Expiry enum ───────────────────────────────────────────────────────────────
 
 enum _Expiry { never, h24, d7, d30 }
 
@@ -415,50 +396,6 @@ extension _ExpiryLabel on _Expiry {
     _Expiry.d7    => '7 days',
     _Expiry.d30   => '30 days',
   };
-}
-
-class _ExpiryRow extends StatelessWidget {
-  final _Expiry            selected;
-  final ValueChanged<_Expiry> onSelected;
-
-  const _ExpiryRow({required this.selected, required this.onSelected});
-
-  @override
-  Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 6,
-      children: _Expiry.values.map((e) {
-        final active = e == selected;
-        return GestureDetector(
-          onTap: () => onSelected(e),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 100),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-            decoration: BoxDecoration(
-              color:        active
-                  ? AppColors.accent.withAlpha(18)
-                  : AppColors.surfaceAlt,
-              borderRadius: BorderRadius.circular(20),
-              border:       Border.all(
-                color: active
-                    ? AppColors.accent.withAlpha(120)
-                    : AppColors.border,
-              ),
-            ),
-            child: Text(
-              e.label,
-              style: AppTextStyles.labelSmall.copyWith(
-                color:      active
-                    ? AppColors.accentDark
-                    : AppColors.textSecondary,
-                fontWeight: active ? FontWeight.w600 : FontWeight.w500,
-              ),
-            ),
-          ),
-        );
-      }).toList(),
-    );
-  }
 }
 
 // ── Generated link card ───────────────────────────────────────────────────────
@@ -516,12 +453,10 @@ class _GeneratedLinkCardState extends State<_GeneratedLinkCard> {
             ],
           ),
           const SizedBox(height: 8),
-          // Role badge
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color:        color.withAlpha(15),
                   borderRadius: BorderRadius.circular(4),
@@ -532,11 +467,9 @@ class _GeneratedLinkCardState extends State<_GeneratedLinkCard> {
                   children: [
                     Icon(widget.mode.icon, size: 10, color: color),
                     const SizedBox(width: 4),
-                    Text(
-                      widget.mode.label,
-                      style: AppTextStyles.overline.copyWith(
-                        color: color, letterSpacing: 0.4),
-                    ),
+                    Text(widget.mode.label,
+                        style: AppTextStyles.overline
+                            .copyWith(color: color, letterSpacing: 0.4)),
                   ],
                 ),
               ),
@@ -551,7 +484,6 @@ class _GeneratedLinkCardState extends State<_GeneratedLinkCard> {
             ],
           ),
           const SizedBox(height: 8),
-          // Link row
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             decoration: BoxDecoration(
@@ -579,12 +511,10 @@ class _GeneratedLinkCardState extends State<_GeneratedLinkCard> {
                     child: _copied
                         ? const Icon(Icons.check_rounded,
                             key: ValueKey('check'),
-                            size: 14,
-                            color: Color(0xFF16A34A))
+                            size: 14, color: Color(0xFF16A34A))
                         : const Icon(Icons.copy_rounded,
                             key: ValueKey('copy'),
-                            size: 14,
-                            color: AppColors.textSecondary),
+                            size: 14, color: AppColors.textSecondary),
                   ),
                 ),
               ],
