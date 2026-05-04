@@ -47,7 +47,7 @@ class _RunSheetShareDialogState extends State<RunSheetShareDialog> {
   RunSheetShareToken? _generated;
   String?          _error;
 
-  static const _baseUrl = 'https://app.hodtravel.com/run-sheet';
+  static const _baseUrl = 'https://app.houseofdreammaker.com/run-sheet';
 
   String _linkFor(RunSheetShareToken t) =>
       '$_baseUrl/${t.tripId}?token=${t.token}';

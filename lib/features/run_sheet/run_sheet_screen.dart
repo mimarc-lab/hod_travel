@@ -31,11 +31,16 @@ class RunSheetScreen extends StatefulWidget {
   /// even if they fall outside the role's default item types).
   final String?          responsibleUserId;
 
+  /// Set to false when opened from a public share link to hide the re-share
+  /// button even for director-mode tokens.
+  final bool             canShare;
+
   const RunSheetScreen({
     super.key,
     required this.trip,
     this.viewMode         = RunSheetViewMode.director,
     this.responsibleUserId,
+    this.canShare         = true,
   });
 
   @override
@@ -74,7 +79,7 @@ class _RunSheetScreenState extends State<RunSheetScreen> {
       appBar: _RunSheetAppBar(
         trip:       widget.trip,
         viewMode:   widget.viewMode,
-        onShare:    widget.viewMode == RunSheetViewMode.director
+        onShare:    widget.canShare && widget.viewMode == RunSheetViewMode.director
             ? () {
                 // Read items at tap time so we always have the loaded list.
                 showRunSheetShareDialog(
@@ -85,7 +90,7 @@ class _RunSheetScreenState extends State<RunSheetScreen> {
                   days:     List.from(_provider.days),
                 );
               }
-            : null, // only directors can share
+            : null, // only directors can share; hidden on public share views
       ),
       body: ListenableBuilder(
         listenable: _provider,

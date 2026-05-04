@@ -7,6 +7,7 @@ import 'core/supabase/app_db.dart';
 import 'features/auth/providers/auth_provider.dart';
 import 'features/auth/widgets/auth_gate.dart';
 import 'features/client_view/client_share_screen.dart';
+import 'features/run_sheet/run_sheet_share_screen.dart';
 import 'features/notifications/providers/notification_provider.dart';
 
 class HODApp extends StatefulWidget {
@@ -67,9 +68,12 @@ class _HODAppState extends State<HODApp> {
 
   @override
   Widget build(BuildContext context) {
-    // Detect public share route on web — bypass auth entirely.
+    // Detect public share routes on web — bypass auth entirely.
     if (kIsWeb) {
-      final segments = Uri.base.pathSegments;
+      final uri      = Uri.base;
+      final segments = uri.pathSegments;
+
+      // /share/{slug} — client itinerary
       if (segments.length >= 2 && segments[0] == 'share') {
         return MaterialApp(
           title:                    'HOD Travel',
@@ -77,6 +81,23 @@ class _HODAppState extends State<HODApp> {
           theme:                    _buildTheme(),
           home:                     ClientShareScreen(token: segments[1]),
         );
+      }
+
+      // /run-sheet/{tripId}?token={token} — role-scoped run sheet
+      if (segments.length >= 2 && segments[0] == 'run-sheet') {
+        final tripId = segments[1];
+        final token  = uri.queryParameters['token'] ?? '';
+        if (token.isNotEmpty) {
+          return MaterialApp(
+            title:                    'HOD Travel',
+            debugShowCheckedModeBanner: false,
+            theme:                    _buildTheme(),
+            home:                     RunSheetShareScreen(
+                                        tripId: tripId,
+                                        token:  token,
+                                      ),
+          );
+        }
       }
     }
 
