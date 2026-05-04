@@ -7,7 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 /// URL format: /share/{trip-name-slug}-{4-char-hex}
 /// The slug is stored in share_tokens.slug and used for DB lookup.
 class ShareLinkService {
-  static const String _baseUrl = 'https://hod-travel.vercel.app';
+  static const String _baseUrl = 'https://app.houseofdreammaker.com';
 
   static final _random = Random();
 
