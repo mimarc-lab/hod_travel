@@ -11,8 +11,8 @@ import 'services/client_media_presenter.dart';
 import 'services/client_safe_content_mapper.dart';
 import 'services/pdf_export_service.dart';
 import 'services/share_link_service.dart';
+import 'widgets/client_trip_hero.dart';
 import 'widgets/itinerary_day_chapter.dart';
-import 'widgets/refined_trip_header.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ClientItineraryScreen
@@ -40,6 +40,7 @@ class _ClientItineraryScreenState extends State<ClientItineraryScreen> {
   List<TripDay> _days = [];
   Map<String, List<ItineraryItem>> _itemsByDayId = {};
   Map<String, List<ClientMediaItem>> _mediaByItemId = {};
+  ClientMediaItem? _heroImage;
   bool _loading    = true;
   bool _exporting  = false;
 
@@ -82,8 +83,13 @@ class _ClientItineraryScreenState extends State<ClientItineraryScreen> {
         componentRepo: repos!.components,
         mediaRepo:     repos.componentMedia,
       );
+      final allItems = _itemsByDayId.values.expand((l) => l).toList();
+      final hero = ClientMediaPresenter.selectTripHero(mediaByItemId, allItems);
       if (mounted) {
-        setState(() => _mediaByItemId = mediaByItemId);
+        setState(() {
+          _mediaByItemId = mediaByItemId;
+          _heroImage     = hero;
+        });
       }
     } catch (_) {
       // Media loading failure is non-fatal — itinerary remains readable
@@ -179,13 +185,12 @@ class _ClientItineraryScreenState extends State<ClientItineraryScreen> {
             color: ClientViewTheme.pageBg,
             child: CustomScrollView(
               slivers: [
-                // Refined trip header — no stats strip
+                // Cinematic trip hero — full-bleed, 320 px
                 SliverToBoxAdapter(
-                  child: RefinedTripHeader(trip: widget.trip),
-                ),
-
-                const SliverToBoxAdapter(
-                  child: SizedBox(height: AppSpacing.massive),
+                  child: ClientTripHero(
+                    trip:      widget.trip,
+                    heroImage: _heroImage,
+                  ),
                 ),
 
                 if (_days.isEmpty)
