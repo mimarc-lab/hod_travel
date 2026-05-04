@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/run_sheet_item.dart';
 import '../models/run_sheet_share_token.dart';
@@ -124,17 +125,15 @@ class SupabaseRunSheetShareRepository implements RunSheetShareRepository {
     String?                    label,
     DateTime?                  expiresAt,
   }) async {
-    final payload = RunSheetShareToken(
-      id:        '', // ignored — DB generates
-      tripId:    tripId,
-      teamId:    teamId,
-      token:     '', // ignored — DB generates via default
-      viewMode:  viewMode,
-      label:     label,
-      expiresAt: expiresAt,
-      createdBy: createdBy,
-      createdAt: DateTime.now(),
-    ).toInsertJson();
+    final payload = <String, dynamic>{
+      'trip_id':   tripId,
+      'token':     _generateToken(),
+      'view_mode': viewMode.dbValue,
+      if (teamId?.isNotEmpty    == true) 'team_id':    teamId,
+      if (label                 != null) 'label':      label,
+      if (expiresAt             != null) 'expires_at': expiresAt.toIso8601String(),
+      if (createdBy?.isNotEmpty == true) 'created_by': createdBy,
+    };
 
     final result = await _client
         .from(_table)
@@ -142,6 +141,13 @@ class SupabaseRunSheetShareRepository implements RunSheetShareRepository {
         .select()
         .single();
     return RunSheetShareToken.fromJson(result);
+  }
+
+  static String _generateToken() {
+    const chars =
+        'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    final rnd = Random.secure();
+    return List.generate(24, (_) => chars[rnd.nextInt(chars.length)]).join();
   }
 
   @override
