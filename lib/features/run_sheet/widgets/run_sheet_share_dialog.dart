@@ -80,7 +80,7 @@ class _RunSheetShareDialogState extends State<RunSheetShareDialog> {
       // Auto-copy to clipboard
       await Clipboard.setData(ClipboardData(text: _linkFor(token)));
     } catch (e) {
-      setState(() { _error = 'Could not generate link. Please try again.'; });
+      setState(() { _error = e.toString(); });
     } finally {
       setState(() { _isGenerating = false; });
     }
