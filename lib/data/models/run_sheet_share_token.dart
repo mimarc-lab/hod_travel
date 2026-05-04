@@ -27,7 +27,7 @@ import 'run_sheet_view_mode.dart';
 class RunSheetShareToken {
   final String           id;
   final String           tripId;
-  final String           teamId;
+  final String?          teamId;
   final String           token;
   final RunSheetViewMode viewMode;
   final String?          label;      // human-readable label, e.g. "Day 3 driver"
@@ -39,7 +39,7 @@ class RunSheetShareToken {
   const RunSheetShareToken({
     required this.id,
     required this.tripId,
-    required this.teamId,
+    this.teamId,
     required this.token,
     required this.viewMode,
     this.label,
@@ -58,7 +58,7 @@ class RunSheetShareToken {
       RunSheetShareToken(
         id:        r['id'] as String,
         tripId:    r['trip_id'] as String,
-        teamId:    r['team_id'] as String,
+        teamId:    r['team_id'] as String?,
         token:     r['token'] as String,
         viewMode:  RunSheetViewModeInfo.fromDb(
                      r['view_mode'] as String? ?? 'director'),
@@ -73,11 +73,11 @@ class RunSheetShareToken {
 
   /// Payload for INSERT — excludes id, token, created_at (DB-generated).
   Map<String, dynamic> toInsertJson() => {
-    'trip_id':   tripId,
-    'team_id':   teamId,
+    'trip_id':  tripId,
     'view_mode': viewMode.dbValue,
-    if (label     != null) 'label':      label,
-    if (expiresAt != null) 'expires_at': expiresAt!.toIso8601String(),
-    if (createdBy != null) 'created_by': createdBy,
+    if (teamId?.isNotEmpty == true) 'team_id':    teamId,
+    if (label     != null)          'label':      label,
+    if (expiresAt != null)          'expires_at': expiresAt!.toIso8601String(),
+    if (createdBy?.isNotEmpty == true) 'created_by': createdBy,
   };
 }

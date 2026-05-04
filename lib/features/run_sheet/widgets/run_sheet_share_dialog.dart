@@ -59,19 +59,18 @@ class _RunSheetShareDialogState extends State<RunSheetShareDialog> {
       final repos = AppRepositories.instance;
       if (repos == null) throw Exception('Not connected');
 
-      final userId = repos.currentUserId ?? '';
       final expiry = switch (_selectedExpiry) {
-        _Expiry.h24  => DateTime.now().add(const Duration(hours: 24)),
-        _Expiry.d7   => DateTime.now().add(const Duration(days: 7)),
-        _Expiry.d30  => DateTime.now().add(const Duration(days: 30)),
+        _Expiry.h24   => DateTime.now().add(const Duration(hours: 24)),
+        _Expiry.d7    => DateTime.now().add(const Duration(days: 7)),
+        _Expiry.d30   => DateTime.now().add(const Duration(days: 30)),
         _Expiry.never => null,
       };
 
       final token = await repos.runSheetShares.createToken(
         tripId:    widget.tripId,
-        teamId:    repos.currentTeamId ?? '',
+        teamId:    repos.currentTeamId,
         viewMode:  _selectedMode,
-        createdBy: userId,
+        createdBy: repos.currentUserId,
         label:     '${_selectedMode.label} — ${widget.tripName}',
         expiresAt: expiry,
       );

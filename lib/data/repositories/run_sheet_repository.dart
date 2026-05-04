@@ -30,9 +30,9 @@ abstract class RunSheetShareRepository {
   /// Create a new share token; returns the full persisted token.
   Future<RunSheetShareToken> createToken({
     required String            tripId,
-    required String            teamId,
+    String?                    teamId,
     required RunSheetViewMode  viewMode,
-    required String            createdBy,
+    String?                    createdBy,
     String?                    label,
     DateTime?                  expiresAt,
   });
@@ -118,9 +118,9 @@ class SupabaseRunSheetShareRepository implements RunSheetShareRepository {
   @override
   Future<RunSheetShareToken> createToken({
     required String            tripId,
-    required String            teamId,
+    String?                    teamId,
     required RunSheetViewMode  viewMode,
-    required String            createdBy,
+    String?                    createdBy,
     String?                    label,
     DateTime?                  expiresAt,
   }) async {
