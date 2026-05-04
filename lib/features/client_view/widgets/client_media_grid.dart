@@ -12,23 +12,26 @@ import 'client_media_viewer_modal.dart';
 // Layout:
 //   1 item  → full-width 16/9
 //   2 items → side-by-side 4/3
-//   3-4     → hero LEFT + 2×1 or 2×2 grid RIGHT
-//   5+      → hero LEFT + 2×2 grid RIGHT, bottom-right tile shows +N badge
-//
-//   ┌─────────────────────┬─────────┬─────────┐
-//   │                     │  [1]    │  [2]    │
-//   │       hero [0]      ├─────────┼─────────┤
-//   │                     │  [3]    │  [4]+N  │
-//   └─────────────────────┴─────────┴─────────┘
+//   3+      → hero LEFT + 2×2 thumbnail grid RIGHT
+//             Tapping a thumbnail swaps it into the hero.
+//             Tapping the hero opens the full-screen viewer.
+//             Last grid slot shows +N badge when more than 5 items.
 // ─────────────────────────────────────────────────────────────────────────────
 
-class ClientMediaGrid extends StatelessWidget {
+class ClientMediaGrid extends StatefulWidget {
   final List<ClientMediaItem> items;
-
   const ClientMediaGrid({super.key, required this.items});
 
   @override
+  State<ClientMediaGrid> createState() => _ClientMediaGridState();
+}
+
+class _ClientMediaGridState extends State<ClientMediaGrid> {
+  int _heroIndex = 0;
+
+  @override
   Widget build(BuildContext context) {
+    final items = widget.items;
     if (items.isEmpty) return const SizedBox.shrink();
 
     if (items.length == 1) {
@@ -38,32 +41,49 @@ class ClientMediaGrid extends StatelessWidget {
     if (items.length == 2) {
       return Row(
         children: [
-          Expanded(child: _ThumbTile(item: items[0], allItems: items, index: 0, ratio: 4 / 3, fullRes: true)),
+          Expanded(child: _HeroTile(item: items[0], allItems: items, index: 0, ratio: 4 / 3)),
           const SizedBox(width: 4),
-          Expanded(child: _ThumbTile(item: items[1], allItems: items, index: 1, ratio: 4 / 3, fullRes: true)),
+          Expanded(child: _HeroTile(item: items[1], allItems: items, index: 1, ratio: 4 / 3)),
         ],
       );
     }
 
-    // 3+ → hero + right grid
+    // 3+ → hero + 2×2 grid
+    // Grid items: all items except the current hero, in original order
+    final gridItems = <({int index, ClientMediaItem item})>[
+      for (int i = 0; i < items.length; i++)
+        if (i != _heroIndex) (index: i, item: items[i]),
+    ];
+
+    final visibleGrid = gridItems.take(4).toList();
+    final overflow    = gridItems.length - 4; // hidden beyond the 4 grid slots
+
     return IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // ── Hero ──────────────────────────────────────────────────────────
+          // ── Hero ────────────────────────────────────────────────────────
           Expanded(
             flex: 3,
             child: _HeroTile(
-              item: items[0], allItems: items, index: 0, ratio: 4 / 3,
+              item:     items[_heroIndex],
+              allItems: items,
+              index:    _heroIndex,
+              ratio:    4 / 3,
             ),
           ),
 
           const SizedBox(width: 4),
 
-          // ── Right 2×2 grid ─────────────────────────────────────────────
+          // ── 2×2 thumbnail grid ───────────────────────────────────────────
           Expanded(
             flex: 2,
-            child: _RightGrid(items: items),
+            child: _ThumbnailGrid(
+              slots:    visibleGrid,
+              allItems: items,
+              overflow: overflow,
+              onSelect: (itemIndex) => setState(() => _heroIndex = itemIndex),
+            ),
           ),
         ],
       ),
@@ -71,47 +91,48 @@ class ClientMediaGrid extends StatelessWidget {
   }
 }
 
-// ── Right 2×2 grid ────────────────────────────────────────────────────────────
-// Shows up to 4 images (indices 1-4). Last slot shows +N when items > 5.
+// ── 2×2 grid of thumbnail slots ───────────────────────────────────────────────
 
-class _RightGrid extends StatelessWidget {
-  final List<ClientMediaItem> items;
-  const _RightGrid({required this.items});
+class _ThumbnailGrid extends StatelessWidget {
+  final List<({int index, ClientMediaItem item})> slots;
+  final List<ClientMediaItem>                     allItems;
+  final int                                       overflow;
+  final ValueChanged<int>                         onSelect;
+
+  const _ThumbnailGrid({
+    required this.slots,
+    required this.allItems,
+    required this.overflow,
+    required this.onSelect,
+  });
 
   @override
   Widget build(BuildContext context) {
-    // Slots to fill: indices 1-4 (up to 4 thumbnails)
-    final slots    = items.skip(1).take(4).toList();
-    final overflow = items.length - 5; // images hidden beyond the 5 visible
-
-    Widget cell(int slotIndex) {
-      final itemIndex = slotIndex + 1; // actual index in items list
-      final item      = slots[slotIndex];
-      final isLast    = slotIndex == slots.length - 1;
+    Widget cell(int slotPos) {
+      final slot    = slots[slotPos];
+      final isLast  = slotPos == slots.length - 1;
       final showBadge = isLast && overflow > 0;
 
       if (showBadge) {
-        return _OverflowTile(
-          item:     item,
-          allItems: items,
-          index:    itemIndex,
+        return _OverflowCell(
+          item:     slot.item,
+          allItems: allItems,
+          index:    slot.index,
           overflow: overflow + 1,
         );
       }
-      return _GridCell(
-        item:     item,
-        allItems: items,
-        index:    itemIndex,
+
+      return _ThumbCell(
+        item:     slot.item,
+        onTap:    () => onSelect(slot.index),
       );
     }
 
-    // Build rows: top row always present, bottom row only when ≥ 3 items
     final hasBottom = slots.length > 2;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Top row
         Expanded(
           child: Row(
             children: [
@@ -123,8 +144,6 @@ class _RightGrid extends StatelessWidget {
             ],
           ),
         ),
-
-        // Bottom row
         if (hasBottom) ...[
           const SizedBox(height: 4),
           Expanded(
@@ -144,7 +163,7 @@ class _RightGrid extends StatelessWidget {
   }
 }
 
-// ── Hero tile ─────────────────────────────────────────────────────────────────
+// ── Hero tile — tapping opens full-screen viewer ──────────────────────────────
 
 class _HeroTile extends StatelessWidget {
   final ClientMediaItem       item;
@@ -172,63 +191,17 @@ class _HeroTile extends StatelessWidget {
       );
 }
 
-// ── Thumbnail tile ────────────────────────────────────────────────────────────
+// ── Thumb cell — tapping swaps into hero (no full-screen) ─────────────────────
 
-class _ThumbTile extends StatelessWidget {
-  final ClientMediaItem       item;
-  final List<ClientMediaItem> allItems;
-  final int                   index;
-  final double                ratio;
-  final bool                  fullRes;
+class _ThumbCell extends StatelessWidget {
+  final ClientMediaItem item;
+  final VoidCallback    onTap;
 
-  const _ThumbTile({
-    required this.item,
-    required this.allItems,
-    required this.index,
-    required this.ratio,
-    this.fullRes = false,
-  });
+  const _ThumbCell({required this.item, required this.onTap});
 
   @override
   Widget build(BuildContext context) => GestureDetector(
-        onTap: () => showClientMediaViewer(context, items: allItems, initialIndex: index),
-        child: AspectRatio(
-          aspectRatio: ratio,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                _NetImage(item: item, fullRes: fullRes),
-                if (item.isVideo)
-                  const Center(
-                    child: Icon(Icons.play_circle_filled_rounded,
-                        size: 28, color: Colors.white70),
-                  ),
-              ],
-            ),
-          ),
-        ),
-      );
-}
-
-// ── Grid cell — fills available space, no aspect ratio ───────────────────────
-// Used inside _RightGrid where Expanded already controls the height.
-
-class _GridCell extends StatelessWidget {
-  final ClientMediaItem       item;
-  final List<ClientMediaItem> allItems;
-  final int                   index;
-
-  const _GridCell({
-    required this.item,
-    required this.allItems,
-    required this.index,
-  });
-
-  @override
-  Widget build(BuildContext context) => GestureDetector(
-        onTap: () => showClientMediaViewer(context, items: allItems, initialIndex: index),
+        onTap: onTap,
         child: ClipRRect(
           borderRadius: BorderRadius.circular(4),
           child: SizedBox.expand(
@@ -248,15 +221,15 @@ class _GridCell extends StatelessWidget {
       );
 }
 
-// ── Overflow tile (+N badge) ──────────────────────────────────────────────────
+// ── Overflow cell — tapping opens full-screen viewer at that index ────────────
 
-class _OverflowTile extends StatelessWidget {
+class _OverflowCell extends StatelessWidget {
   final ClientMediaItem       item;
   final List<ClientMediaItem> allItems;
   final int                   index;
   final int                   overflow;
 
-  const _OverflowTile({
+  const _OverflowCell({
     required this.item,
     required this.allItems,
     required this.index,
