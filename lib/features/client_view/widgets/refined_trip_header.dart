@@ -153,11 +153,11 @@ class _JourneyManager extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text('YOUR JOURNEY MANAGER', style: ClientViewTheme.managerLabel),
+        Text('CREATED BY', style: ClientViewTheme.managerLabel),
         const SizedBox(height: 8),
-        Text(trip.tripLead.name, style: ClientViewTheme.managerName),
+        Text('The House of DreamMaker', style: ClientViewTheme.managerName),
         const SizedBox(height: 3),
-        Text('HOD Travel', style: ClientViewTheme.managerSub),
+        Text('www.houseofdreammaker.com', style: ClientViewTheme.managerSub),
       ],
     );
   }
