@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_spacing.dart';
@@ -8,10 +9,11 @@ import '../../core/utils/responsive.dart';
 import '../../data/models/itinerary_models.dart';
 import '../../data/models/run_sheet_item.dart';
 import '../../data/models/trip_model.dart';
+import '../client_view/client_view_theme.dart';
 import 'providers/run_sheet_provider.dart';
 import 'widgets/run_sheet_day_selector.dart';
+import 'widgets/run_sheet_editorial_item.dart';
 import 'widgets/run_sheet_filter_bar.dart';
-import 'widgets/run_sheet_item_card.dart';
 import 'widgets/run_sheet_share_dialog.dart';
 import 'widgets/run_sheet_view_mode_banner.dart';
 
@@ -75,7 +77,7 @@ class _RunSheetScreenState extends State<RunSheetScreen> {
     final isMobile = Responsive.isMobile(context);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: ClientViewTheme.pageBg,
       appBar: _RunSheetAppBar(
         trip:       widget.trip,
         viewMode:   widget.viewMode,
@@ -168,7 +170,7 @@ class _RunSheetAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     return AppBar(
-      backgroundColor:  AppColors.surface,
+      backgroundColor:  ClientViewTheme.surface,
       surfaceTintColor: Colors.transparent,
       elevation:        0,
       leading: IconButton(
@@ -179,19 +181,23 @@ class _RunSheetAppBar extends StatelessWidget implements PreferredSizeWidget {
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Run Sheet', style: AppTextStyles.heading3),
+          Text(
+            'Run Sheet',
+            style: GoogleFonts.inter(
+              fontSize:    15,
+              fontWeight:  FontWeight.w500,
+              color:       ClientViewTheme.ink,
+              letterSpacing: -0.2,
+            ),
+          ),
           Text(
             trip.name,
-            style: AppTextStyles.labelSmall
-                .copyWith(color: AppColors.textMuted),
+            style: ClientViewTheme.itemMeta,
           ),
         ],
       ),
       actions: [
-        // INTERNAL badge (director) or ROLE badge (restricted views)
         _ViewBadge(viewMode: viewMode),
-
-        // Share button — director only
         if (onShare != null)
           IconButton(
             onPressed: onShare,
@@ -199,12 +205,11 @@ class _RunSheetAppBar extends StatelessWidget implements PreferredSizeWidget {
             icon: const Icon(Icons.share_rounded,
                 size: 18, color: AppColors.textSecondary),
           ),
-
         const SizedBox(width: 4),
       ],
       bottom: const PreferredSize(
         preferredSize: Size.fromHeight(1),
-        child: Divider(height: 1, color: AppColors.border),
+        child: Divider(height: 1, color: ClientViewTheme.hairline),
       ),
     );
   }
@@ -285,7 +290,6 @@ class _DesktopBody extends StatelessWidget {
       children: [
         RunSheetDayPanel(provider: provider),
         Expanded(child: _ItemList(provider: provider)),
-        _StatsSidebar(provider: provider),
       ],
     );
   }
@@ -311,14 +315,17 @@ class _ItemList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final items = provider.visibleItems;
-    final day   = provider.selectedDay;
+    final items   = provider.visibleItems;
+    final day     = provider.selectedDay;
+    final isMob   = Responsive.isMobile(context);
+    final hPad    = isMob ? 20.0 : 40.0;
 
     return CustomScrollView(
       slivers: [
-        // Day header
+        // Editorial day chapter header
         if (day != null)
-          SliverToBoxAdapter(child: _DayHeader(day: day, provider: provider)),
+          SliverToBoxAdapter(
+              child: _DayHeader(day: day, provider: provider, hPad: hPad)),
 
         // Items
         if (items.isEmpty)
@@ -348,20 +355,20 @@ class _ItemList extends StatelessWidget {
               ),
             ),
           )
-        else
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(
-                AppSpacing.base, AppSpacing.sm, AppSpacing.base, AppSpacing.massive),
-            sliver: SliverList.separated(
-              itemCount:        items.length,
-              separatorBuilder: (_, _) =>
-                  const SizedBox(height: AppSpacing.xl),
-              itemBuilder: (_, i) => RunSheetItemCard(
-                item:     items[i],
-                provider: provider,
-              ),
+        else ...[
+          SliverList.separated(
+            itemCount:        items.length,
+            separatorBuilder: (_, _) =>
+                const Divider(height: 1, color: ClientViewTheme.hairline),
+            itemBuilder: (_, i) => RunSheetEditorialItem(
+              item:     items[i],
+              provider: provider,
+              hPad:     hPad,
             ),
           ),
+          const SliverToBoxAdapter(
+              child: SizedBox(height: AppSpacing.massive)),
+        ],
       ],
     );
   }
@@ -372,50 +379,57 @@ class _ItemList extends StatelessWidget {
 class _DayHeader extends StatelessWidget {
   final TripDay          day;
   final RunSheetProvider provider;
-  const _DayHeader({required this.day, required this.provider});
+  final double           hPad;
+  const _DayHeader({required this.day, required this.provider, this.hPad = 40.0});
 
   @override
   Widget build(BuildContext context) {
     final dateStr = day.date != null
-        ? DateFormat('EEEE, d MMMM yyyy').format(day.date!)
+        ? DateFormat('EEEE, d MMMM yyyy').format(day.date!).toUpperCase()
         : '';
     final items = provider.visibleItems;
     final done  = items
         .where((i) => i.status == RunSheetStatus.completed)
         .length;
+    final city = day.city.isEmpty ? 'Day ${day.dayNumber}' : day.city;
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(
-          AppSpacing.base, AppSpacing.base, AppSpacing.base, AppSpacing.md),
+    return Padding(
+      padding: EdgeInsets.fromLTRB(hPad, 36, hPad, 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // DAY label in gold
+          Text(
+            'DAY ${day.dayNumber.toString().padLeft(2, '0')}',
+            style: ClientViewTheme.dayLabel,
+          ),
+          const SizedBox(height: 6),
+
+          // City name — large light weight
+          Text(city, style: ClientViewTheme.cityName),
+          const SizedBox(height: 6),
+
+          // Date + progress pill row
           Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Day ${day.dayNumber}  ·  ${day.city.toUpperCase()}',
-                    style: AppTextStyles.heading2,
-                  ),
-                  if (dateStr.isNotEmpty)
-                    Text(dateStr, style: AppTextStyles.bodySmall),
-                ],
-              ),
+              if (dateStr.isNotEmpty)
+                Text(dateStr, style: ClientViewTheme.dayDate),
               const Spacer(),
               if (items.isNotEmpty)
                 _ProgressPill(done: done, total: items.length),
             ],
           ),
+
+          // Day title / overview line
           if (day.title != null && day.title!.isNotEmpty) ...[
-            const SizedBox(height: 4),
-            Text(
-              day.title!,
-              style: AppTextStyles.bodySmall
-                  .copyWith(color: AppColors.textSecondary),
-            ),
+            const SizedBox(height: 8),
+            Text(day.title!, style: ClientViewTheme.dayIntro),
           ],
+
+          // Gold accent underline
+          const SizedBox(height: 14),
+          Container(width: 28, height: 1.5, color: ClientViewTheme.gold),
         ],
       ),
     );
@@ -434,120 +448,26 @@ class _ProgressPill extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         SizedBox(
-          width: 60,
+          width: 56,
           child: ClipRRect(
             borderRadius: BorderRadius.circular(3),
             child: LinearProgressIndicator(
               value:           pct,
-              minHeight:       5,
-              backgroundColor: AppColors.surfaceAlt,
+              minHeight:       4,
+              backgroundColor: ClientViewTheme.hairline,
               valueColor: const AlwaysStoppedAnimation<Color>(
-                  Color(0xFF059669)),
+                  ClientViewTheme.gold),
             ),
           ),
         ),
         const SizedBox(width: 8),
         Text(
           '$done / $total',
-          style: AppTextStyles.labelSmall.copyWith(
-            color:      AppColors.textSecondary,
+          style: ClientViewTheme.itemMeta.copyWith(
             fontWeight: FontWeight.w600,
           ),
         ),
       ],
-    );
-  }
-}
-
-// ── Stats sidebar (desktop only) ──────────────────────────────────────────────
-
-class _StatsSidebar extends StatelessWidget {
-  final RunSheetProvider provider;
-  const _StatsSidebar({required this.provider});
-
-  @override
-  Widget build(BuildContext context) {
-    // Stats are scoped to the active role's visible items
-    final all       = provider.roleFilteredItems;
-    final total     = all.length;
-    final completed = all
-        .where((i) => i.status == RunSheetStatus.completed)
-        .length;
-    final inProg    = all
-        .where((i) => i.status == RunSheetStatus.inProgress)
-        .length;
-    final delayed   = all
-        .where((i) => i.status == RunSheetStatus.delayed)
-        .length;
-    final issues    = all
-        .where((i) => i.status == RunSheetStatus.issueFlagged)
-        .length;
-
-    return Container(
-      width: 200,
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        border: Border(left: BorderSide(color: AppColors.border)),
-      ),
-      padding: const EdgeInsets.all(AppSpacing.base),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'TRIP SUMMARY',
-            style: AppTextStyles.overline.copyWith(letterSpacing: 1.5),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          _StatRow('Total items',  '$total',     AppColors.textSecondary),
-          _StatRow('Completed',    '$completed', const Color(0xFF059669)),
-          _StatRow('In Progress',  '$inProg',    const Color(0xFF1D4ED8)),
-          if (delayed > 0)
-            _StatRow('Delayed',   '$delayed',   const Color(0xFF92400E)),
-          if (issues > 0)
-            _StatRow('Issues',    '$issues',    const Color(0xFF991B1B)),
-
-          const Divider(height: AppSpacing.xl, color: AppColors.border),
-
-          const Spacer(),
-          TextButton.icon(
-            onPressed: provider.reload,
-            icon:  const Icon(Icons.refresh_rounded, size: 14),
-            label: const Text('Refresh'),
-            style: TextButton.styleFrom(
-              foregroundColor: AppColors.textSecondary,
-              padding: EdgeInsets.zero,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _StatRow extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color  color;
-  const _StatRow(this.label, this.value, this.color);
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 5),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(label, style: AppTextStyles.bodySmall),
-          ),
-          Text(
-            value,
-            style: AppTextStyles.bodySmall.copyWith(
-              color:      color,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
