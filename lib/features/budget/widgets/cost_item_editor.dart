@@ -484,11 +484,11 @@ class _CostItemEditorFormState extends State<_CostItemEditorForm> {
                 ),
                 const SizedBox(height: AppSpacing.base),
 
-                // Notes
+                // Finance Notes
                 _Field(
-                  label: 'INTERNAL NOTES',
+                  label: 'FINANCE NOTES',
                   child: _text(_notesCtrl,
-                      'Booking reference, instructions, remarks…',
+                      'Costs, margins, payment terms, booking refs…',
                       maxLines: 3),
                 ),
 

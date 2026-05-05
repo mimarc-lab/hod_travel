@@ -295,6 +295,7 @@ class TripComponent {
   // Notes
   final String? notesInternal;
   final String? notesClient;
+  final String? notesFinance;
 
   // Linking
   final String? costItemId;
@@ -340,6 +341,7 @@ class TripComponent {
     this.detailsJson = const {},
     this.notesInternal,
     this.notesClient,
+    this.notesFinance,
     this.costItemId,
     this.itineraryItemId,
     this.runSheetItemId,
@@ -434,6 +436,7 @@ class TripComponent {
     Map<String, dynamic>? detailsJson,
     String? notesInternal,
     String? notesClient,
+    String? notesFinance,
     String? costItemId,
     String? itineraryItemId,
     String? runSheetItemId,
@@ -473,6 +476,7 @@ class TripComponent {
         detailsJson:   detailsJson   ?? this.detailsJson,
         notesInternal: notesInternal ?? this.notesInternal,
         notesClient:   notesClient   ?? this.notesClient,
+        notesFinance:  notesFinance  ?? this.notesFinance,
         costItemId:      costItemId      ?? this.costItemId,
         itineraryItemId: itineraryItemId ?? this.itineraryItemId,
         runSheetItemId:  runSheetItemId  ?? this.runSheetItemId,

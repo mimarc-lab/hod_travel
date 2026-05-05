@@ -189,6 +189,7 @@ class _ComponentFormSheetState extends State<_ComponentFormSheet> {
   // Notes
   late TextEditingController _notesInternalCtrl;
   late TextEditingController _notesClientCtrl;
+  late TextEditingController _notesFinanceCtrl;
 
   // Type-specific details_json
   final Map<String, TextEditingController> _detailTextCtrls = {};
@@ -246,6 +247,7 @@ class _ComponentFormSheetState extends State<_ComponentFormSheet> {
 
     _notesInternalCtrl = TextEditingController(text: e?.notesInternal ?? '');
     _notesClientCtrl   = TextEditingController(text: e?.notesClient ?? '');
+    _notesFinanceCtrl  = TextEditingController(text: e?.notesFinance ?? '');
 
     _initDetailControllers(e?.detailsJson ?? {});
 
@@ -320,6 +322,7 @@ class _ComponentFormSheetState extends State<_ComponentFormSheet> {
     _overrideEmailCtrl.dispose();
     _notesInternalCtrl.dispose();
     _notesClientCtrl.dispose();
+    _notesFinanceCtrl.dispose();
     for (final c in _detailTextCtrls.values) { c.dispose(); }
     super.dispose();
   }
@@ -425,6 +428,7 @@ class _ComponentFormSheetState extends State<_ComponentFormSheet> {
       detailsJson:   _buildDetailsJson(),
       notesInternal: _nullIfEmpty(_notesInternalCtrl.text),
       notesClient:   _nullIfEmpty(_notesClientCtrl.text),
+      notesFinance:  _nullIfEmpty(_notesFinanceCtrl.text),
       costItemId:      widget.existing?.costItemId,
       itineraryItemId: widget.existing?.itineraryItemId,
       runSheetItemId:  widget.existing?.runSheetItemId,
@@ -1033,6 +1037,16 @@ class _ComponentFormSheetState extends State<_ComponentFormSheet> {
             child: TextFormField(
               controller: _notesClientCtrl,
               decoration: _inputDeco('Visible on client itinerary'),
+              maxLines: 3,
+              style: AppTextStyles.bodyMedium,
+            ),
+          ),
+          _rowGap(),
+          _labeledField(
+            label: 'Finance Notes',
+            child: TextFormField(
+              controller: _notesFinanceCtrl,
+              decoration: _inputDeco('Costs, margins, payment terms…'),
               maxLines: 3,
               style: AppTextStyles.bodyMedium,
             ),

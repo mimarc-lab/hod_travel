@@ -42,7 +42,7 @@ class BudgetTableHeader extends StatelessWidget {
         children: [
           _H('ITEM NAME',       BudgetColumns.name),
           _H('SUPPLIER',        BudgetColumns.supplier),
-          _H('CATEGORY',        BudgetColumns.category),
+          _H('FINANCE NOTES',   BudgetColumns.category),
           _H('CITY',            BudgetColumns.city),
           _H('NET COST',        BudgetColumns.net),
           _H('DEPOSIT PAID',    BudgetColumns.deposit),
@@ -147,10 +147,26 @@ class _DesktopRow extends StatelessWidget {
                     overflow: TextOverflow.ellipsis),
               ),
 
-              // Category
+              // Finance Notes
               SizedBox(
                 width: BudgetColumns.category,
-                child: CostCategoryBadge(category: item.category),
+                child: item.notes != null && item.notes!.isNotEmpty
+                    ? Tooltip(
+                        message: item.notes!,
+                        preferBelow: true,
+                        textStyle: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.white,
+                          height: 1.4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1E2028),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Icon(Icons.notes_rounded,
+                            size: 16, color: AppColors.textSecondary),
+                      )
+                    : const SizedBox.shrink(),
               ),
 
               // City
