@@ -1,11 +1,11 @@
 {
-    "name": "hod_travel",
-    "short_name": "hod_travel",
+    "name": "The House of DreamMaker",
+    "short_name": "DreamMaker",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "Unbound Amazement",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
