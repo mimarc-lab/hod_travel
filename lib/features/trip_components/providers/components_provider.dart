@@ -322,8 +322,8 @@ class ComponentsProvider extends ChangeNotifier {
             clearDate:      component.startDate == null,
             supplierId:     component.supplierId,
             clearSupplierId: component.supplierId == null,
-            notes:      component.notesInternal,
-            clearNotes: component.notesInternal == null,
+            notes:      component.notesFinance,
+            clearNotes: component.notesFinance == null,
           ));
         }
       } catch (e) {

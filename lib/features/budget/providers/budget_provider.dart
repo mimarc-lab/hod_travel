@@ -20,6 +20,10 @@ class BudgetProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _error;
 
+  // Guards recently server-confirmed updates from being overwritten by a
+  // stale Realtime re-fetch that races with the commit becoming visible.
+  final Map<String, CostItem> _pendingConfirmed = {};
+
   // Filters
   String? _tripFilter;
   CostCategory? _categoryFilter;
@@ -100,7 +104,7 @@ class BudgetProvider extends ChangeNotifier {
     _sub?.cancel();
     _sub = _repo.watchAll(_teamId).listen(
       (items) {
-        _items = items;
+        _items = _mergeWithPending(items);
         _isLoading = false;
         _error = null;
         notifyListeners();
@@ -120,7 +124,7 @@ class BudgetProvider extends ChangeNotifier {
     _sub?.cancel();
     _sub = _repo.watchForTrip(tripId).listen(
       (items) {
-        _items = items;
+        _items = _mergeWithPending(items);
         _isLoading = false;
         _error = null;
         notifyListeners();
@@ -131,6 +135,13 @@ class BudgetProvider extends ChangeNotifier {
         notifyListeners();
       },
     );
+  }
+
+  // Prevents a stale Realtime re-fetch from overwriting a recently
+  // server-confirmed update before the stream catches up.
+  List<CostItem> _mergeWithPending(List<CostItem> fresh) {
+    if (_pendingConfirmed.isEmpty) return fresh;
+    return fresh.map((item) => _pendingConfirmed[item.id] ?? item).toList();
   }
 
   Future<void> reload() async {
@@ -215,7 +226,12 @@ class BudgetProvider extends ChangeNotifier {
     }
     try {
       final confirmed = await _repo.update(updated);
-      // Overwrite with server-confirmed values immediately.
+      // Pin the confirmed item so the next Realtime re-fetch can't overwrite
+      // it with stale data if the stream races the commit.
+      _pendingConfirmed[confirmed.id] = confirmed;
+      Future.delayed(const Duration(seconds: 5),
+          () => _pendingConfirmed.remove(confirmed.id));
+
       final confirmedIdx = _items.indexWhere((i) => i.id == confirmed.id);
       if (confirmedIdx != -1) {
         _items[confirmedIdx] = confirmed;
