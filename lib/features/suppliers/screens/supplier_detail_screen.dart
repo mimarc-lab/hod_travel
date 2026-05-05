@@ -80,7 +80,8 @@ class _SupplierDetailScreenState extends State<SupplierDetailScreen> {
                           const SizedBox(height: AppSpacing.xl),
                         ],
 
-                        if (AppRepositories.instance?.supplierMedia != null)
+                        if (AppRepositories.instance?.supplierMedia != null &&
+                            supplier.id.isNotEmpty)
                           SupplierMediaSection(
                             supplierId: supplier.id,
                             teamId:     AppRepositories.instance?.currentTeamId ?? '',
