@@ -241,8 +241,9 @@ class _EditorialBody extends StatelessWidget {
           ),
         ],
 
-        // Suggest badge — shown when no instructions but templates exist
+        // Suggest badge — director-only; hidden on role share links
         if (!item.hasInstructions &&
+            !provider.viewMode.isRestricted &&
             DefaultInstructionTemplates.hasTemplatesFor(item.type.dbValue)) ...[
           const SizedBox(height: 10),
           Container(
