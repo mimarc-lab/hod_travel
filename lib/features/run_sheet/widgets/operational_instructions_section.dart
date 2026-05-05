@@ -35,12 +35,17 @@ class OperationalInstructionsSection extends StatefulWidget {
   /// already exist.
   final Future<SuggestedInstructions?> Function()? onRefreshSuggestions;
 
+  /// Clears all instructions. When provided, a delete icon appears in the
+  /// section header while in idle mode with instructions present.
+  final Future<void> Function()? onDelete;
+
   const OperationalInstructionsSection({
     super.key,
     required this.item,
     required this.suggestions,
     required this.onSave,
     this.onRefreshSuggestions,
+    this.onDelete,
   });
 
   @override
@@ -100,6 +105,15 @@ class _OperationalInstructionsSectionState
     _conCtrl.text = widget.item.contingencyInstructions ?? '';
     _escCtrl.text = widget.item.escalationInstructions  ?? '';
     setState(() => _phase = _InstructionPhase.editing);
+  }
+
+  Future<void> _handleDelete() async {
+    setState(() => _phase = _InstructionPhase.saving);
+    try {
+      await widget.onSave(null, null, null, InstructionsSource.manual);
+    } finally {
+      if (mounted) setState(() => _phase = _InstructionPhase.idle);
+    }
   }
 
   /// Re-fetches suggestions from DB.
@@ -166,6 +180,7 @@ class _OperationalInstructionsSectionState
           onReapplyTemplate: widget.onRefreshSuggestions != null
               ? _handleRefresh
               : null,
+          onDelete: widget.onDelete != null ? _handleDelete : null,
         ),
         const SizedBox(height: AppSpacing.sm),
 
@@ -203,12 +218,14 @@ class _SectionHeader extends StatelessWidget {
   final _InstructionPhase  phase;
   final VoidCallback        onEdit;
   final Future<void> Function()? onReapplyTemplate;
+  final Future<void> Function()? onDelete;
 
   const _SectionHeader({
     required this.hasInstructions,
     required this.phase,
     required this.onEdit,
     this.onReapplyTemplate,
+    this.onDelete,
   });
 
   @override
@@ -221,6 +238,14 @@ class _SectionHeader extends StatelessWidget {
             style: AppTextStyles.overline.copyWith(letterSpacing: 1.2)),
         const Spacer(),
         if (phase == _InstructionPhase.idle && hasInstructions) ...[
+          if (onDelete != null) ...[
+            GestureDetector(
+              onTap: onDelete,
+              child: const Icon(Icons.delete_outline_rounded,
+                  size: 14, color: AppColors.textMuted),
+            ),
+            const SizedBox(width: 12),
+          ],
           if (onReapplyTemplate != null) ...[
             GestureDetector(
               onTap: onReapplyTemplate,

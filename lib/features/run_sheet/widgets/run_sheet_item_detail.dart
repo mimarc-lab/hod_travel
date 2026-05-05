@@ -153,6 +153,10 @@ class _ItemDetailSheetState extends State<_ItemDetailSheet> {
                       suggestions:          _suggestions,
                       onSave:               _saveInstructions,
                       onRefreshSuggestions: _refreshSuggestions,
+                      onDelete: _item.hasInstructions
+                          ? () => _saveInstructions(
+                                null, null, null, InstructionsSource.manual)
+                          : null,
                     ),
 
                     // Notes section
