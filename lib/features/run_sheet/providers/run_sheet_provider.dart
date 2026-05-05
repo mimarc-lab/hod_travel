@@ -268,8 +268,10 @@ class RunSheetProvider extends ChangeNotifier {
         : null;
 
     // Optimistic local update
+    final isClearing = operational == null && contingency == null && escalation == null;
     final updated = item.copyWith(
       id:                      item.isPersisted ? item.id : item.id,
+      clearInstructions:       isClearing,
       operationalInstructions: operational,
       contingencyInstructions: contingency,
       escalationInstructions:  escalation,

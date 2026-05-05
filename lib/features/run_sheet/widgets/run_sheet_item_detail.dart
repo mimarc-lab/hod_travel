@@ -84,8 +84,10 @@ class _ItemDetailSheetState extends State<_ItemDetailSheet> {
       source:        source,
     );
     // Refresh local reference so the read-view shows the saved text
+    final isClearing = operational == null && contingency == null && escalation == null;
     setState(() {
       _item = _item.copyWith(
+        clearInstructions:       isClearing,
         operationalInstructions: operational,
         contingencyInstructions: contingency,
         escalationInstructions:  escalation,

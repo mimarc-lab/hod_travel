@@ -279,6 +279,7 @@ class RunSheetItem {
     InstructionsSource?   instructionsSource,
     String?               instructionsApprovedBy,
     DateTime?             instructionsApprovedAt,
+    bool                  clearInstructions = false,
   }) {
     return RunSheetItem(
       id:                       id                       ?? this.id,
@@ -306,12 +307,12 @@ class RunSheetItem {
       transportNotes:           transportNotes           ?? this.transportNotes,
       guideNotes:               guideNotes               ?? this.guideNotes,
       sortOrder:                sortOrder,
-      operationalInstructions:  operationalInstructions  ?? this.operationalInstructions,
-      contingencyInstructions:  contingencyInstructions  ?? this.contingencyInstructions,
-      escalationInstructions:   escalationInstructions   ?? this.escalationInstructions,
-      instructionsSource:       instructionsSource       ?? this.instructionsSource,
-      instructionsApprovedBy:   instructionsApprovedBy   ?? this.instructionsApprovedBy,
-      instructionsApprovedAt:   instructionsApprovedAt   ?? this.instructionsApprovedAt,
+      operationalInstructions:  clearInstructions ? null : (operationalInstructions ?? this.operationalInstructions),
+      contingencyInstructions:  clearInstructions ? null : (contingencyInstructions ?? this.contingencyInstructions),
+      escalationInstructions:   clearInstructions ? null : (escalationInstructions  ?? this.escalationInstructions),
+      instructionsSource:       clearInstructions ? null : (instructionsSource       ?? this.instructionsSource),
+      instructionsApprovedBy:   clearInstructions ? null : (instructionsApprovedBy   ?? this.instructionsApprovedBy),
+      instructionsApprovedAt:   clearInstructions ? null : (instructionsApprovedAt   ?? this.instructionsApprovedAt),
     );
   }
 
