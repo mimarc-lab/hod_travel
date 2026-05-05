@@ -63,6 +63,7 @@ class _RunSheetScreenState extends State<RunSheetScreen> {
       teamId:              repos?.currentTeamId,
       viewMode:            widget.viewMode,
       responsibleUserId:   widget.responsibleUserId,
+      isShareLink:         !widget.canShare,
     );
   }
 

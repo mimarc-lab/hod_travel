@@ -241,9 +241,9 @@ class _EditorialBody extends StatelessWidget {
           ),
         ],
 
-        // Suggest badge — director-only; hidden on role share links
+        // Suggest badge — internal only; never shown on share links
         if (!item.hasInstructions &&
-            !provider.viewMode.isRestricted &&
+            !provider.isShareLink &&
             DefaultInstructionTemplates.hasTemplatesFor(item.type.dbValue)) ...[
           const SizedBox(height: 10),
           Container(

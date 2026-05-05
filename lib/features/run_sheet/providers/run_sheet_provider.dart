@@ -61,6 +61,7 @@ class RunSheetProvider extends ChangeNotifier {
   final String?              _teamId;
   final RunSheetViewMode     _viewMode;
   final String?              _responsibleUserId; // for assignment-based filtering
+  final bool                 _isShareLink;
 
   RunSheetProvider({
     required String tripId,
@@ -69,12 +70,14 @@ class RunSheetProvider extends ChangeNotifier {
     String?              teamId,
     RunSheetViewMode     viewMode = RunSheetViewMode.director,
     String?              responsibleUserId,
+    bool                 isShareLink = false,
   })  : _tripId             = tripId,
         _itineraryRepo      = itineraryRepository,
         _runSheetRepo       = runSheetRepository,
         _teamId             = teamId,
         _viewMode           = viewMode,
-        _responsibleUserId  = responsibleUserId {
+        _responsibleUserId  = responsibleUserId,
+        _isShareLink        = isShareLink {
     _load();
   }
 
@@ -95,6 +98,7 @@ class RunSheetProvider extends ChangeNotifier {
   TripDay?           get selectedDay     => _selectedDay;
   RunSheetFilter     get filter          => _filter;
   RunSheetViewMode   get viewMode        => _viewMode;
+  bool               get isShareLink     => _isShareLink;
   List<RunSheetItem> get allItems        => _allItems;
 
   /// All items after role filtering (no day or UI filter applied yet).
