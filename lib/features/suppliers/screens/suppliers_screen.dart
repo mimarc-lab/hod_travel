@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
@@ -14,7 +15,7 @@ import '../widgets/supplier_list_item.dart';
 import 'supplier_detail_screen.dart';
 
 /// Entry point for the Supplier Database module.
-/// Holds the SupplierProvider and top-level list UI.
+/// Holds the SupplierProvider and curated supplier portfolio grid.
 class SuppliersScreen extends StatefulWidget {
   const SuppliersScreen({super.key});
 
@@ -124,7 +125,7 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
                 if (_provider.isLoading && _provider.totalCount == 0) {
                   return const Center(
                     child: CircularProgressIndicator(
-                      color: AppColors.accent, strokeWidth: 2),
+                        color: AppColors.accent, strokeWidth: 2),
                   );
                 }
 
@@ -156,28 +157,47 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
                   return _EmptyState(
                     hasFilters: _provider.hasActiveFilters,
                     onClear: _provider.clearFilters,
-                    onAdd: () => showSupplierEditor(context, provider: _provider),
+                    onAdd: () =>
+                        showSupplierEditor(context, provider: _provider),
                   );
                 }
 
-                return Column(
-                  children: [
-                    if (Responsive.showSidebar(context))
-                      _TableHeader(),
-                    Expanded(
-                      child: ListView.builder(
-                        padding: Responsive.isMobile(context)
-                            ? const EdgeInsets.symmetric(vertical: AppSpacing.sm)
-                            : EdgeInsets.zero,
-                        itemCount: suppliers.length,
-                        itemBuilder: (context, index) => SupplierListItem(
-                          supplier: suppliers[index],
-                          onTap: () => _openDetail(context, suppliers[index]),
-                          onDelete: () => _confirmDelete(context, suppliers[index]),
-                        ),
+                // Responsive 2-col grid (desktop/tablet) → 1-col (mobile)
+                return LayoutBuilder(
+                  builder: (context, constraints) {
+                    final cols = constraints.maxWidth > 600 ? 2 : 1;
+                    final hPad = cols == 1
+                        ? AppSpacing.pagePaddingHMobile
+                        : AppSpacing.pagePaddingH;
+                    const gap = 18.0;
+                    const cardHeight = 264.0;
+                    final cardWidth = (constraints.maxWidth -
+                            hPad * 2 -
+                            (cols - 1) * gap) /
+                        cols;
+
+                    return GridView.builder(
+                      padding: EdgeInsets.fromLTRB(
+                          hPad, AppSpacing.base, hPad, AppSpacing.massive),
+                      gridDelegate:
+                          SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: cols,
+                        mainAxisSpacing: gap,
+                        crossAxisSpacing: gap,
+                        childAspectRatio: cardWidth / cardHeight,
                       ),
-                    ),
-                  ],
+                      itemCount: suppliers.length,
+                      itemBuilder: (context, index) {
+                        final s = suppliers[index];
+                        return SupplierCard(
+                          key: ValueKey(s.id),
+                          supplier: s,
+                          onTap: () => _openDetail(context, s),
+                          onDelete: () => _confirmDelete(context, s),
+                        );
+                      },
+                    );
+                  },
                 );
               },
             ),
@@ -207,12 +227,13 @@ class _SuppliersHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = Responsive.isMobile(context);
+    final hPad =
+        isMobile ? AppSpacing.pagePaddingHMobile : AppSpacing.pagePaddingH;
+
     return Container(
-      color: AppColors.surface,
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.pagePaddingH,
-        vertical: AppSpacing.base,
-      ),
+      color: AppColors.background,
+      padding: EdgeInsets.fromLTRB(hPad, 20, hPad, 14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -222,25 +243,61 @@ class _SuppliersHeader extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Suppliers', style: AppTextStyles.displayMedium),
+                    Text('Suppliers',
+                        style: AppTextStyles.displayMedium),
+                    const SizedBox(height: 2),
                     ListenableBuilder(
                       listenable: provider,
                       builder: (context, _) => Text(
-                        '${provider.totalCount} partners in database',
+                        '${provider.totalCount} partners in network',
                         style: AppTextStyles.bodySmall,
                       ),
                     ),
                   ],
                 ),
               ),
-              _DiscoverButton(onTap: onDiscoverTap),
-              const SizedBox(width: AppSpacing.sm),
-              _ImportButton(onTap: onImportTap),
-              const SizedBox(width: AppSpacing.sm),
-              _AddButton(onTap: onAddTap),
+              if (!isMobile) ...[
+                _GhostButton(
+                  icon: Icons.travel_explore_rounded,
+                  label: 'Discover',
+                  onTap: onDiscoverTap,
+                ),
+                const SizedBox(width: 8),
+                _GhostButton(
+                  icon: Icons.link_rounded,
+                  label: 'Import URL',
+                  onTap: onImportTap,
+                ),
+                const SizedBox(width: 10),
+              ],
+              _AddSupplierButton(onTap: onAddTap),
             ],
           ),
-          const SizedBox(height: AppSpacing.base),
+          if (isMobile) ...[
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: _GhostButton(
+                    icon: Icons.travel_explore_rounded,
+                    label: 'Discover',
+                    onTap: onDiscoverTap,
+                    fullWidth: true,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _GhostButton(
+                    icon: Icons.link_rounded,
+                    label: 'Import URL',
+                    onTap: onImportTap,
+                    fullWidth: true,
+                  ),
+                ),
+              ],
+            ),
+          ],
+          const SizedBox(height: 14),
           _SearchField(ctrl: searchCtrl, provider: provider),
         ],
       ),
@@ -248,30 +305,47 @@ class _SuppliersHeader extends StatelessWidget {
   }
 }
 
-class _DiscoverButton extends StatelessWidget {
+// ── Ghost (secondary) button ──────────────────────────────────────────────────
+
+class _GhostButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
   final VoidCallback onTap;
-  const _DiscoverButton({required this.onTap});
+  final bool fullWidth;
+
+  const _GhostButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.fullWidth = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+        padding:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: AppColors.surfaceAlt,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: AppColors.border),
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: AppColors.border, width: 0.8),
         ),
         child: Row(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisSize: fullWidth ? MainAxisSize.max : MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.travel_explore_rounded,
-                size: 15, color: AppColors.textSecondary),
+            Icon(icon, size: 14, color: AppColors.textSecondary),
             const SizedBox(width: 5),
-            Text('Discover',
-                style: AppTextStyles.labelMedium
-                    .copyWith(color: AppColors.textSecondary)),
+            Text(
+              label,
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textSecondary,
+              ),
+            ),
           ],
         ),
       ),
@@ -279,65 +353,40 @@ class _DiscoverButton extends StatelessWidget {
   }
 }
 
-class _ImportButton extends StatelessWidget {
+// ── Add Supplier button ───────────────────────────────────────────────────────
+
+class _AddSupplierButton extends StatelessWidget {
   final VoidCallback onTap;
-  const _ImportButton({required this.onTap});
+  const _AddSupplierButton({required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-        decoration: BoxDecoration(
-          color: AppColors.surfaceAlt,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.link_rounded, size: 15,
-                color: AppColors.textSecondary),
-            const SizedBox(width: 5),
-            Text('Import URL',
-                style: AppTextStyles.labelMedium
-                    .copyWith(color: AppColors.textSecondary)),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _AddButton extends StatelessWidget {
-  final VoidCallback onTap;
-  const _AddButton({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+        padding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
         decoration: BoxDecoration(
           color: AppColors.accent,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             const Icon(Icons.add_rounded, size: 15, color: Colors.white),
             const SizedBox(width: 5),
-            Text('Add Supplier',
-                style: AppTextStyles.labelMedium
-                    .copyWith(color: Colors.white)),
+            Text(
+              'Add Supplier',
+              style: AppTextStyles.labelMedium.copyWith(color: Colors.white),
+            ),
           ],
         ),
       ),
     );
   }
 }
+
+// ── Search field ──────────────────────────────────────────────────────────────
 
 class _SearchField extends StatelessWidget {
   final TextEditingController ctrl;
@@ -346,85 +395,63 @@ class _SearchField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TextField(
-      controller: ctrl,
-      onChanged: provider.setSearch,
-      style: AppTextStyles.bodySmall.copyWith(color: AppColors.textPrimary),
-      decoration: InputDecoration(
-        hintText: 'Search by name, city, contact, or tag…',
-        hintStyle: AppTextStyles.bodySmall,
-        prefixIcon: const Icon(Icons.search_rounded,
-            size: 17, color: AppColors.textMuted),
-        suffixIcon: ListenableBuilder(
-          listenable: provider,
-          builder: (context, _) => provider.searchQuery.isNotEmpty
-              ? GestureDetector(
-                  onTap: () {
-                    ctrl.clear();
-                    provider.setSearch('');
-                  },
-                  child: const Icon(Icons.close_rounded,
-                      size: 16, color: AppColors.textMuted),
-                )
-              : const SizedBox.shrink(),
-        ),
-        filled: true,
-        fillColor: AppColors.surfaceAlt,
-        isDense: true,
-        contentPadding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.base, vertical: AppSpacing.sm),
-        border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: AppColors.border)),
-        enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: AppColors.border)),
-        focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide:
-                const BorderSide(color: AppColors.accent, width: 1.5)),
-      ),
-    );
-  }
-}
-
-// ── Table header (desktop) ────────────────────────────────────────────────────
-
-class _TableHeader extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
     return Container(
-      height: 36,
-      color: AppColors.surfaceAlt,
-      padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.pagePaddingH),
-      child: Row(
-        children: [
-          const SizedBox(width: 36 + AppSpacing.base), // icon space
-          _Col(label: 'NAME', flex: 5),
-          _Col(label: 'CATEGORY', flex: 3),
-          _Col(label: 'PREFERRED / RATING', flex: 3),
-          _Col(label: 'CONTACT', flex: 3),
-          _Col(label: 'LAST USED', width: 80),
-          const SizedBox(width: 16), // chevron space
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x09000000),
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
         ],
       ),
+      child: TextField(
+        controller: ctrl,
+        onChanged: provider.setSearch,
+        style: AppTextStyles.bodySmall
+            .copyWith(color: AppColors.textPrimary),
+        decoration: InputDecoration(
+          hintText: 'Search suppliers, cities, specialties…',
+          hintStyle: AppTextStyles.bodySmall,
+          prefixIcon: const Icon(Icons.search_rounded,
+              size: 18, color: AppColors.textMuted),
+          suffixIcon: ListenableBuilder(
+            listenable: provider,
+            builder: (context, _) => provider.searchQuery.isNotEmpty
+                ? GestureDetector(
+                    onTap: () {
+                      ctrl.clear();
+                      provider.setSearch('');
+                    },
+                    child: const Icon(Icons.close_rounded,
+                        size: 16, color: AppColors.textMuted),
+                  )
+                : const SizedBox.shrink(),
+          ),
+          filled: true,
+          fillColor: AppColors.surface,
+          contentPadding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.base, vertical: 14),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide:
+                const BorderSide(color: AppColors.border, width: 0.8),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide:
+                const BorderSide(color: AppColors.border, width: 0.8),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide:
+                const BorderSide(color: AppColors.accent, width: 1.5),
+          ),
+        ),
+      ),
     );
-  }
-}
-
-class _Col extends StatelessWidget {
-  final String label;
-  final int? flex;
-  final double? width;
-  const _Col({required this.label, this.flex, this.width});
-
-  @override
-  Widget build(BuildContext context) {
-    final child = Text(label, style: AppTextStyles.tableHeader,
-        overflow: TextOverflow.ellipsis);
-    if (width != null) return SizedBox(width: width, child: child);
-    return Expanded(flex: flex ?? 1, child: child);
   }
 }
 
@@ -459,14 +486,16 @@ class _EmptyState extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.base),
           Text(
-            hasFilters ? 'No suppliers match filters' : 'No suppliers yet',
+            hasFilters
+                ? 'No suppliers match filters'
+                : 'No suppliers yet',
             style: AppTextStyles.heading2,
           ),
           const SizedBox(height: 6),
           Text(
             hasFilters
                 ? 'Try adjusting the category or clearing filters.'
-                : 'Add your first trusted partner to the database.',
+                : 'Add your first trusted partner to the network.',
             style: AppTextStyles.bodySmall,
           ),
           const SizedBox(height: AppSpacing.lg),
@@ -474,8 +503,8 @@ class _EmptyState extends StatelessWidget {
             GestureDetector(
               onTap: onClear,
               child: Text('Clear filters',
-                  style: AppTextStyles.labelMedium.copyWith(
-                      color: AppColors.accent)),
+                  style: AppTextStyles.labelMedium
+                      .copyWith(color: AppColors.accent)),
             )
           else
             GestureDetector(
@@ -485,7 +514,7 @@ class _EmptyState extends StatelessWidget {
                     horizontal: 18, vertical: 10),
                 decoration: BoxDecoration(
                   color: AppColors.accent,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text('Add Supplier',
                     style: AppTextStyles.labelMedium

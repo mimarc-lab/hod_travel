@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
@@ -7,82 +8,101 @@ import '../../../data/models/supplier_model.dart';
 import '../providers/supplier_provider.dart';
 
 /// Horizontal filter row: category chips + preferred toggle + clear button.
-/// Reads and writes directly to the provider.
+/// Reads and writes directly to the provider — all logic unchanged.
 class SupplierFilterBar extends StatelessWidget {
   final SupplierProvider provider;
   const SupplierFilterBar({super.key, required this.provider});
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = Responsive.isMobile(context);
+    final hPad = isMobile
+        ? AppSpacing.pagePaddingHMobile
+        : AppSpacing.pagePaddingH;
+
     return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        border: Border(bottom: BorderSide(color: AppColors.border)),
-      ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        padding: EdgeInsets.symmetric(
-          horizontal: Responsive.isMobile(context)
-              ? AppSpacing.pagePaddingHMobile
-              : AppSpacing.pagePaddingH,
-          vertical: AppSpacing.sm,
-        ),
-        child: Row(
-          children: [
-            // "All" chip
-            _FilterChip(
-              label: 'All',
-              isSelected: provider.typeFilter == null,
-              onTap: () => provider.setTypeFilter(null),
-            ),
-            const SizedBox(width: AppSpacing.xs),
-
-            // Type chips
-            ...SupplierType.values.map((type) => Padding(
-              padding: const EdgeInsets.only(right: AppSpacing.xs),
-              child: _FilterChip(
-                label: type.label,
-                icon: type.icon,
-                color: type.color,
-                isSelected: provider.typeFilter == type,
-                onTap: () => provider.setTypeFilter(
-                  provider.typeFilter == type ? null : type,
+      color: AppColors.background,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: EdgeInsets.fromLTRB(hPad, 10, hPad, 10),
+            child: Row(
+              children: [
+                // "All" chip
+                _FilterChip(
+                  label: 'All',
+                  isSelected: provider.typeFilter == null,
+                  onTap: () => provider.setTypeFilter(null),
                 ),
-              ),
-            )),
+                const SizedBox(width: 6),
 
-            // Divider
-            Container(
-              width: 1, height: 20,
-              color: AppColors.border,
-              margin: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-            ),
+                // Type chips
+                ...SupplierType.values.map((type) => Padding(
+                      padding: const EdgeInsets.only(right: 6),
+                      child: _FilterChip(
+                        label: _shortLabel(type),
+                        icon: type.icon,
+                        color: type.color,
+                        isSelected: provider.typeFilter == type,
+                        onTap: () => provider.setTypeFilter(
+                          provider.typeFilter == type ? null : type,
+                        ),
+                      ),
+                    )),
 
-            // Preferred toggle
-            _PreferredToggleChip(
-              isOn: provider.preferredOnly,
-              onTap: () => provider.setPreferredOnly(!provider.preferredOnly),
-            ),
+                // Divider
+                Container(
+                  width: 1,
+                  height: 18,
+                  color: AppColors.border,
+                  margin:
+                      const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                ),
 
-            // Clear filters button (only when filters active)
-            if (provider.hasActiveFilters) ...[
-              const SizedBox(width: AppSpacing.sm),
-              GestureDetector(
-                onTap: provider.clearFilters,
-                child: Text(
-                  'Clear',
-                  style: AppTextStyles.labelSmall.copyWith(
-                    color: AppColors.accent,
-                    fontWeight: FontWeight.w600,
+                // Preferred toggle
+                _PreferredToggleChip(
+                  isOn: provider.preferredOnly,
+                  onTap: () =>
+                      provider.setPreferredOnly(!provider.preferredOnly),
+                ),
+
+                // Clear filters
+                if (provider.hasActiveFilters) ...[
+                  const SizedBox(width: AppSpacing.sm),
+                  GestureDetector(
+                    onTap: provider.clearFilters,
+                    child: Text(
+                      'Clear',
+                      style: AppTextStyles.labelSmall.copyWith(
+                        color: AppColors.accent,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
-                ),
-              ),
-            ],
-          ],
-        ),
+                ],
+              ],
+            ),
+          ),
+          // Subtle hairline separator from content area
+          const Divider(height: 1, color: AppColors.divider),
+        ],
       ),
     );
   }
+
+  // Compact label for filter bar chips (Experience Providers → Experience)
+  String _shortLabel(SupplierType type) => switch (type) {
+        SupplierType.accommodation      => 'Accommodation',
+        SupplierType.dining             => 'Dining',
+        SupplierType.transport          => 'Transport',
+        SupplierType.guide              => 'Guides',
+        SupplierType.experienceProvider => 'Experience',
+        SupplierType.specialistServices => 'Specialist',
+        SupplierType.venue              => 'Venues',
+        SupplierType.other              => 'Other',
+      };
 }
 
 // ── Filter chip ───────────────────────────────────────────────────────────────
@@ -108,28 +128,33 @@ class _FilterChip extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 130),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        duration: const Duration(milliseconds: 140),
+        padding:
+            const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
         decoration: BoxDecoration(
-          color: isSelected ? c.withAlpha(22) : AppColors.surfaceAlt,
+          color: isSelected ? c.withAlpha(20) : AppColors.surface,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? c : AppColors.border,
-            width: isSelected ? 1.5 : 1,
+            color: isSelected ? c.withAlpha(120) : AppColors.border,
+            width: isSelected ? 1.2 : 0.8,
           ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             if (icon != null) ...[
-              Icon(icon, size: 11, color: isSelected ? c : AppColors.textMuted),
+              Icon(icon, size: 11,
+                  color: isSelected ? c : AppColors.textMuted),
               const SizedBox(width: 4),
             ],
             Text(
               label,
-              style: AppTextStyles.labelSmall.copyWith(
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                fontWeight:
+                    isSelected ? FontWeight.w600 : FontWeight.w400,
                 color: isSelected ? c : AppColors.textSecondary,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                height: 1.3,
               ),
             ),
           ],
@@ -151,30 +176,40 @@ class _PreferredToggleChip extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 130),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        duration: const Duration(milliseconds: 140),
+        padding:
+            const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
         decoration: BoxDecoration(
-          color: isOn ? AppColors.accent.withAlpha(22) : AppColors.surfaceAlt,
+          color: isOn
+              ? AppColors.accent.withAlpha(20)
+              : AppColors.surface,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isOn ? AppColors.accent : AppColors.border,
-            width: isOn ? 1.5 : 1,
+            color: isOn
+                ? AppColors.accent.withAlpha(120)
+                : AppColors.border,
+            width: isOn ? 1.2 : 0.8,
           ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              Icons.star_rounded,
+              Icons.diamond_outlined,
               size: 11,
               color: isOn ? AppColors.accent : AppColors.textMuted,
             ),
             const SizedBox(width: 4),
             Text(
               'Preferred',
-              style: AppTextStyles.labelSmall.copyWith(
-                color: isOn ? AppColors.accent : AppColors.textSecondary,
-                fontWeight: isOn ? FontWeight.w600 : FontWeight.w400,
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                fontWeight:
+                    isOn ? FontWeight.w600 : FontWeight.w400,
+                color: isOn
+                    ? AppColors.accent
+                    : AppColors.textSecondary,
+                height: 1.3,
               ),
             ),
           ],

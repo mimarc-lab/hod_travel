@@ -111,21 +111,27 @@ class PreferredBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: AppColors.accent.withAlpha(22),
-        borderRadius: BorderRadius.circular(5),
+        color: AppColors.accent.withAlpha(14),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(
+          color: AppColors.accent.withAlpha(40),
+          width: 0.8,
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.star_rounded, size: 11, color: AppColors.accent),
-          const SizedBox(width: 3),
+          Icon(Icons.diamond_outlined,
+              size: 11, color: AppColors.accent.withAlpha(200)),
+          const SizedBox(width: 4),
           Text(
-            'Preferred',
+            'Preferred Partner',
             style: AppTextStyles.labelSmall.copyWith(
               color: AppColors.accent,
               fontWeight: FontWeight.w600,
+              letterSpacing: 0.1,
             ),
           ),
         ],
