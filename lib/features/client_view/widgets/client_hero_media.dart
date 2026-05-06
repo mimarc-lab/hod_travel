@@ -85,6 +85,7 @@ class ClientHeroMedia extends StatelessWidget {
 }
 
 Map<String, String> _storageHeaders() {
-  final token = Supabase.instance.client.auth.currentSession?.accessToken;
-  return token != null ? {'Authorization': 'Bearer $token'} : {};
+  final client = Supabase.instance.client;
+  final token = client.auth.currentSession?.accessToken ?? client.supabaseKey;
+  return {'Authorization': 'Bearer $token'};
 }

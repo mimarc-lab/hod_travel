@@ -268,8 +268,9 @@ class _OverflowCell extends StatelessWidget {
 // ── Image.network wrapper ─────────────────────────────────────────────────────
 
 Map<String, String> _storageHeaders() {
-  final token = Supabase.instance.client.auth.currentSession?.accessToken;
-  return token != null ? {'Authorization': 'Bearer $token'} : {};
+  final client = Supabase.instance.client;
+  final token = client.auth.currentSession?.accessToken ?? client.supabaseKey;
+  return {'Authorization': 'Bearer $token'};
 }
 
 class _NetImage extends StatelessWidget {
