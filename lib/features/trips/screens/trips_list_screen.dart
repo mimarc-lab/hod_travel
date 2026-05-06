@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
@@ -40,6 +41,8 @@ class _TripsListScreenState extends State<TripsListScreen> {
     super.dispose();
   }
 
+  // ── Filter logic (unchanged) ───────────────────────────────────────────────
+
   List<Trip> get _filtered => _provider.trips.where((t) {
     final matchSearch =
         _search.isEmpty ||
@@ -51,6 +54,8 @@ class _TripsListScreenState extends State<TripsListScreen> {
     final matchStatus = _filterStatus == null || t.status == _filterStatus;
     return matchSearch && matchStatus;
   }).toList();
+
+  // ── Navigation (unchanged) ─────────────────────────────────────────────────
 
   void _openTrip(Trip trip) {
     Navigator.of(context).push(
@@ -77,8 +82,9 @@ class _TripsListScreenState extends State<TripsListScreen> {
         ),
       ),
     );
-    // Provider notifies ListenableBuilder automatically after update.
   }
+
+  // ── Build ──────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -98,6 +104,7 @@ class _TripsListScreenState extends State<TripsListScreen> {
       body: ListenableBuilder(
         listenable: _provider,
         builder: (context, _) {
+          // Loading state
           if (_provider.isLoading && _provider.trips.isEmpty) {
             return const Center(
               child: CircularProgressIndicator(
@@ -107,6 +114,7 @@ class _TripsListScreenState extends State<TripsListScreen> {
             );
           }
 
+          // Error state
           if (_provider.error != null && _provider.trips.isEmpty) {
             return Center(
               child: Column(
@@ -119,9 +127,11 @@ class _TripsListScreenState extends State<TripsListScreen> {
                   const SizedBox(height: AppSpacing.base),
                   GestureDetector(
                     onTap: _provider.reload,
-                    child: Text('Retry',
-                        style: AppTextStyles.labelMedium
-                            .copyWith(color: AppColors.accent)),
+                    child: Text(
+                      'Retry',
+                      style: AppTextStyles.labelMedium
+                          .copyWith(color: AppColors.accent),
+                    ),
                   ),
                 ],
               ),
@@ -129,67 +139,70 @@ class _TripsListScreenState extends State<TripsListScreen> {
           }
 
           return Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: hPad,
-              vertical: AppSpacing.pagePaddingV,
+            padding: EdgeInsets.fromLTRB(
+              hPad,
+              AppSpacing.pagePaddingV,
+              hPad,
+              0,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // ── Search + filter bar ──────────────────────────────────
                 _SearchAndFilters(
                   search: _search,
                   onSearchChanged: (v) => setState(() => _search = v),
                   filterStatus: _filterStatus,
                   onFilterChanged: (s) => setState(() => _filterStatus = s),
                 ),
-                const SizedBox(height: AppSpacing.lg),
+                const SizedBox(height: 20),
+
+                // ── Trip card grid ────────────────────────────────────────
                 Expanded(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius:
-                          BorderRadius.circular(AppSpacing.cardRadius),
-                      border: Border.all(color: AppColors.border),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: AppColors.shadow,
-                          blurRadius: 4,
-                          offset: Offset(0, 1),
+                  child: _filtered.isEmpty
+                      ? EmptyState(
+                          icon: Icons.flight_takeoff_rounded,
+                          title: 'No trips found',
+                          subtitle: _search.isNotEmpty
+                              ? 'Try adjusting your search or filters.'
+                              : 'Create your first trip to get started.',
+                          actionLabel: _search.isEmpty ? 'Create Trip' : null,
+                          onAction: _openCreateTrip,
+                        )
+                      : LayoutBuilder(
+                          builder: (context, constraints) {
+                            final cols =
+                                constraints.maxWidth > 600 ? 2 : 1;
+                            final spacing = 20.0;
+                            final cardWidth = (constraints.maxWidth -
+                                    (cols - 1) * spacing) /
+                                cols;
+                            const cardHeight = 256.0;
+                            return GridView.builder(
+                              padding: const EdgeInsets.only(
+                                  bottom: AppSpacing.massive),
+                              gridDelegate:
+                                  SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: cols,
+                                mainAxisSpacing: spacing,
+                                crossAxisSpacing: spacing,
+                                childAspectRatio: cardWidth / cardHeight,
+                              ),
+                              itemCount: _filtered.length,
+                              itemBuilder: (_, i) {
+                                final trip = _filtered[i];
+                                return TripCard(
+                                  key: ValueKey(trip.id),
+                                  trip: trip,
+                                  gradientIndex:
+                                      trip.id.hashCode.abs() % 6,
+                                  onTap: () => _openTrip(trip),
+                                  onEdit: () => _openEditTrip(trip),
+                                );
+                              },
+                            );
+                          },
                         ),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        const TripTableHeader(),
-                        const Divider(height: 1, color: AppColors.divider),
-                        Expanded(
-                          child: _filtered.isEmpty
-                              ? EmptyState(
-                                  icon: Icons.flight_takeoff_rounded,
-                                  title: 'No trips found',
-                                  subtitle: _search.isNotEmpty
-                                      ? 'Try adjusting your search or filters.'
-                                      : 'Create your first trip to get started.',
-                                  actionLabel:
-                                      _search.isEmpty ? 'Create Trip' : null,
-                                  onAction: _openCreateTrip,
-                                )
-                              : ListView.separated(
-                                  itemCount: _filtered.length,
-                                  separatorBuilder: (context, i) => const Divider(
-                                    height: 1,
-                                    color: AppColors.divider,
-                                  ),
-                                  itemBuilder: (_, i) => TripRow(
-                                    trip: _filtered[i],
-                                    onTap: () => _openTrip(_filtered[i]),
-                                    onEdit: () => _openEditTrip(_filtered[i]),
-                                  ),
-                                ),
-                        ),
-                      ],
-                    ),
-                  ),
                 ),
               ],
             ),
@@ -200,7 +213,7 @@ class _TripsListScreenState extends State<TripsListScreen> {
   }
 }
 
-// ── Search + filter bar ────────────────────────────────────────────────────────
+// ── Search + filter bar ───────────────────────────────────────────────────────
 
 class _SearchAndFilters extends StatelessWidget {
   final String search;
@@ -217,57 +230,68 @@ class _SearchAndFilters extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      spacing: AppSpacing.sm,
-      runSpacing: AppSpacing.sm,
-      crossAxisAlignment: WrapCrossAlignment.center,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(
-          width: 260,
-          height: 38,
-          child: TextField(
-            onChanged: onSearchChanged,
-            style: AppTextStyles.bodyMedium,
-            decoration: InputDecoration(
-              hintText: 'Search trips…',
-              hintStyle: AppTextStyles.bodySmall,
-              prefixIcon: const Icon(
-                Icons.search_rounded,
-                size: 18,
-                color: AppColors.textMuted,
-              ),
-              filled: true,
-              fillColor: AppColors.surface,
-              contentPadding: const EdgeInsets.symmetric(
-                vertical: 0,
-                horizontal: AppSpacing.sm,
-              ),
-              border: OutlineInputBorder(
-                borderRadius:
-                    BorderRadius.circular(AppSpacing.inputRadius),
-                borderSide: const BorderSide(color: AppColors.border),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius:
-                    BorderRadius.circular(AppSpacing.inputRadius),
-                borderSide: const BorderSide(color: AppColors.border),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius:
-                    BorderRadius.circular(AppSpacing.inputRadius),
-                borderSide: const BorderSide(
-                    color: AppColors.accent, width: 1.5),
-              ),
+        // Search bar — 48px tall, radius 14
+        TextField(
+          onChanged: onSearchChanged,
+          style: AppTextStyles.bodyMedium,
+          decoration: InputDecoration(
+            hintText: 'Search trips…',
+            hintStyle: AppTextStyles.bodySmall,
+            prefixIcon: const Icon(
+              Icons.search_rounded,
+              size: 18,
+              color: AppColors.textMuted,
+            ),
+            filled: true,
+            fillColor: AppColors.surface,
+            contentPadding: const EdgeInsets.symmetric(
+              vertical: 14,
+              horizontal: AppSpacing.sm,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(color: AppColors.border),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(color: AppColors.border),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide:
+                  const BorderSide(color: AppColors.accent, width: 1.5),
             ),
           ),
         ),
-        ...[null, TripStatus.planning, TripStatus.confirmed,
-            TripStatus.inProgress, TripStatus.completed, TripStatus.cancelled]
-            .map((status) => _FilterChip(
+        const SizedBox(height: 12),
+        // Filter chips — horizontally scrollable on all screen sizes
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              null,
+              TripStatus.planning,
+              TripStatus.confirmed,
+              TripStatus.inProgress,
+              TripStatus.completed,
+              TripStatus.cancelled,
+            ].asMap().entries.map((entry) {
+              final i = entry.key;
+              final status = entry.value;
+              return Padding(
+                padding: EdgeInsets.only(right: i < 5 ? 8 : 0),
+                child: _FilterChip(
                   label: status == null ? 'All' : status.label,
                   selected: filterStatus == status,
                   onTap: () => onFilterChanged(status),
-                )),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
       ],
     );
   }
@@ -289,22 +313,31 @@ class _FilterChip extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 120),
-        padding:
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
           color: selected ? AppColors.accent : AppColors.surface,
-          borderRadius:
-              BorderRadius.circular(AppSpacing.chipRadius),
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(
-              color: selected ? AppColors.accent : AppColors.border),
+            color: selected ? AppColors.accent : AppColors.border,
+          ),
+          boxShadow: selected
+              ? [
+                  BoxShadow(
+                    color: AppColors.accent.withAlpha(40),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
         ),
         child: Text(
           label,
-          style: AppTextStyles.labelMedium.copyWith(
+          style: GoogleFonts.inter(
+            fontSize: 12,
+            fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
             color: selected ? Colors.white : AppColors.textSecondary,
-            fontWeight:
-                selected ? FontWeight.w600 : FontWeight.w500,
+            height: 1.3,
           ),
         ),
       ),
@@ -312,7 +345,7 @@ class _FilterChip extends StatelessWidget {
   }
 }
 
-// ── Create trip button ─────────────────────────────────────────────────────────
+// ── Create trip button ────────────────────────────────────────────────────────
 
 class _CreateTripButton extends StatelessWidget {
   final VoidCallback onTap;
@@ -327,19 +360,19 @@ class _CreateTripButton extends StatelessWidget {
             horizontal: AppSpacing.base, vertical: 8),
         decoration: BoxDecoration(
           color: AppColors.accent,
-          borderRadius:
-              BorderRadius.circular(AppSpacing.buttonRadius),
+          borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.add, size: 16, color: Colors.white),
+            const Icon(Icons.add, size: 15, color: Colors.white),
             const SizedBox(width: 6),
             Text(
               'Create Trip',
               style: AppTextStyles.bodySmall.copyWith(
                 color: Colors.white,
                 fontWeight: FontWeight.w600,
+                fontSize: 13,
               ),
             ),
           ],
