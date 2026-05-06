@@ -140,8 +140,10 @@ class _ViewerState extends State<_Viewer> {
 // ── Single page ───────────────────────────────────────────────────────────────
 
 Map<String, String> _storageHeaders() {
-  final client = Supabase.instance.client;
-  final token = client.auth.currentSession?.accessToken ?? client.supabaseKey;
+  const anonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
+  final token = Supabase.instance.client.auth.currentSession?.accessToken
+      ?? (anonKey.isNotEmpty ? anonKey : null);
+  if (token == null) return {};
   return {'Authorization': 'Bearer $token'};
 }
 
