@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
@@ -12,8 +13,52 @@ import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/user_avatar.dart';
 import '../providers/task_center_provider.dart';
 
+// ── Shared helpers (file-private) ─────────────────────────────────────────────
+
+const _kCardRadius = 16.0;
+
+bool _isTerminal(TaskStatus s) =>
+    s == TaskStatus.confirmed || s == TaskStatus.cancelled;
+
+bool _isOverdue(Task t) =>
+    t.dueDate != null &&
+    t.dueDate!.isBefore(DateTime.now()) &&
+    !_isTerminal(t.status);
+
+/// 4px accent bar colour — drives at-a-glance status scanning.
+Color _accentColor(TaskStatus status, bool isOverdue) {
+  if (isOverdue) return const Color(0xFFEF4444);
+  switch (status) {
+    case TaskStatus.notStarted:     return const Color(0xFFD1D5DB);
+    case TaskStatus.researching:    return const Color(0xFF3B82F6);
+    case TaskStatus.awaitingReply:  return const Color(0xFFF59E0B);
+    case TaskStatus.readyForReview: return const Color(0xFF8B5CF6);
+    case TaskStatus.approved:       return const Color(0xFF059669);
+    case TaskStatus.sentToClient:   return const Color(0xFFC9A96E);
+    case TaskStatus.confirmed:      return const Color(0xFF10B981);
+    case TaskStatus.cancelled:      return const Color(0xFF9CA3AF);
+  }
+}
+
+/// Human-readable operational state — more meaningful than raw status labels.
+String _operationalLabel(TaskStatus status, bool isOverdue) {
+  if (isOverdue) return 'Overdue';
+  switch (status) {
+    case TaskStatus.notStarted:     return 'Not started';
+    case TaskStatus.researching:    return 'In research';
+    case TaskStatus.awaitingReply:  return 'Waiting on supplier';
+    case TaskStatus.readyForReview: return 'Ready for review';
+    case TaskStatus.approved:       return 'Approved';
+    case TaskStatus.sentToClient:   return 'Sent to client';
+    case TaskStatus.confirmed:      return 'Confirmed';
+    case TaskStatus.cancelled:      return 'Cancelled';
+  }
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
-// TaskCenterScreen — global task view, replaces the Tasks placeholder tab.
+// TaskCenterScreen
+// Future architecture: add Kanban / Timeline / Calendar tabs here by extending
+// _tabLabels and adding corresponding views inside TabBarView.
 // ─────────────────────────────────────────────────────────────────────────────
 
 class TaskCenterScreen extends StatefulWidget {
@@ -53,6 +98,7 @@ class _TaskCenterScreenState extends State<TaskCenterScreen>
     super.dispose();
   }
 
+  // Navigation unchanged — preserves routing to TripBoardScreen with task focus
   void _openTask(Task task) {
     final trip = _provider.tripsById[task.tripId];
     if (trip == null) return;
@@ -66,9 +112,8 @@ class _TaskCenterScreenState extends State<TaskCenterScreen>
   @override
   Widget build(BuildContext context) {
     final isMobile = Responsive.isMobile(context);
-    final hPad = isMobile
-        ? AppSpacing.pagePaddingHMobile
-        : AppSpacing.pagePaddingH;
+    final hPad =
+        isMobile ? AppSpacing.pagePaddingHMobile : AppSpacing.pagePaddingH;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -81,15 +126,19 @@ class _TaskCenterScreenState extends State<TaskCenterScreen>
         listenable: _provider,
         builder: (context, _) => Column(
           children: [
+            // ── Search + filter toolbar ─────────────────────────────────
             _SearchFilterBar(
               provider: _provider,
               searchCtrl: _searchCtrl,
               hPad: hPad,
             ),
+            // ── Tab bar ─────────────────────────────────────────────────
             _TaskTabBar(
               controller: _tabController,
               overdueCount: _provider.overdueTasks.length,
+              hPad: hPad,
             ),
+            // ── Tab content ─────────────────────────────────────────────
             Expanded(
               child: _provider.isLoading
                   ? const Center(
@@ -99,10 +148,22 @@ class _TaskCenterScreenState extends State<TaskCenterScreen>
                       controller: _tabController,
                       physics: const NeverScrollableScrollPhysics(),
                       children: [
-                        _MyTasksView(provider: _provider, hPad: hPad, onTap: _openTask),
-                        _OverdueView(provider: _provider, hPad: hPad, onTap: _openTask),
-                        _ByTripView(provider: _provider, hPad: hPad, onTap: _openTask),
-                        _ByStatusView(provider: _provider, hPad: hPad, onTap: _openTask),
+                        _MyTasksView(
+                            provider: _provider,
+                            hPad: hPad,
+                            onTap: _openTask),
+                        _OverdueView(
+                            provider: _provider,
+                            hPad: hPad,
+                            onTap: _openTask),
+                        _ByTripView(
+                            provider: _provider,
+                            hPad: hPad,
+                            onTap: _openTask),
+                        _ByStatusView(
+                            provider: _provider,
+                            hPad: hPad,
+                            onTap: _openTask),
                       ],
                     ),
             ),
@@ -132,14 +193,14 @@ class _SearchFilterBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       color: AppColors.surface,
-      padding: EdgeInsets.fromLTRB(hPad, AppSpacing.sm, hPad, AppSpacing.sm),
+      padding: EdgeInsets.fromLTRB(hPad, 14, hPad, 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Search field
+          // Search bar — 48px, radius 14, white fill
           TextField(
             controller: searchCtrl,
-            style: AppTextStyles.bodySmall.copyWith(color: AppColors.textPrimary),
+            style: AppTextStyles.bodyMedium,
             decoration: InputDecoration(
               hintText: 'Search tasks or trips…',
               hintStyle: AppTextStyles.bodySmall,
@@ -155,28 +216,27 @@ class _SearchFilterBar extends StatelessWidget {
                           size: 16, color: AppColors.textMuted),
                     )
                   : null,
-              isDense: true,
               filled: true,
-              fillColor: AppColors.surfaceAlt,
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              fillColor: AppColors.surface,
+              contentPadding: const EdgeInsets.symmetric(
+                  vertical: 14, horizontal: 12),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(14),
                 borderSide: const BorderSide(color: AppColors.border),
               ),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(14),
                 borderSide: const BorderSide(color: AppColors.border),
               ),
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(14),
                 borderSide:
                     const BorderSide(color: AppColors.accent, width: 1.5),
               ),
             ),
           ),
-          const SizedBox(height: AppSpacing.sm),
-          // Filter chips
+          const SizedBox(height: 10),
+          // Filter chips — horizontal scroll, PopupMenuButton wrappers intact
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
@@ -199,7 +259,7 @@ class _SearchFilterBar extends StatelessWidget {
                     active: provider.filterStatus != null,
                   ),
                 ),
-                const SizedBox(width: AppSpacing.xs),
+                const SizedBox(width: 8),
 
                 // Priority filter
                 PopupMenuButton<TaskPriority?>(
@@ -220,7 +280,7 @@ class _SearchFilterBar extends StatelessWidget {
                     active: provider.filterPriority != null,
                   ),
                 ),
-                const SizedBox(width: AppSpacing.xs),
+                const SizedBox(width: 8),
 
                 // Trip filter
                 PopupMenuButton<String?>(
@@ -243,7 +303,7 @@ class _SearchFilterBar extends StatelessWidget {
                     active: provider.filterTripId != null,
                   ),
                 ),
-                const SizedBox(width: AppSpacing.xs),
+                const SizedBox(width: 8),
 
                 // Due date filter
                 PopupMenuButton<DueDateFilter?>(
@@ -266,7 +326,7 @@ class _SearchFilterBar extends StatelessWidget {
                 ),
 
                 if (provider.hasActiveFilters) ...[
-                  const SizedBox(width: AppSpacing.sm),
+                  const SizedBox(width: 12),
                   GestureDetector(
                     onTap: provider.clearFilters,
                     child: Text(
@@ -292,10 +352,11 @@ class _FilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 140),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(
-        color: active ? AppColors.accentFaint : AppColors.surfaceAlt,
+        color: active ? AppColors.accentFaint : AppColors.surface,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: active ? AppColors.accent : AppColors.border,
@@ -306,14 +367,17 @@ class _FilterChip extends StatelessWidget {
         children: [
           Text(
             label,
-            style: AppTextStyles.labelMedium.copyWith(
-              color: active ? AppColors.accent : AppColors.textSecondary,
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              fontWeight: active ? FontWeight.w600 : FontWeight.w500,
+              color: active ? AppColors.accentDark : AppColors.textSecondary,
+              height: 1.3,
             ),
           ),
           const SizedBox(width: 4),
           Icon(
             Icons.expand_more_rounded,
-            size: 14,
+            size: 13,
             color: active ? AppColors.accent : AppColors.textMuted,
           ),
         ],
@@ -323,13 +387,19 @@ class _FilterChip extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Tab bar (with overdue count badge)
+// Tab bar with overdue badge
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _TaskTabBar extends StatelessWidget {
   final TabController controller;
   final int overdueCount;
-  const _TaskTabBar({required this.controller, required this.overdueCount});
+  final double hPad;
+
+  const _TaskTabBar({
+    required this.controller,
+    required this.overdueCount,
+    required this.hPad,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -342,20 +412,26 @@ class _TaskTabBar extends StatelessWidget {
             controller: controller,
             isScrollable: true,
             tabAlignment: TabAlignment.start,
-            labelStyle: AppTextStyles.bodySmall
-                .copyWith(fontWeight: FontWeight.w600),
-            unselectedLabelStyle: AppTextStyles.bodySmall,
+            labelStyle: GoogleFonts.inter(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              height: 1.3,
+            ),
+            unselectedLabelStyle: GoogleFonts.inter(
+              fontSize: 13,
+              fontWeight: FontWeight.w400,
+              height: 1.3,
+            ),
             labelColor: AppColors.accent,
             unselectedLabelColor: AppColors.textSecondary,
             indicatorColor: AppColors.accent,
             indicatorWeight: 2,
             dividerColor: Colors.transparent,
-            padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.pagePaddingH),
+            padding: EdgeInsets.symmetric(horizontal: hPad),
             tabs: [
-              const Tab(text: 'My Tasks', height: 42),
+              const Tab(text: 'My Tasks', height: 44),
               Tab(
-                height: 42,
+                height: 44,
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -364,24 +440,40 @@ class _TaskTabBar extends StatelessWidget {
                       const SizedBox(width: 6),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 1),
+                            horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
                           color: const Color(0xFFFEE2E2),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Text(
                           '$overdueCount',
-                          style: AppTextStyles.labelSmall
-                              .copyWith(color: const Color(0xFFEF4444)),
+                          style: GoogleFonts.inter(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFFEF4444),
+                            height: 1.2,
+                          ),
                         ),
                       ),
                     ],
                   ],
                 ),
               ),
-              const Tab(text: 'By Trip', height: 42),
-              const Tab(text: 'By Status', height: 42),
+              const Tab(text: 'By Trip', height: 44),
+              const Tab(text: 'By Status', height: 44),
             ],
+          ),
+          // Subtle bottom shadow separating header from content
+          Container(
+            height: 1,
+            decoration: const BoxDecoration(
+              boxShadow: [
+                BoxShadow(
+                    color: Color(0x06000000),
+                    blurRadius: 6,
+                    offset: Offset(0, 3)),
+              ],
+            ),
           ),
         ],
       ),
@@ -390,13 +482,140 @@ class _TaskTabBar extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// My Tasks view — tasks assigned to current user
+// Today Focus section — compact urgency summary at top of My Tasks
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _TodayFocusSection extends StatelessWidget {
+  final List<Task> tasks;
+  final void Function(Task) onTap;
+
+  const _TodayFocusSection({required this.tasks, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFFDE8D0)),
+        boxShadow: const [
+          BoxShadow(
+              color: Color(0x05000000), blurRadius: 8, offset: Offset(0, 2)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(
+            children: [
+              const Icon(Icons.bolt_rounded,
+                  size: 14, color: Color(0xFFF59E0B)),
+              const SizedBox(width: 6),
+              Text(
+                'Today Focus',
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF374151),
+                  height: 1.3,
+                ),
+              ),
+              const Spacer(),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFEF3C7),
+                  borderRadius: BorderRadius.circular(99),
+                ),
+                child: Text(
+                  '${tasks.length} urgent',
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFFB45309),
+                    height: 1.2,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          // Task rows
+          ...tasks.map((t) => _FocusRow(task: t, onTap: () => onTap(t))),
+        ],
+      ),
+    );
+  }
+}
+
+class _FocusRow extends StatelessWidget {
+  final Task task;
+  final VoidCallback onTap;
+  const _FocusRow({required this.task, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final overdue = _isOverdue(task);
+    final dueText = overdue ? 'Overdue' : 'Due Today';
+    final dueColor = overdue
+        ? const Color(0xFFEF4444)
+        : const Color(0xFFF59E0B);
+
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 9),
+        child: Row(
+          children: [
+            Container(
+              width: 5,
+              height: 5,
+              decoration:
+                  BoxDecoration(color: dueColor, shape: BoxShape.circle),
+            ),
+            const SizedBox(width: 9),
+            Expanded(
+              child: Text(
+                task.name,
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  color: const Color(0xFF374151),
+                  height: 1.3,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              dueText,
+              style: GoogleFonts.inter(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: dueColor,
+                height: 1.2,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// My Tasks view
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _MyTasksView extends StatelessWidget {
   final TaskCenterProvider provider;
   final double hPad;
   final void Function(Task) onTap;
+
   const _MyTasksView(
       {required this.provider, required this.hPad, required this.onTap});
 
@@ -410,27 +629,51 @@ class _MyTasksView extends StatelessWidget {
         subtitle: 'Tasks assigned to you across all trips will appear here.',
       );
     }
-    return ListView.separated(
-      padding: EdgeInsets.symmetric(horizontal: hPad, vertical: AppSpacing.base),
-      itemCount: tasks.length,
-      separatorBuilder: (context, index) => const SizedBox(height: AppSpacing.xs),
-      itemBuilder: (_, i) => _TaskRow(
-        task: tasks[i],
-        tripName: provider.tripsById[tasks[i].tripId]?.name,
-        onTap: () => onTap(tasks[i]),
-      ),
+
+    // Today Focus: overdue OR due today, non-terminal, up to 5
+    final now = DateTime.now();
+    final tomorrowStart =
+        DateTime(now.year, now.month, now.day + 1);
+    final focusTasks = tasks
+        .where((t) =>
+            t.dueDate != null &&
+            t.dueDate!.isBefore(tomorrowStart) &&
+            !_isTerminal(t.status))
+        .take(5)
+        .toList();
+
+    return ListView(
+      padding:
+          EdgeInsets.symmetric(horizontal: hPad, vertical: AppSpacing.base),
+      children: [
+        if (focusTasks.isNotEmpty) ...[
+          _TodayFocusSection(tasks: focusTasks, onTap: onTap),
+          const SizedBox(height: 16),
+        ],
+        ...tasks.asMap().entries.map((e) => Padding(
+              padding:
+                  EdgeInsets.only(bottom: e.key < tasks.length - 1 ? 12 : 0),
+              child: _TaskCard(
+                task: e.value,
+                tripName: provider.tripsById[e.value.tripId]?.name,
+                onTap: () => onTap(e.value),
+              ),
+            )),
+        const SizedBox(height: AppSpacing.massive),
+      ],
     );
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Overdue view — all overdue tasks, grouped by trip
+// Overdue view — grouped by trip
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _OverdueView extends StatelessWidget {
   final TaskCenterProvider provider;
   final double hPad;
   final void Function(Task) onTap;
+
   const _OverdueView(
       {required this.provider, required this.hPad, required this.onTap});
 
@@ -445,7 +688,7 @@ class _OverdueView extends StatelessWidget {
       );
     }
 
-    // Group by trip
+    // Group by trip — unchanged logic
     final grouped = <String, List<Task>>{};
     for (final t in tasks) {
       grouped.putIfAbsent(t.tripId ?? '__no_trip__', () => []).add(t);
@@ -456,11 +699,14 @@ class _OverdueView extends StatelessWidget {
       final tripName =
           provider.tripsById[tripId]?.name ?? 'Unknown Trip';
       items.add(_SectionHeader(label: tripName, count: tripTasks.length));
-      items.addAll(tripTasks.map((t) => _TaskRow(
-            task: t,
-            tripName: tripName,
-            showTrip: false,
-            onTap: () => onTap(t),
+      items.addAll(tripTasks.map((t) => Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: _TaskCard(
+              task: t,
+              tripName: tripName,
+              showTrip: false,
+              onTap: () => onTap(t),
+            ),
           )));
       items.add(const SizedBox(height: AppSpacing.md));
     });
@@ -468,7 +714,10 @@ class _OverdueView extends StatelessWidget {
     return ListView(
       padding:
           EdgeInsets.symmetric(horizontal: hPad, vertical: AppSpacing.base),
-      children: items,
+      children: [
+        ...items,
+        const SizedBox(height: AppSpacing.massive),
+      ],
     );
   }
 }
@@ -481,6 +730,7 @@ class _ByTripView extends StatelessWidget {
   final TaskCenterProvider provider;
   final double hPad;
   final void Function(Task) onTap;
+
   const _ByTripView(
       {required this.provider, required this.hPad, required this.onTap});
 
@@ -500,11 +750,14 @@ class _ByTripView extends StatelessWidget {
       final tripName =
           provider.tripsById[tripId]?.name ?? 'Unassigned';
       items.add(_SectionHeader(label: tripName, count: tasks.length));
-      items.addAll(tasks.map((t) => _TaskRow(
-            task: t,
-            tripName: tripName,
-            showTrip: false,
-            onTap: () => onTap(t),
+      items.addAll(tasks.map((t) => Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: _TaskCard(
+              task: t,
+              tripName: tripName,
+              showTrip: false,
+              onTap: () => onTap(t),
+            ),
           )));
       items.add(const SizedBox(height: AppSpacing.md));
     });
@@ -512,7 +765,10 @@ class _ByTripView extends StatelessWidget {
     return ListView(
       padding:
           EdgeInsets.symmetric(horizontal: hPad, vertical: AppSpacing.base),
-      children: items,
+      children: [
+        ...items,
+        const SizedBox(height: AppSpacing.massive),
+      ],
     );
   }
 }
@@ -525,6 +781,7 @@ class _ByStatusView extends StatelessWidget {
   final TaskCenterProvider provider;
   final double hPad;
   final void Function(Task) onTap;
+
   const _ByStatusView(
       {required this.provider, required this.hPad, required this.onTap});
 
@@ -544,12 +801,15 @@ class _ByStatusView extends StatelessWidget {
       items.add(_SectionHeader(
         label: status.label,
         count: tasks.length,
-        dotColor: _statusColor(status),
+        dotColor: _accentColor(status, false),
       ));
-      items.addAll(tasks.map((t) => _TaskRow(
-            task: t,
-            tripName: provider.tripsById[t.tripId]?.name,
-            onTap: () => onTap(t),
+      items.addAll(tasks.map((t) => Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: _TaskCard(
+              task: t,
+              tripName: provider.tripsById[t.tripId]?.name,
+              onTap: () => onTap(t),
+            ),
           )));
       items.add(const SizedBox(height: AppSpacing.md));
     });
@@ -557,65 +817,68 @@ class _ByStatusView extends StatelessWidget {
     return ListView(
       padding:
           EdgeInsets.symmetric(horizontal: hPad, vertical: AppSpacing.base),
-      children: items,
+      children: [
+        ...items,
+        const SizedBox(height: AppSpacing.massive),
+      ],
     );
-  }
-
-  Color _statusColor(TaskStatus s) {
-    switch (s) {
-      case TaskStatus.notStarted:    return AppColors.statusNotStartedText;
-      case TaskStatus.researching:   return AppColors.statusInProgressText;
-      case TaskStatus.awaitingReply: return AppColors.statusWaitingText;
-      case TaskStatus.readyForReview:return AppColors.statusInProgressText;
-      case TaskStatus.approved:      return AppColors.statusDoneText;
-      case TaskStatus.sentToClient:  return AppColors.statusInProgressText;
-      case TaskStatus.confirmed:     return AppColors.statusDoneText;
-      case TaskStatus.cancelled:     return AppColors.statusBlockedText;
-    }
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// _SectionHeader — group label with count badge
+// Section header — group label with count badge
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _SectionHeader extends StatelessWidget {
   final String label;
   final int count;
   final Color? dotColor;
+
   const _SectionHeader(
       {required this.label, required this.count, this.dotColor});
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(
-          bottom: AppSpacing.xs, top: AppSpacing.xs),
+      padding: const EdgeInsets.only(bottom: 10, top: 8),
       child: Row(
         children: [
           if (dotColor != null) ...[
             Container(
-              width: 8,
-              height: 8,
-              decoration: BoxDecoration(
-                  color: dotColor, shape: BoxShape.circle),
+              width: 7,
+              height: 7,
+              decoration:
+                  BoxDecoration(color: dotColor, shape: BoxShape.circle),
             ),
-            const SizedBox(width: AppSpacing.xs),
+            const SizedBox(width: 8),
           ],
-          Text(label,
-              style: AppTextStyles.labelMedium
-                  .copyWith(color: AppColors.textSecondary)),
-          const SizedBox(width: AppSpacing.xs),
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF6B7280),
+              letterSpacing: 0.2,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(width: 8),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
             decoration: BoxDecoration(
               color: AppColors.surfaceAlt,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppColors.border),
+              borderRadius: BorderRadius.circular(99),
             ),
-            child: Text('$count',
-                style: AppTextStyles.labelSmall
-                    .copyWith(color: AppColors.textMuted)),
+            child: Text(
+              '$count',
+              style: GoogleFonts.inter(
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                color: const Color(0xFF9CA3AF),
+                height: 1.2,
+              ),
+            ),
           ),
         ],
       ),
@@ -624,16 +887,19 @@ class _SectionHeader extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// _TaskRow — 2-line task list item
+// Task card — replaces _TaskRow
+// Architecture note: entire card is tappable. Left accent bar visually encodes
+// status for instant scanning. Designed to be extensible for swipe gestures
+// and inline status editing in future iterations.
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _TaskRow extends StatelessWidget {
+class _TaskCard extends StatefulWidget {
   final Task task;
   final String? tripName;
   final bool showTrip;
   final VoidCallback onTap;
 
-  const _TaskRow({
+  const _TaskCard({
     required this.task,
     required this.onTap,
     this.tripName,
@@ -641,157 +907,244 @@ class _TaskRow extends StatelessWidget {
   });
 
   @override
+  State<_TaskCard> createState() => _TaskCardState();
+}
+
+class _TaskCardState extends State<_TaskCard> {
+  bool _hovered = false;
+
+  @override
   Widget build(BuildContext context) {
-    final isOverdue = task.dueDate != null &&
-        task.dueDate!.isBefore(DateTime.now()) &&
-        !_isTerminal(task.status);
+    final task = widget.task;
+    final overdue = _isOverdue(task);
+    final accent = _accentColor(task.status, overdue);
 
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.md, vertical: AppSpacing.sm),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: AppColors.borderSubtle),
-        ),
-        child: Row(
-          children: [
-            // Status dot
-            Container(
-              width: 8,
-              height: 8,
-              margin: const EdgeInsets.only(top: 2, right: AppSpacing.sm),
-              decoration: BoxDecoration(
-                color: _statusColor(task.status),
-                shape: BoxShape.circle,
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(_kCardRadius),
+            boxShadow: [
+              BoxShadow(
+                color: Color(_hovered ? 0x0E000000 : 0x07000000),
+                blurRadius: _hovered ? 16 : 8,
+                offset: Offset(0, _hovered ? 4 : 2),
               ),
-            ),
-
-            // Title + meta
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    task.name,
-                    style: AppTextStyles.bodySmall
-                        .copyWith(color: AppColors.textPrimary),
-                    overflow: TextOverflow.ellipsis,
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(_kCardRadius),
+            child: Stack(
+              children: [
+                // Main content — defines card height
+                Padding(
+                  padding:
+                      const EdgeInsets.fromLTRB(18, 14, 14, 14),
+                  child: _CardContent(
+                    task: task,
+                    tripName: widget.tripName,
+                    showTrip: widget.showTrip,
+                    isOverdue: overdue,
                   ),
-                  const SizedBox(height: 2),
-                  _MetaLine(
-                    tripName: showTrip ? tripName : null,
-                    dueDate: task.dueDate,
-                    isOverdue: isOverdue,
-                    priority: task.priority,
+                ),
+                // Left accent bar — stretches to full card height via Positioned
+                Positioned(
+                  left: 0,
+                  top: 0,
+                  bottom: 0,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    width: 4,
+                    color: accent,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-
-            const SizedBox(width: AppSpacing.sm),
-
-            // Assignee avatar
-            if (task.assignedTo != null)
-              UserAvatar(user: task.assignedTo!, size: 22),
-
-            const SizedBox(width: AppSpacing.xs),
-            Icon(Icons.chevron_right_rounded,
-                size: 15, color: AppColors.textMuted),
-          ],
+          ),
         ),
       ),
     );
   }
-
-  bool _isTerminal(TaskStatus s) =>
-      s == TaskStatus.confirmed || s == TaskStatus.cancelled;
-
-  Color _statusColor(TaskStatus s) {
-    switch (s) {
-      case TaskStatus.notStarted:    return AppColors.statusNotStartedText;
-      case TaskStatus.researching:   return AppColors.statusInProgressText;
-      case TaskStatus.awaitingReply: return AppColors.statusWaitingText;
-      case TaskStatus.readyForReview:return AppColors.statusInProgressText;
-      case TaskStatus.approved:      return AppColors.statusDoneText;
-      case TaskStatus.sentToClient:  return AppColors.statusInProgressText;
-      case TaskStatus.confirmed:     return AppColors.statusDoneText;
-      case TaskStatus.cancelled:     return AppColors.statusBlockedText;
-    }
-  }
 }
 
-class _MetaLine extends StatelessWidget {
-  final String? tripName;
-  final DateTime? dueDate;
-  final bool isOverdue;
-  final TaskPriority priority;
+// ── Card content ──────────────────────────────────────────────────────────────
 
-  const _MetaLine({
-    this.tripName,
-    this.dueDate,
+class _CardContent extends StatelessWidget {
+  final Task task;
+  final String? tripName;
+  final bool showTrip;
+  final bool isOverdue;
+
+  const _CardContent({
+    required this.task,
     required this.isOverdue,
-    required this.priority,
+    this.tripName,
+    this.showTrip = true,
   });
 
   @override
   Widget build(BuildContext context) {
-    final parts = <String>[];
-    if (tripName != null && tripName!.isNotEmpty) parts.add(tripName!);
-    if (dueDate != null) {
-      final formatted = DateFormat('d MMM').format(dueDate!);
-      parts.add(isOverdue ? 'Due $formatted' : 'Due $formatted');
-    }
-
-    return Wrap(
-      spacing: AppSpacing.xs,
-      crossAxisAlignment: WrapCrossAlignment.center,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        if (parts.isNotEmpty)
+        // Title + assignee avatar
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Text(
+                task.name,
+                style: GoogleFonts.inter(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF111111),
+                  height: 1.3,
+                  letterSpacing: -0.1,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (task.assignedTo != null) ...[
+              const SizedBox(width: 10),
+              UserAvatar(user: task.assignedTo!, size: 28),
+            ],
+          ],
+        ),
+
+        // Trip name
+        if (showTrip && tripName != null && tripName!.isNotEmpty) ...[
+          const SizedBox(height: 4),
           Text(
-            parts.join(' · '),
-            style: AppTextStyles.labelSmall.copyWith(
-              color: isOverdue && dueDate != null
-                  ? AppColors.statusBlockedText
-                  : AppColors.textMuted,
+            tripName!,
+            style: GoogleFonts.inter(
+              fontSize: 13,
+              color: const Color(0xFF777777),
+              height: 1.3,
             ),
             overflow: TextOverflow.ellipsis,
           ),
-        _PriorityDot(priority: priority),
+        ],
+
+        const SizedBox(height: 8),
+
+        // Due date + priority chip row
+        Row(
+          children: [
+            if (task.dueDate != null) ...[
+              _DueLabel(dueDate: task.dueDate!, isOverdue: isOverdue),
+              const SizedBox(width: 8),
+              Container(
+                  width: 3,
+                  height: 3,
+                  decoration: const BoxDecoration(
+                      color: Color(0xFFD1D5DB), shape: BoxShape.circle)),
+              const SizedBox(width: 8),
+            ],
+            _PriorityPill(priority: task.priority),
+          ],
+        ),
+
+        const SizedBox(height: 5),
+
+        // Operational state label
+        Text(
+          _operationalLabel(task.status, isOverdue),
+          style: GoogleFonts.inter(
+            fontSize: 12,
+            color: const Color(0xFFABAFBB),
+            fontWeight: FontWeight.w400,
+            height: 1.3,
+          ),
+        ),
       ],
     );
   }
 }
 
-class _PriorityDot extends StatelessWidget {
-  final TaskPriority priority;
-  const _PriorityDot({required this.priority});
+// ── Due date label ────────────────────────────────────────────────────────────
+
+class _DueLabel extends StatelessWidget {
+  final DateTime dueDate;
+  final bool isOverdue;
+
+  const _DueLabel({required this.dueDate, required this.isOverdue});
 
   @override
   Widget build(BuildContext context) {
+    final text = _format(dueDate, isOverdue);
+    final isToday = text == 'Due Today';
+    final color = isOverdue
+        ? const Color(0xFFEF4444)
+        : isToday
+            ? const Color(0xFFF59E0B)
+            : const Color(0xFF9CA3AF);
+
+    return Text(
+      text,
+      style: GoogleFonts.inter(
+        fontSize: 12,
+        fontWeight:
+            (isOverdue || isToday) ? FontWeight.w600 : FontWeight.w400,
+        color: color,
+        height: 1.3,
+      ),
+    );
+  }
+
+  static String _format(DateTime d, bool overdue) {
+    if (overdue) return 'Overdue';
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final diff = d.difference(today).inDays;
+    if (diff == 0) return 'Due Today';
+    if (diff == 1) return 'Due Tomorrow';
+    return DateFormat('d MMM').format(d);
+  }
+}
+
+// ── Priority pill ─────────────────────────────────────────────────────────────
+
+class _PriorityPill extends StatelessWidget {
+  final TaskPriority priority;
+  const _PriorityPill({required this.priority});
+
+  @override
+  Widget build(BuildContext context) {
+    final (bg, fg) = _colors(priority);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: _color(priority).withAlpha(20),
-        borderRadius: BorderRadius.circular(4),
+        color: bg,
+        borderRadius: BorderRadius.circular(99),
       ),
       child: Text(
         priority.label,
-        style: AppTextStyles.labelSmall.copyWith(
-          color: _color(priority),
+        style: GoogleFonts.inter(
+          fontSize: 11,
           fontWeight: FontWeight.w600,
+          color: fg,
+          height: 1.2,
         ),
       ),
     );
   }
 
-  Color _color(TaskPriority p) {
+  static (Color, Color) _colors(TaskPriority p) {
     switch (p) {
-      case TaskPriority.high:   return const Color(0xFFEF4444);
-      case TaskPriority.medium: return const Color(0xFFF59E0B);
-      case TaskPriority.low:    return AppColors.textMuted;
+      case TaskPriority.low:
+        return (const Color(0xFFF3F4F6), const Color(0xFF9CA3AF));
+      case TaskPriority.medium:
+        return (const Color(0xFFFDF3DC), const Color(0xFFB45309));
+      case TaskPriority.high:
+        return (const Color(0xFFFEE2E2), const Color(0xFFDC2626));
     }
   }
 }
