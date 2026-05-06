@@ -59,8 +59,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
+      // Empty title — dashboard uses its own greeting section below
       appBar: AppHeader(
-        title: 'Dashboard',
+        title: '',
         showMenuButton: isMobile,
         onMenuTap: () => Scaffold.of(context).openDrawer(),
         actions: [
@@ -71,20 +72,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
         listenable: _provider,
         builder: (context, _) {
           return SingleChildScrollView(
-            padding: EdgeInsets.symmetric(
-              horizontal: hPad,
-              vertical: AppSpacing.pagePaddingV,
+            padding: EdgeInsets.fromLTRB(
+              hPad,
+              AppSpacing.xl,
+              hPad,
+              AppSpacing.massive,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _Greeting(userName: AppRepositories.instance?.currentAppUser?.name),
-                const SizedBox(height: AppSpacing.xl),
+                // ── Greeting ──────────────────────────────────────────────
+                _Greeting(
+                  userName:    AppRepositories.instance?.currentAppUser?.name,
+                  activeCount: _provider.activeTrips.length,
+                  taskCount:   _provider.myTasks.length,
+                ),
+                const SizedBox(height: AppSpacing.xxl),
 
+                // ── KPI grid (compact) ────────────────────────────────────
                 _StatGrid(provider: _provider, isDesktop: isDesktop),
                 const SizedBox(height: AppSpacing.xxl),
 
-                // ── Operational intelligence ────────────────────────────────
+                // ── Operational intelligence (conditional) ────────────────
                 if (_provider.alerts.isNotEmpty) ...[
                   IntelligenceSection(
                     alerts:       _provider.alerts,
@@ -95,6 +104,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   const SizedBox(height: AppSpacing.xxl),
                 ],
 
+                // ── Main content ──────────────────────────────────────────
                 if (_provider.isLoading && _provider.allTrips.isEmpty)
                   const Center(child: CircularProgressIndicator(
                     color: AppColors.accent, strokeWidth: 2,
@@ -107,18 +117,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         flex: 5,
                         child: Column(
                           children: [
-                            MyTasksSection(tasks: _provider.myTasks),
-                            const SizedBox(height: AppSpacing.xxl),
+                            // Trips first — emotional center
                             UpcomingTripsSection(
                               trips: _provider.upcomingTrips,
                               onTripTap: (t) => _openTrip(context, t),
                             ),
+                            const SizedBox(height: AppSpacing.xxl),
+                            MyTasksSection(tasks: _provider.myTasks),
                           ],
                         ),
                       ),
                       const SizedBox(width: AppSpacing.xl),
                       SizedBox(
-                        width: 320,
+                        width: 300,
                         child: TeamActivitySection(activity: _provider.teamActivity),
                       ),
                     ],
@@ -126,18 +137,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 else
                   Column(
                     children: [
-                      MyTasksSection(tasks: _provider.myTasks),
-                      const SizedBox(height: AppSpacing.xxl),
                       UpcomingTripsSection(
                         trips: _provider.upcomingTrips,
                         onTripTap: (t) => _openTrip(context, t),
                       ),
                       const SizedBox(height: AppSpacing.xxl),
+                      MyTasksSection(tasks: _provider.myTasks),
+                      const SizedBox(height: AppSpacing.xxl),
                       TeamActivitySection(activity: _provider.teamActivity),
                     ],
                   ),
-
-                const SizedBox(height: AppSpacing.massive),
               ],
             ),
           );
@@ -151,7 +160,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
 class _Greeting extends StatelessWidget {
   final String? userName;
-  const _Greeting({this.userName});
+  final int activeCount;
+  final int taskCount;
+
+  const _Greeting({
+    this.userName,
+    required this.activeCount,
+    required this.taskCount,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -159,14 +175,32 @@ class _Greeting extends StatelessWidget {
     final greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
     final first    = (userName ?? 'there').split(' ').first;
 
+    final parts = <String>[];
+    if (activeCount > 0) {
+      parts.add('$activeCount ${activeCount == 1 ? 'trip' : 'trips'} active today.');
+    }
+    if (taskCount > 0) {
+      parts.add('$taskCount ${taskCount == 1 ? 'task needs' : 'tasks need'} attention.');
+    }
+    final subtitle = parts.isNotEmpty ? parts.join('  ') : "Let's plan something great.";
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('$greeting, $first.', style: AppTextStyles.displayMedium),
-        const SizedBox(height: 4),
         Text(
-          "Here's what's happening today.",
-          style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+          '$greeting, $first.',
+          style: AppTextStyles.displayMedium.copyWith(
+            fontWeight: FontWeight.w500,
+            letterSpacing: -0.5,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          subtitle,
+          style: AppTextStyles.bodyMedium.copyWith(
+            color: AppColors.textSecondary,
+            height: 1.5,
+          ),
         ),
       ],
     );
@@ -187,46 +221,47 @@ class _StatGrid extends StatelessWidget {
         label:    'Active Trips',
         value:    '${provider.activeTrips.length}',
         icon:     Icons.flight_takeoff_rounded,
-        iconColor: const Color(0xFF6366F1),
-        iconBg:   const Color(0xFFEEF2FF),
+        iconColor: const Color(0xFFC9A96E),  // gold
+        iconBg:   const Color(0xFFFDF8F0),
         subtitle: 'in progress now',
       ),
       _StatData(
-        label:    'Tasks Due Today',
+        label:    'Due Today',
         value:    '${provider.tasksDueToday.length}',
         icon:     Icons.task_alt_rounded,
-        iconColor: const Color(0xFFF59E0B),
-        iconBg:   const Color(0xFFFEF3C7),
-        subtitle: 'assigned to you',
+        iconColor: const Color(0xFFEF4444),  // muted red
+        iconBg:   const Color(0xFFFEF2F2),
+        subtitle: 'tasks due today',
       ),
       _StatData(
         label:    'My Tasks',
         value:    '${provider.myTasks.length}',
         icon:     Icons.checklist_rounded,
-        iconColor: const Color(0xFFEC4899),
-        iconBg:   const Color(0xFFFCE7F3),
+        iconColor: const Color(0xFF3B82F6),  // blue
+        iconBg:   const Color(0xFFEFF6FF),
         subtitle: 'across all trips',
       ),
       _StatData(
-        label:    'Upcoming Departures',
+        label:    'Departures',
         value:    '${provider.upcomingDepartureCount}',
         icon:     Icons.luggage_rounded,
-        iconColor: const Color(0xFF10B981),
-        iconBg:   const Color(0xFFD1FAE5),
+        iconColor: const Color(0xFF10B981),  // muted green
+        iconBg:   const Color(0xFFECFDF5),
         subtitle: 'within 30 days',
       ),
     ];
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final cols = constraints.maxWidth > 700 ? 4 : 2;
+        final cols = constraints.maxWidth > 600 ? 4 : 2;
         return GridView.count(
           crossAxisCount: cols,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           mainAxisSpacing: AppSpacing.md,
           crossAxisSpacing: AppSpacing.md,
-          childAspectRatio: constraints.maxWidth > 700 ? 1.4 : 1.5,
+          // Taller aspect ratio = shorter cards (~35% height reduction)
+          childAspectRatio: constraints.maxWidth > 600 ? 2.0 : 1.8,
           children: stats.map((s) => StatCard(
             label:     s.label,
             value:     s.value,
@@ -275,13 +310,14 @@ class _NewTripButton extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.add, size: 16, color: Colors.white),
+            const Icon(Icons.add, size: 15, color: Colors.white),
             const SizedBox(width: 6),
             Text(
               'New Trip',
               style: AppTextStyles.bodySmall.copyWith(
                 color: Colors.white,
                 fontWeight: FontWeight.w600,
+                fontSize: 13,
               ),
             ),
           ],

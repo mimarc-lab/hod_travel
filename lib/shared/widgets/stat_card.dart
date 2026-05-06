@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_spacing.dart';
-import '../../core/constants/app_text_styles.dart';
 
+/// Compact KPI stat card — number-dominant, premium minimal style.
 class StatCard extends StatelessWidget {
   final String label;
   final String value;
@@ -24,48 +25,83 @@ class StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.base,
-        vertical: AppSpacing.md,
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.base,
+        AppSpacing.md,
+        AppSpacing.base,
+        AppSpacing.md,
       ),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
         border: Border.all(color: AppColors.border),
         boxShadow: const [
-          BoxShadow(color: AppColors.shadow, blurRadius: 4, offset: Offset(0, 1)),
+          BoxShadow(
+            color: AppColors.shadow,
+            blurRadius: 6,
+            offset: Offset(0, 2),
+          ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Label + icon row
+          // Accent dot + label row
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Flexible(
-                child: Text(label, style: AppTextStyles.labelMedium, overflow: TextOverflow.ellipsis),
-              ),
-              const SizedBox(width: 8),
               Container(
-                width: 30,
-                height: 30,
-                decoration: BoxDecoration(color: iconBg, borderRadius: BorderRadius.circular(7)),
-                child: Icon(icon, size: 15, color: iconColor),
+                width: 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  color: iconColor,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  label,
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textMuted,
+                    letterSpacing: 0.1,
+                    height: 1.4,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ],
           ),
-          // Value + subtitle
+          // Number + subtitle
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(value, style: AppTextStyles.statNumber),
+              Text(
+                value,
+                style: GoogleFonts.inter(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                  letterSpacing: -0.8,
+                  height: 1.1,
+                ),
+              ),
               if (subtitle != null) ...[
-                const SizedBox(height: 2),
-                Text(subtitle!, style: AppTextStyles.labelSmall, overflow: TextOverflow.ellipsis),
+                const SizedBox(height: 3),
+                Text(
+                  subtitle!,
+                  style: GoogleFonts.inter(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w400,
+                    color: AppColors.textMuted,
+                    height: 1.4,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ],
             ],
           ),

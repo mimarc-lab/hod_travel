@@ -26,9 +26,9 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     return Container(
       height: AppSpacing.headerHeight,
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        border: Border(bottom: BorderSide(color: AppColors.border)),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        border: Border(bottom: BorderSide(color: AppColors.border.withAlpha(120))),
       ),
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.pagePaddingH),
       child: Row(
@@ -43,18 +43,20 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
             ),
             const SizedBox(width: AppSpacing.md),
           ],
-          Expanded(
-            child: Text(title, style: AppTextStyles.heading1),
-          ),
+          // Only show title text if non-empty; dashboard uses its own greeting
+          if (title.isNotEmpty)
+            Expanded(
+              child: Text(title, style: AppTextStyles.heading1),
+            )
+          else
+            const Spacer(),
           if (actions != null) ...actions!,
-          const SizedBox(width: AppSpacing.base),
-          // Notification bell
+          const SizedBox(width: AppSpacing.sm),
           _HeaderIconButton(
             icon: Icons.notifications_none_rounded,
             onTap: () {},
           ),
           const SizedBox(width: AppSpacing.xs),
-          // User avatar
           UserAvatar(user: currentUser, size: 32),
         ],
       ),

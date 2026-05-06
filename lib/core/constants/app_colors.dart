@@ -4,18 +4,20 @@ import 'package:flutter/material.dart';
 /// All colors are defined here and referenced throughout the app.
 abstract class AppColors {
   // ── Backgrounds ──────────────────────────────────────────────────────────
-  static const Color background = Color(0xFFF8F7F5);   // warm off-white canvas
+  static const Color background = Color(0xFFFAF9F7);   // premium warm canvas
   static const Color surface = Color(0xFFFFFFFF);
   static const Color surfaceAlt = Color(0xFFF4F3F1);   // subtle card tint
 
   // ── Sidebar ───────────────────────────────────────────────────────────────
-  static const Color sidebarBg = Color(0xFF111318);
-  static const Color sidebarActiveBg = Color(0xFF1E2028);
+  static const Color sidebarBg = Color(0xFF111315);
+  static const Color sidebarActiveBg = Color(0x0FFFFFFF); // rgba(255,255,255,0.06) — subtle overlay
+  static const Color sidebarHoverBg = Color(0x08FFFFFF);  // rgba(255,255,255,0.03)
   static const Color sidebarText = Color(0xFF8A8F9E);
   static const Color sidebarActiveText = Color(0xFFFFFFFF);
   static const Color sidebarIcon = Color(0xFF5A5F6E);
   static const Color sidebarActiveIcon = Color(0xFFC9A96E);
-  static const Color sidebarDivider = Color(0xFF1E2028);
+  static const Color sidebarDivider = Color(0xFF1D2025);
+  static const Color sidebarSectionLabel = Color(0x668A8F9E); // 40% opacity muted
 
   // ── Text ──────────────────────────────────────────────────────────────────
   static const Color textPrimary = Color(0xFF111318);

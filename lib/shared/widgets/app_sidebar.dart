@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_spacing.dart';
 import '../../core/constants/app_text_styles.dart';
@@ -59,28 +60,26 @@ class AppSidebar extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _BrandSection(),
-          const SizedBox(height: AppSpacing.sm),
+          const _BrandSection(),
           Expanded(
             child: ListView(
               padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.sm,
-                vertical: AppSpacing.xs,
+                vertical: AppSpacing.sm,
               ),
               children: [
+                // ── WORKSPACE ─────────────────────────────────────────────
+                const _SectionLabel('Workspace'),
                 ..._navItems.take(5).map((item) => _NavTile(
                       item: item,
                       isActive: currentIndex == item.index,
                       onTap: () => onItemTap(item.index),
                     )),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.sm,
-                    vertical: AppSpacing.sm,
-                  ),
-                  child: Container(height: 1, color: AppColors.sidebarDivider),
-                ),
-                // Notifications with unread badge
+
+                const SizedBox(height: AppSpacing.sm),
+
+                // ── OPERATIONS ────────────────────────────────────────────
+                const _SectionLabel('Operations'),
                 ListenableBuilder(
                   listenable: notificationProvider,
                   builder: (context, _) => _NavTile(
@@ -93,26 +92,33 @@ class AppSidebar extends StatelessWidget {
                   ),
                 ),
                 _NavTile(
-                  item: _navItems[6],
-                  isActive: currentIndex == 6,
-                  onTap: () => onItemTap(6),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.sm,
-                    vertical: AppSpacing.sm,
-                  ),
-                  child: Container(height: 1, color: AppColors.sidebarDivider),
-                ),
-                _NavTile(
                   item: _navItems[7],
                   isActive: currentIndex == 7,
                   onTap: () => onItemTap(7),
                 ),
+
+                const SizedBox(height: AppSpacing.sm),
+
+                // ── CRM ───────────────────────────────────────────────────
+                const _SectionLabel('CRM'),
                 _NavTile(
                   item: _navItems[8],
                   isActive: currentIndex == 8,
                   onTap: () => onItemTap(8),
+                ),
+
+                // ── Settings (bottom utility) ─────────────────────────────
+                const SizedBox(height: AppSpacing.sm),
+                Container(
+                  height: 1,
+                  margin: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                  color: AppColors.sidebarDivider,
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                _NavTile(
+                  item: _navItems[6],
+                  isActive: currentIndex == 6,
+                  onTap: () => onItemTap(6),
                 ),
               ],
             ),
@@ -127,6 +133,8 @@ class AppSidebar extends StatelessWidget {
 // ── Brand / logo section ──────────────────────────────────────────────────────
 
 class _BrandSection extends StatelessWidget {
+  const _BrandSection();
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -138,19 +146,22 @@ class _BrandSection extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 28,
-            height: 28,
+            width: 26,
+            height: 26,
             decoration: BoxDecoration(
               color: AppColors.accent,
               borderRadius: BorderRadius.circular(6),
             ),
             child: const Center(
-              child: Text('H',
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 15,
-                      height: 1)),
+              child: Text(
+                'H',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 14,
+                  height: 1,
+                ),
+              ),
             ),
           ),
           const SizedBox(width: AppSpacing.sm),
@@ -161,9 +172,33 @@ class _BrandSection extends StatelessWidget {
   }
 }
 
+// ── Section label ─────────────────────────────────────────────────────────────
+
+class _SectionLabel extends StatelessWidget {
+  final String text;
+  const _SectionLabel(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 10, top: 14, bottom: 4),
+      child: Text(
+        text.toUpperCase(),
+        style: GoogleFonts.inter(
+          fontSize: 10,
+          fontWeight: FontWeight.w600,
+          color: AppColors.sidebarSectionLabel,
+          letterSpacing: 1.1,
+          height: 1.4,
+        ),
+      ),
+    );
+  }
+}
+
 // ── Individual nav item ───────────────────────────────────────────────────────
 
-class _NavTile extends StatelessWidget {
+class _NavTile extends StatefulWidget {
   final _NavItem item;
   final bool isActive;
   final VoidCallback onTap;
@@ -177,62 +212,98 @@ class _NavTile extends StatelessWidget {
   });
 
   @override
+  State<_NavTile> createState() => _NavTileState();
+}
+
+class _NavTileState extends State<_NavTile> {
+  bool _hovered = false;
+
+  @override
   Widget build(BuildContext context) {
+    final isActive = widget.isActive;
+
     return Padding(
-      padding: const EdgeInsets.only(bottom: 2),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(6),
-        child: Material(
-          color: isActive ? AppColors.sidebarActiveBg : Colors.transparent,
-          child: InkWell(
-            onTap: onTap,
-            hoverColor: AppColors.sidebarActiveBg.withAlpha(160),
-            splashColor: AppColors.sidebarActiveBg,
-            highlightColor: Colors.transparent,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.sm, vertical: 9),
-              child: Row(
+      padding: const EdgeInsets.only(bottom: 1),
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _hovered = true),
+        onExit: (_) => setState(() => _hovered = false),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(6),
+          child: Material(
+            color: isActive
+                ? AppColors.sidebarActiveBg
+                : _hovered
+                    ? AppColors.sidebarHoverBg
+                    : Colors.transparent,
+            child: InkWell(
+              onTap: widget.onTap,
+              splashColor: Colors.transparent,
+              highlightColor: Colors.transparent,
+              hoverColor: Colors.transparent,
+              child: Stack(
                 children: [
-                  Icon(
-                    isActive ? item.iconActive : item.icon,
-                    size: 17,
-                    color: isActive
-                        ? AppColors.sidebarActiveIcon
-                        : AppColors.sidebarIcon,
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      item.label,
-                      style: isActive
-                          ? AppTextStyles.sidebarItemActive
-                          : AppTextStyles.sidebarItem,
-                    ),
-                  ),
-                  if (badge != null)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 1),
+                  // Gold left accent line
+                  AnimatedPositioned(
+                    duration: const Duration(milliseconds: 200),
+                    left: 0,
+                    top: 6,
+                    bottom: 6,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      curve: Curves.easeOut,
+                      width: isActive ? 2 : 0,
                       decoration: BoxDecoration(
                         color: AppColors.accent,
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(1),
                       ),
-                      child: Text(
-                        badge! > 9 ? '9+' : '$badge',
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700),
-                      ),
-                    )
-                  else if (isActive)
-                    Container(
-                      width: 5,
-                      height: 5,
-                      decoration: const BoxDecoration(
-                          color: AppColors.accent, shape: BoxShape.circle),
                     ),
+                  ),
+                  // Nav item content
+                  Padding(
+                    padding: const EdgeInsets.only(
+                      left: 12,
+                      right: 10,
+                      top: 9,
+                      bottom: 9,
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          isActive ? widget.item.iconActive : widget.item.icon,
+                          size: 16,
+                          color: isActive
+                              ? AppColors.sidebarActiveIcon
+                              : AppColors.sidebarIcon,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            widget.item.label,
+                            style: isActive
+                                ? AppTextStyles.sidebarItemActive
+                                : AppTextStyles.sidebarItem,
+                          ),
+                        ),
+                        if (widget.badge != null)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 1),
+                            decoration: BoxDecoration(
+                              color: AppColors.accent,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              widget.badge! > 9 ? '9+' : '${widget.badge}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -264,21 +335,25 @@ class _UserFooter extends StatelessWidget {
             final user = rs.user;
             return Row(
               children: [
-                UserAvatar(user: user, size: 30),
+                UserAvatar(user: user, size: 28),
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(user.name,
-                          style: AppTextStyles.sidebarItemActive
-                              .copyWith(fontSize: 12),
-                          overflow: TextOverflow.ellipsis),
-                      Text(user.role,
-                          style:
-                              AppTextStyles.sidebarItem.copyWith(fontSize: 11),
-                          overflow: TextOverflow.ellipsis),
+                      Text(
+                        user.name,
+                        style: AppTextStyles.sidebarItemActive
+                            .copyWith(fontSize: 12),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                        user.role,
+                        style:
+                            AppTextStyles.sidebarItem.copyWith(fontSize: 11),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ],
                   ),
                 ),
@@ -289,7 +364,7 @@ class _UserFooter extends StatelessWidget {
                     child: const Tooltip(
                       message: 'Sign out',
                       child: Icon(Icons.logout_rounded,
-                          size: 15, color: AppColors.sidebarIcon),
+                          size: 14, color: AppColors.sidebarIcon),
                     ),
                   )
                 else

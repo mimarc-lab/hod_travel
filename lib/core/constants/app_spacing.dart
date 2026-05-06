@@ -18,9 +18,9 @@ abstract class AppSpacing {
   static const double pagePaddingHMobile = 16.0;
 
   // ── Layout ────────────────────────────────────────────────────────────────
-  static const double sidebarWidth = 228.0;
+  static const double sidebarWidth = 260.0;
   static const double headerHeight = 60.0;
-  static const double cardRadius = 10.0;
+  static const double cardRadius = 12.0;
   static const double chipRadius = 6.0;
   static const double inputRadius = 8.0;
   static const double buttonRadius = 8.0;

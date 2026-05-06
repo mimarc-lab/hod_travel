@@ -13,34 +13,35 @@ class TeamActivitySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Show latest 5 only
+    final visible = activity.take(5).toList();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SectionHeader(title: 'Team Activity'),
-        const SizedBox(height: AppSpacing.md),
-        if (activity.isEmpty)
-          _EmptyState()
+        const SizedBox(height: AppSpacing.base),
+        if (visible.isEmpty)
+          const _EmptyActivity()
         else
-          Container(
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: Column(
-              children: [
-                for (int i = 0; i < activity.length; i++) ...[
-                  _ActivityRow(item: activity[i]),
-                  if (i < activity.length - 1)
-                    const Divider(height: 1, indent: 52, color: AppColors.divider),
-                ],
+          Column(
+            children: [
+              for (int i = 0; i < visible.length; i++) ...[
+                _ActivityRow(item: visible[i]),
+                if (i < visible.length - 1)
+                  const Padding(
+                    padding: EdgeInsets.only(left: 40),
+                    child: Divider(height: 1, color: AppColors.divider),
+                  ),
               ],
-            ),
+            ],
           ),
       ],
     );
   }
 }
+
+// ── Activity row ──────────────────────────────────────────────────────────────
 
 class _ActivityRow extends StatelessWidget {
   final TeamActivityItem item;
@@ -49,41 +50,50 @@ class _ActivityRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.cardPaddingH,
-        vertical: 11,
-      ),
+      padding: const EdgeInsets.symmetric(vertical: 10),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          UserAvatar(user: item.actor, size: 28),
+          UserAvatar(user: item.actor, size: 26),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
-            child: RichText(
-              text: TextSpan(
-                style: AppTextStyles.bodySmall,
-                children: [
-                  TextSpan(
-                    text: item.actor.name.split(' ').first,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                RichText(
+                  text: TextSpan(
                     style: AppTextStyles.bodySmall.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
+                      color: AppColors.textSecondary,
+                      height: 1.45,
                     ),
+                    children: [
+                      TextSpan(
+                        text: item.actor.name.split(' ').first,
+                        style: AppTextStyles.bodySmall.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      TextSpan(text: ' ${item.action} '),
+                      TextSpan(
+                        text: item.subject,
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
                   ),
-                  TextSpan(text: ' ${item.action} '),
-                  TextSpan(
-                    text: item.subject,
-                    style: AppTextStyles.bodySmall
-                        .copyWith(color: AppColors.textPrimary),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  _formatTime(item.time),
+                  style: AppTextStyles.labelSmall.copyWith(
+                    color: AppColors.textMuted,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          Text(
-            _formatTime(item.time),
-            style: AppTextStyles.labelSmall,
           ),
         ],
       ),
@@ -98,32 +108,30 @@ class _ActivityRow extends StatelessWidget {
   }
 }
 
-class _EmptyState extends StatelessWidget {
+// ── Empty state ───────────────────────────────────────────────────────────────
+
+class _EmptyActivity extends StatelessWidget {
+  const _EmptyActivity();
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.xl),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-        border: Border.all(color: AppColors.border),
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
       child: Column(
         children: [
           const Icon(Icons.people_outline_rounded,
-              size: 28, color: AppColors.textMuted),
+              size: 24, color: AppColors.textMuted),
           const SizedBox(height: AppSpacing.sm),
           Text(
             'No recent activity',
             style: AppTextStyles.bodySmall
                 .copyWith(color: AppColors.textSecondary),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 3),
           Text(
-            'Team actions will appear here as tasks are updated.',
-            style: AppTextStyles.labelSmall
-                .copyWith(color: AppColors.textMuted),
+            'Team updates will appear here.',
+            style:
+                AppTextStyles.labelSmall.copyWith(color: AppColors.textMuted),
             textAlign: TextAlign.center,
           ),
         ],

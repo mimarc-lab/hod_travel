@@ -19,7 +19,7 @@ class MyTasksSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SectionHeader(title: 'My Tasks', actionLabel: 'View all'),
-        const SizedBox(height: AppSpacing.md),
+        const SizedBox(height: AppSpacing.base),
         if (tasks.isEmpty)
           const EmptyState(
             icon: Icons.task_alt_rounded,
@@ -27,107 +27,119 @@ class MyTasksSection extends StatelessWidget {
             subtitle: 'Tasks assigned to you will appear here.',
           )
         else
-          Container(
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: Column(
-              children: [
-                const _TaskRowHeader(),
-                const Divider(height: 1, color: AppColors.divider),
-                ...tasks.asMap().entries.map((e) => Column(
-                  children: [
-                    _TaskRowItem(task: e.value),
-                    if (e.key < tasks.length - 1)
-                      const Divider(height: 1, color: AppColors.divider),
-                  ],
-                )),
-              ],
-            ),
+          Column(
+            children: tasks.asMap().entries.map((e) => Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+              child: _TaskCard(task: e.value),
+            )).toList(),
           ),
       ],
     );
   }
 }
 
-class _TaskRowHeader extends StatelessWidget {
-  const _TaskRowHeader();
+// ── Task card ─────────────────────────────────────────────────────────────────
+
+class _TaskCard extends StatefulWidget {
+  final Task task;
+  const _TaskCard({required this.task});
 
   @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.cardPaddingH,
-        vertical: AppSpacing.sm,
-      ),
-      child: Row(
-        children: [
-          Expanded(flex: 3, child: Text('TASK',     style: AppTextStyles.tableHeader)),
-          Expanded(flex: 2, child: Text('TRIP',     style: AppTextStyles.tableHeader)),
-          Expanded(flex: 2, child: Text('STATUS',   style: AppTextStyles.tableHeader)),
-          Expanded(flex: 1, child: Text('DUE',      style: AppTextStyles.tableHeader)),
-          Expanded(flex: 1, child: Text('PRIORITY', style: AppTextStyles.tableHeader)),
-        ],
-      ),
-    );
-  }
+  State<_TaskCard> createState() => _TaskCardState();
 }
 
-class _TaskRowItem extends StatelessWidget {
-  final Task task;
-  const _TaskRowItem({required this.task});
+class _TaskCardState extends State<_TaskCard> {
+  bool _hovered = false;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.cardPaddingH,
-        vertical: 10,
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            flex: 3,
-            child: Text(
-              task.name,
-              style: AppTextStyles.bodyMedium,
-              overflow: TextOverflow.ellipsis,
-            ),
+    final task    = widget.task;
+    final dueDate = task.dueDate;
+    final isOverdue = dueDate != null && dueDate.isBefore(DateTime.now());
+
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        curve: Curves.easeOut,
+        decoration: BoxDecoration(
+          color: _hovered ? AppColors.surfaceAlt : AppColors.surface,
+          borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+          border: Border.all(
+            color: _hovered ? AppColors.border : AppColors.border,
           ),
-          Expanded(
-            flex: 2,
-            child: Text(
-              '—',
-              style: AppTextStyles.bodySmall,
-              overflow: TextOverflow.ellipsis,
+          boxShadow: [
+            BoxShadow(
+              color: Color(_hovered ? 0x0A000000 : 0x05000000),
+              blurRadius: _hovered ? 8 : 3,
+              offset: const Offset(0, 1),
             ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.base,
+            vertical: AppSpacing.md,
           ),
-          Expanded(
-            flex: 2,
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: TaskStatusChip(status: task.status),
-            ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Checkbox-style dot indicator
+              Container(
+                width: 14,
+                height: 14,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: AppColors.border,
+                    width: 1.5,
+                  ),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              // Task name + meta
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      task.name,
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.textPrimary,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (dueDate != null) ...[
+                      const SizedBox(height: 3),
+                      Text(
+                        'Due ${DateFormat('MMM d').format(dueDate)}',
+                        style: AppTextStyles.labelSmall.copyWith(
+                          color: isOverdue
+                              ? AppColors.statusBlockedText
+                              : AppColors.textMuted,
+                          fontWeight: isOverdue ? FontWeight.w600 : FontWeight.w400,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              // Status + priority chips
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  PriorityChip(priority: task.priority),
+                  const SizedBox(width: 6),
+                  TaskStatusChip(status: task.status),
+                ],
+              ),
+            ],
           ),
-          Expanded(
-            flex: 1,
-            child: Text(
-              task.dueDate != null
-                  ? DateFormat('MMM d').format(task.dueDate!)
-                  : '—',
-              style: AppTextStyles.bodySmall,
-            ),
-          ),
-          Expanded(
-            flex: 1,
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: PriorityChip(priority: task.priority),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
