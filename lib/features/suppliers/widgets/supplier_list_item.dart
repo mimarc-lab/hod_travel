@@ -264,17 +264,10 @@ class _SupplierCardBody extends StatelessWidget {
 
   const _SupplierCardBody({required this.supplier, this.onDelete});
 
-  static String? _trustLabel(double rating) {
-    if (rating >= 5.0) return 'Trusted Partner';
-    if (rating >= 4.0) return 'Excellent Reliability';
-    return null;
-  }
-
   @override
   Widget build(BuildContext context) {
     final hasNotes =
         supplier.notes != null && supplier.notes!.trim().isNotEmpty;
-    final trust = _trustLabel(supplier.internalRating);
 
     return Expanded(
       child: Padding(
@@ -325,11 +318,6 @@ class _SupplierCardBody extends StatelessWidget {
               ),
             ],
             const Spacer(),
-            // Trust / reliability signal
-            if (trust != null) ...[
-              _TrustRow(label: trust),
-              const SizedBox(height: 4),
-            ],
             // Primary contact
             if (supplier.contactName != null)
               _ContactRow(name: supplier.contactName!),
@@ -363,37 +351,6 @@ class _PreferredPartnerBadge extends StatelessWidget {
             fontWeight: FontWeight.w600,
             color: AppColors.accent,
             letterSpacing: 0.1,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ── Trust row ─────────────────────────────────────────────────────────────────
-
-class _TrustRow extends StatelessWidget {
-  final String label;
-  const _TrustRow({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const Icon(
-          Icons.verified_rounded,
-          size: 11,
-          color: Color(0xFF4A90A4),
-        ),
-        const SizedBox(width: 4),
-        Text(
-          label,
-          style: GoogleFonts.inter(
-            fontSize: 11,
-            fontWeight: FontWeight.w500,
-            color: const Color(0xFF5A7A8A),
-            height: 1.3,
           ),
         ),
       ],
