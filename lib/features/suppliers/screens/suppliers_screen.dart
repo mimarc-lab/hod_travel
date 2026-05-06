@@ -12,6 +12,7 @@ import '../providers/supplier_provider.dart';
 import '../widgets/supplier_editor.dart';
 import '../widgets/supplier_filter_bar.dart';
 import '../widgets/supplier_list_item.dart';
+import '../../../shared/widgets/app_header.dart';
 import 'supplier_detail_screen.dart';
 
 /// Entry point for the Supplier Database module.
@@ -93,15 +94,48 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = Responsive.isMobile(context);
+
     return Scaffold(
       backgroundColor: AppColors.background,
+      appBar: AppHeader(
+        title: 'Suppliers',
+        showMenuButton: isMobile,
+        onMenuTap: () => Scaffold.of(context).openDrawer(),
+        actions: [
+          if (!isMobile) ...[
+            _GhostButton(
+              icon: Icons.travel_explore_rounded,
+              label: 'Discover',
+              onTap: () => showSupplierSearchSheet(
+                context,
+                provider: _enrichmentProvider,
+                supplierProvider: _provider,
+              ),
+            ),
+            const SizedBox(width: 8),
+            _GhostButton(
+              icon: Icons.link_rounded,
+              label: 'Import URL',
+              onTap: () => showUrlEnrichmentSheet(
+                context,
+                provider: _enrichmentProvider,
+                supplierProvider: _provider,
+              ),
+            ),
+            const SizedBox(width: 10),
+          ],
+          _AddSupplierButton(
+            onTap: () => showSupplierEditor(context, provider: _provider),
+          ),
+        ],
+      ),
       body: Column(
         children: [
           _SuppliersHeader(
             provider: _provider,
             searchCtrl: _searchCtrl,
-            onAddTap: () =>
-                showSupplierEditor(context, provider: _provider),
+            isMobile: isMobile,
             onImportTap: () => showUrlEnrichmentSheet(
               context,
               provider: _enrichmentProvider,
@@ -213,68 +247,31 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
 class _SuppliersHeader extends StatelessWidget {
   final SupplierProvider provider;
   final TextEditingController searchCtrl;
-  final VoidCallback onAddTap;
+  final bool isMobile;
   final VoidCallback onImportTap;
   final VoidCallback onDiscoverTap;
 
   const _SuppliersHeader({
     required this.provider,
     required this.searchCtrl,
-    required this.onAddTap,
+    required this.isMobile,
     required this.onImportTap,
     required this.onDiscoverTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final isMobile = Responsive.isMobile(context);
     final hPad =
         isMobile ? AppSpacing.pagePaddingHMobile : AppSpacing.pagePaddingH;
 
     return Container(
       color: AppColors.background,
-      padding: EdgeInsets.fromLTRB(hPad, 20, hPad, 14),
+      padding: EdgeInsets.fromLTRB(hPad, 12, hPad, 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Suppliers',
-                        style: AppTextStyles.displayMedium),
-                    const SizedBox(height: 2),
-                    ListenableBuilder(
-                      listenable: provider,
-                      builder: (context, _) => Text(
-                        '${provider.totalCount} partners in network',
-                        style: AppTextStyles.bodySmall,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (!isMobile) ...[
-                _GhostButton(
-                  icon: Icons.travel_explore_rounded,
-                  label: 'Discover',
-                  onTap: onDiscoverTap,
-                ),
-                const SizedBox(width: 8),
-                _GhostButton(
-                  icon: Icons.link_rounded,
-                  label: 'Import URL',
-                  onTap: onImportTap,
-                ),
-                const SizedBox(width: 10),
-              ],
-              _AddSupplierButton(onTap: onAddTap),
-            ],
-          ),
+          // On mobile, secondary actions sit below the AppHeader
           if (isMobile) ...[
-            const SizedBox(height: 10),
             Row(
               children: [
                 Expanded(
@@ -296,8 +293,8 @@ class _SuppliersHeader extends StatelessWidget {
                 ),
               ],
             ),
+            const SizedBox(height: 10),
           ],
-          const SizedBox(height: 14),
           _SearchField(ctrl: searchCtrl, provider: provider),
         ],
       ),
