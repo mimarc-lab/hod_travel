@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../core/supabase/app_db.dart';
 import '../../../data/models/approval_model.dart';
-import '../../../data/models/board_group_model.dart';
+import '../../../data/models/board_group_model.dart' show BoardGroup, defaultBoardGroupNames;
 import '../../../data/models/scheduled_task_result.dart';
 import '../../../data/models/subtask.dart';
 import '../../../data/models/task_comment_model.dart';
@@ -80,7 +80,7 @@ class BoardProvider extends ChangeNotifier {
     _groupsSub?.cancel();
     _groupsSub = _repo.watchGroupsForTrip(trip.id).listen(
       (groups) {
-        _groups = groups;
+        _groups = _sortedGroups(groups);
         _isLoading = false;
         _error = null;
         // Keep selected task in sync with fresh data
@@ -118,6 +118,17 @@ class BoardProvider extends ChangeNotifier {
         notifyListeners();
       },
     );
+  }
+
+  static List<BoardGroup> _sortedGroups(List<BoardGroup> groups) {
+    return [...groups]..sort((a, b) {
+        final ai = defaultBoardGroupNames.indexOf(a.name);
+        final bi = defaultBoardGroupNames.indexOf(b.name);
+        if (ai == -1 && bi == -1) return 0;
+        if (ai == -1) return 1;
+        if (bi == -1) return -1;
+        return ai.compareTo(bi);
+      });
   }
 
   Future<void> reload() async {

@@ -21,11 +21,14 @@ import '../providers/board_provider.dart';
 class PlanningTimelineBanner extends StatelessWidget {
   final Trip trip;
   final BoardProvider provider;
+  /// When true, renders a compact card (used inside the mobile trip header).
+  final bool compact;
 
   const PlanningTimelineBanner({
     super.key,
     required this.trip,
     required this.provider,
+    this.compact = false,
   });
 
   @override
@@ -44,7 +47,6 @@ class PlanningTimelineBanner extends StatelessWidget {
 
     if (tasks.isEmpty) return const SizedBox.shrink();
 
-    // Timeline span (no double-counting of parallel tasks)
     final earliest = tasks
         .map((t) => t.travelDate!)
         .reduce((a, b) => a.isBefore(b) ? a : b);
@@ -53,41 +55,41 @@ class PlanningTimelineBanner extends StatelessWidget {
         .reduce((a, b) => a.isAfter(b) ? a : b);
     final durationDays = latest.difference(earliest).inDays + 1;
 
-    // Total effort = sum of every task's duration (parallel tasks inflate this
-    // beyond the timeline span — it represents cumulative team workload).
     final totalEffort = tasks.fold<int>(
       0,
       (sum, t) => sum + (t.estimatedDurationDays ?? 0),
     );
     final approxHours = totalEffort * 8;
 
-    // Planning complete-by deadline
     final deadline = trip.startDate
         ?.subtract(Duration(days: PlanningDeadlineHelper.defaultBufferDays));
-
     final isPast = deadline?.isBefore(DateTime.now()) ?? false;
 
+    if (compact) {
+      return _buildCompactCard(
+        isPast: isPast,
+        earliest: earliest,
+        deadline: deadline,
+        durationDays: durationDays,
+        totalEffort: totalEffort,
+      );
+    }
+
+    // ── Strip layout (desktop / tablet) ──────────────────────────────────────
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
       decoration: BoxDecoration(
-        color: isPast
-            ? const Color(0xFFFFF7ED) // amber tint when deadline passed
-            : const Color(0xFFF0F9FF), // blue tint otherwise
-        border: const Border(
-          bottom: BorderSide(color: AppColors.border),
-        ),
+        color: isPast ? const Color(0xFFFFF7ED) : const Color(0xFFF0F9FF),
+        border: const Border(bottom: BorderSide(color: AppColors.border)),
       ),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-            Icon(
-              Icons.schedule_outlined,
-              size: 13,
-              color: isPast ? const Color(0xFFB45309) : const Color(0xFF0369A1),
-            ),
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.schedule_outlined, size: 13,
+                color: isPast ? const Color(0xFFB45309) : const Color(0xFF0369A1)),
             const SizedBox(width: 6),
             Text(
               'Planning Timeline',
@@ -116,6 +118,70 @@ class PlanningTimelineBanner extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  // ── Compact card layout (mobile expandable header) ────────────────────────
+
+  Widget _buildCompactCard({
+    required bool isPast,
+    required DateTime earliest,
+    required DateTime? deadline,
+    required int durationDays,
+    required int totalEffort,
+  }) {
+    final accent = isPast ? const Color(0xFFB45309) : const Color(0xFF0369A1);
+    final bg     = isPast ? const Color(0xFFFFF7ED) : const Color(0xFFF0F9FF);
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: accent.withAlpha(38)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
+            child: Row(
+              children: [
+                Icon(Icons.schedule_outlined, size: 13, color: accent),
+                const SizedBox(width: 5),
+                Text(
+                  'Planning Timeline',
+                  style: AppTextStyles.labelSmall.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: accent,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Divider(height: 1, color: accent.withAlpha(30)),
+          // Stats row
+          IntrinsicHeight(
+            child: Row(
+              children: [
+                _CompactStat(label: 'Start',       value: _fmt(earliest)),
+                _VertDivider(color: accent),
+                _CompactStat(
+                  label: 'Complete By',
+                  value: deadline != null ? _fmt(deadline) : '—',
+                  valueColor: isPast ? const Color(0xFFEF4444) : null,
+                ),
+                _VertDivider(color: accent),
+                _CompactStat(label: 'Duration',    value: '$durationDays days'),
+                _VertDivider(color: accent),
+                _CompactStat(label: 'Effort',      value: '$totalEffort td'),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+        ],
       ),
     );
   }
@@ -168,5 +234,57 @@ class _Divider extends StatelessWidget {
       child: Text('·',
           style: AppTextStyles.labelSmall.copyWith(color: AppColors.textMuted)),
     );
+  }
+}
+
+// ── Compact card helpers ──────────────────────────────────────────────────────
+
+class _CompactStat extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color? valueColor;
+
+  const _CompactStat({required this.label, required this.value, this.valueColor});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: AppTextStyles.labelSmall.copyWith(
+                fontSize: 10,
+                color: AppColors.textMuted,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 3),
+            Text(
+              value,
+              style: AppTextStyles.labelSmall.copyWith(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: valueColor ?? AppColors.textPrimary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _VertDivider extends StatelessWidget {
+  final Color color;
+  const _VertDivider({required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(width: 1, color: color.withAlpha(30));
   }
 }

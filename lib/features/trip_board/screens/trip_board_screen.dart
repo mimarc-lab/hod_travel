@@ -426,23 +426,28 @@ class _TripHeaderState extends State<_TripHeader> {
 
     final topRow = Row(
       children: [
-        GestureDetector(
-          onTap: widget.onBack,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.arrow_back_rounded, size: 16, color: AppColors.textSecondary),
-              const SizedBox(width: 4),
-              Text('Trips', style: AppTextStyles.bodySmall),
-              Text(' / ', style: AppTextStyles.bodySmall),
-              Text(
-                trip.name,
-                style: AppTextStyles.bodySmall.copyWith(color: AppColors.textPrimary),
-              ),
-            ],
+        Expanded(
+          child: GestureDetector(
+            onTap: widget.onBack,
+            child: Row(
+              children: [
+                Icon(Icons.arrow_back_rounded, size: 16, color: AppColors.textSecondary),
+                const SizedBox(width: 4),
+                Text('Trips', style: AppTextStyles.bodySmall),
+                Text(' / ', style: AppTextStyles.bodySmall),
+                Flexible(
+                  child: Text(
+                    trip.name,
+                    style: AppTextStyles.bodySmall.copyWith(color: AppColors.textPrimary),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
-        const Spacer(),
+        const SizedBox(width: 8),
         TripStatusChip(status: trip.status),
         const SizedBox(width: AppSpacing.sm),
         _TripOptionsMenu(
@@ -521,7 +526,7 @@ class _TripHeaderState extends State<_TripHeader> {
                   ),
                   child: metaContent,
                 ),
-                PlanningTimelineBanner(trip: trip, provider: widget.provider),
+                PlanningTimelineBanner(trip: trip, provider: widget.provider, compact: true),
               ],
             ),
           ),
