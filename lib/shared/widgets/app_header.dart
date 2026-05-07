@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_spacing.dart';
 import '../../core/constants/app_text_styles.dart';
+import '../../core/utils/responsive.dart';
 import '../../data/mock/mock_data.dart';
 import 'user_avatar.dart';
 
@@ -24,13 +25,17 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hPad = Responsive.isMobile(context)
+        ? AppSpacing.pagePaddingHMobile
+        : AppSpacing.pagePaddingH;
+
     return Container(
       height: AppSpacing.headerHeight,
       decoration: BoxDecoration(
         color: AppColors.background,
         border: Border(bottom: BorderSide(color: AppColors.border.withAlpha(120))),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.pagePaddingH),
+      padding: EdgeInsets.symmetric(horizontal: hPad),
       child: Row(
         children: [
           if (showMenuButton) ...[
@@ -41,12 +46,17 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(),
             ),
-            const SizedBox(width: AppSpacing.md),
+            const SizedBox(width: AppSpacing.sm),
           ],
           // Only show title text if non-empty; dashboard uses its own greeting
           if (title.isNotEmpty)
             Expanded(
-              child: Text(title, style: AppTextStyles.heading1),
+              child: Text(
+                title,
+                style: AppTextStyles.heading1,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             )
           else
             const Spacer(),
