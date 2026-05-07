@@ -10,8 +10,10 @@ import '../../../data/models/trip_model.dart';
 import '../../../data/repositories/supplier_repository.dart';
 import '../../../data/repositories/trip_repository.dart';
 import '../../../shared/widgets/app_header.dart';
+import '../../../shared/design_system/spacing_tokens.dart';
 import '../providers/budget_provider.dart';
 import '../widgets/budget_filter_bar.dart';
+import '../widgets/budget_row.dart';
 import '../widgets/budget_summary_cards.dart';
 import '../widgets/cost_item_editor.dart';
 import '../widgets/cost_item_row.dart';
@@ -140,12 +142,15 @@ class _BudgetScreenState extends State<BudgetScreen> {
                       children: [
                         BudgetSummaryCards(
                             summary: summary, currency: currency),
+                        BudgetColumnHeader(hPad: hPad),
                         Expanded(
-                          child: ListView.builder(
+                          child: ListView.separated(
                             padding: EdgeInsets.fromLTRB(
                                 hPad, 4, hPad, AppSpacing.massive),
                             itemCount: items.length,
-                            itemBuilder: (context, i) => BudgetItemCard(
+                            separatorBuilder: (_, _) =>
+                                const SizedBox(height: AdaptiveSpacing.rowGap),
+                            itemBuilder: (context, i) => BudgetRow(
                               key: ValueKey(items[i].id),
                               item: items[i],
                               onTap: () =>

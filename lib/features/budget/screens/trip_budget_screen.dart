@@ -10,7 +10,9 @@ import '../../../data/models/supplier_model.dart';
 import '../../../data/models/trip_model.dart';
 import '../../../data/repositories/supplier_repository.dart';
 import '../providers/budget_provider.dart';
+import '../../../shared/design_system/spacing_tokens.dart';
 import '../widgets/budget_filter_bar.dart';
+import '../widgets/budget_row.dart';
 import '../widgets/budget_summary_cards.dart';
 import '../widgets/cost_item_editor.dart';
 import '../widgets/cost_item_row.dart';
@@ -167,15 +169,25 @@ class _BudgetItemList extends StatelessWidget {
         ? AppSpacing.pagePaddingHMobile
         : AppSpacing.pagePaddingH;
 
-    return ListView.builder(
-      padding: EdgeInsets.fromLTRB(hPad, AppSpacing.base, hPad, AppSpacing.massive),
-      itemCount: items.length,
-      itemBuilder: (context, i) => BudgetItemCard(
-        key:      ValueKey(items[i].id),
-        item:     items[i],
-        onTap:    () => onTap(items[i]),
-        onDelete: () => onDelete(items[i]),
-      ),
+    return Column(
+      children: [
+        BudgetColumnHeader(hPad: hPad),
+        Expanded(
+          child: ListView.separated(
+            padding: EdgeInsets.fromLTRB(
+                hPad, 4, hPad, AppSpacing.massive),
+            itemCount: items.length,
+            separatorBuilder: (_, _) =>
+                const SizedBox(height: AdaptiveSpacing.rowGap),
+            itemBuilder: (context, i) => BudgetRow(
+              key:      ValueKey(items[i].id),
+              item:     items[i],
+              onTap:    () => onTap(items[i]),
+              onDelete: () => onDelete(items[i]),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
