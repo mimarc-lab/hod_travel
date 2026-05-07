@@ -28,16 +28,16 @@ class SignatureExperienceFilterBar extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ── Row 1: Search + Category dropdown ──────────────────────────────
+        // ── Row 1: Category dropdown + Search ──────────────────────────────
         Row(
           children: [
-            Expanded(
-              child: _EditorialSearchBar(onChanged: onSearchChanged),
-            ),
-            const SizedBox(width: 10),
             _CategoryDropdown(
               selected: filterCategory,
               onChanged: onCategoryChanged,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _EditorialSearchBar(onChanged: onSearchChanged),
             ),
           ],
         ),

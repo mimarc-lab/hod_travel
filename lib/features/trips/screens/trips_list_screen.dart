@@ -230,117 +230,210 @@ class _SearchAndFilters extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    // Status dropdown + search bar inline
+    return Row(
       children: [
-        // Search bar — 48px tall, radius 14
-        TextField(
-          onChanged: onSearchChanged,
-          style: AppTextStyles.bodyMedium,
-          decoration: InputDecoration(
-            hintText: 'Search trips…',
-            hintStyle: AppTextStyles.bodySmall,
-            prefixIcon: const Icon(
-              Icons.search_rounded,
-              size: 18,
-              color: AppColors.textMuted,
-            ),
-            filled: true,
-            fillColor: AppColors.surface,
-            contentPadding: const EdgeInsets.symmetric(
-              vertical: 14,
-              horizontal: AppSpacing.sm,
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(color: AppColors.border),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(color: AppColors.border),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide:
-                  const BorderSide(color: AppColors.accent, width: 1.5),
-            ),
-          ),
+        _TripStatusDropdown(
+          selected: filterStatus,
+          onChanged: onFilterChanged,
         ),
-        const SizedBox(height: 12),
-        // Filter chips — horizontally scrollable on all screen sizes
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
-              null,
-              TripStatus.planning,
-              TripStatus.confirmed,
-              TripStatus.inProgress,
-              TripStatus.completed,
-              TripStatus.cancelled,
-            ].asMap().entries.map((entry) {
-              final i = entry.key;
-              final status = entry.value;
-              return Padding(
-                padding: EdgeInsets.only(right: i < 5 ? 8 : 0),
-                child: _FilterChip(
-                  label: status == null ? 'All' : status.label,
-                  selected: filterStatus == status,
-                  onTap: () => onFilterChanged(status),
-                ),
-              );
-            }).toList(),
-          ),
-        ),
+        const SizedBox(width: 10),
+        Expanded(child: _TripSearchBar(onChanged: onSearchChanged)),
       ],
     );
   }
 }
 
-class _FilterChip extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
+// ── Trip search bar ───────────────────────────────────────────────────────────
 
-  const _FilterChip({
-    required this.label,
+class _TripSearchBar extends StatelessWidget {
+  final ValueChanged<String> onChanged;
+  const _TripSearchBar({required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 48,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border, width: 0.75),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x09000000),
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: TextField(
+        onChanged: onChanged,
+        style: AppTextStyles.bodyMedium,
+        decoration: InputDecoration(
+          hintText: 'Search trips, clients, destinations…',
+          hintStyle:
+              AppTextStyles.bodySmall.copyWith(color: AppColors.textMuted),
+          prefixIcon: const Icon(
+            Icons.search_rounded,
+            size: 20,
+            color: AppColors.textMuted,
+          ),
+          prefixIconConstraints: const BoxConstraints(minWidth: 48),
+          border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
+          contentPadding:
+              const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Trip status dropdown ──────────────────────────────────────────────────────
+
+class _TripStatusDropdown extends StatelessWidget {
+  final TripStatus? selected;
+  final ValueChanged<TripStatus?> onChanged;
+
+  const _TripStatusDropdown({
     required this.selected,
-    required this.onTap,
+    required this.onChanged,
+  });
+
+  static const _statusColors = {
+    TripStatus.planning:   Color(0xFF3B82F6),
+    TripStatus.confirmed:  Color(0xFFC9A96E),
+    TripStatus.inProgress: Color(0xFFF59E0B),
+    TripStatus.completed:  Color(0xFF10B981),
+    TripStatus.cancelled:  Color(0xFF9CA3AF),
+  };
+
+  Color get _dotColor =>
+      selected != null ? _statusColors[selected]! : AppColors.textMuted;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasSelection = selected != null;
+    final label = selected?.label ?? 'Status';
+    final dotColor = _dotColor;
+    final borderColor =
+        hasSelection ? dotColor.withAlpha(100) : AppColors.border;
+    final bgColor = hasSelection ? dotColor.withAlpha(18) : AppColors.surface;
+
+    return PopupMenuButton<TripStatus?>(
+      onSelected: onChanged,
+      offset: const Offset(0, 54),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      elevation: 8,
+      shadowColor: const Color(0x18000000),
+      constraints: const BoxConstraints(minWidth: 180),
+      itemBuilder: (_) => [
+        // All trips
+        PopupMenuItem<TripStatus?>(
+          value: null,
+          child: _DropdownItem(
+            label: 'All Trips',
+            dotColor: AppColors.textMuted,
+            isSelected: selected == null,
+          ),
+        ),
+        const PopupMenuDivider(height: 1),
+        ...TripStatus.values.map(
+          (s) => PopupMenuItem<TripStatus?>(
+            value: s,
+            child: _DropdownItem(
+              label: s.label,
+              dotColor: _statusColors[s]!,
+              isSelected: selected == s,
+            ),
+          ),
+        ),
+      ],
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 120),
+        height: 48,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: borderColor, width: 0.75),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x09000000),
+              blurRadius: 8,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: dotColor,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                fontWeight:
+                    hasSelection ? FontWeight.w600 : FontWeight.w400,
+                color:
+                    hasSelection ? dotColor : AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Icon(
+              Icons.keyboard_arrow_down_rounded,
+              size: 16,
+              color: hasSelection ? dotColor : AppColors.textMuted,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DropdownItem extends StatelessWidget {
+  final String label;
+  final Color dotColor;
+  final bool isSelected;
+  const _DropdownItem({
+    required this.label,
+    required this.dotColor,
+    required this.isSelected,
   });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-        decoration: BoxDecoration(
-          color: selected ? AppColors.accent : AppColors.surface,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: selected ? AppColors.accent : AppColors.border,
-          ),
-          boxShadow: selected
-              ? [
-                  BoxShadow(
-                    color: AppColors.accent.withAlpha(40),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : null,
+    return Row(
+      children: [
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
         ),
-        child: Text(
+        const SizedBox(width: 10),
+        Text(
           label,
           style: GoogleFonts.inter(
-            fontSize: 12,
-            fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-            color: selected ? Colors.white : AppColors.textSecondary,
-            height: 1.3,
+            fontSize: 13,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+            color: isSelected ? dotColor : AppColors.textSecondary,
           ),
         ),
-      ),
+        if (isSelected) ...[
+          const Spacer(),
+          Icon(Icons.check_rounded, size: 14, color: dotColor),
+        ],
+      ],
     );
   }
 }

@@ -7,8 +7,7 @@ import '../../../core/utils/responsive.dart';
 import '../../../data/models/supplier_model.dart';
 import '../providers/supplier_provider.dart';
 
-/// Horizontal filter row: category chips + preferred toggle + clear button.
-/// Reads and writes directly to the provider — all logic unchanged.
+/// Compact filter row: type dropdown + preferred toggle + clear.
 class SupplierFilterBar extends StatelessWidget {
   final SupplierProvider provider;
   const SupplierFilterBar({super.key, required this.provider});
@@ -25,50 +24,20 @@ class SupplierFilterBar extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
+          Padding(
             padding: EdgeInsets.fromLTRB(hPad, 10, hPad, 10),
             child: Row(
               children: [
-                // "All" chip
-                _FilterChip(
-                  label: 'All',
-                  isSelected: provider.typeFilter == null,
-                  onTap: () => provider.setTypeFilter(null),
+                _SupplierTypeDropdown(
+                  selected: provider.typeFilter,
+                  onChanged: provider.setTypeFilter,
                 ),
-                const SizedBox(width: 6),
-
-                // Type chips
-                ...SupplierType.values.map((type) => Padding(
-                      padding: const EdgeInsets.only(right: 6),
-                      child: _FilterChip(
-                        label: _shortLabel(type),
-                        icon: type.icon,
-                        color: type.color,
-                        isSelected: provider.typeFilter == type,
-                        onTap: () => provider.setTypeFilter(
-                          provider.typeFilter == type ? null : type,
-                        ),
-                      ),
-                    )),
-
-                // Divider
-                Container(
-                  width: 1,
-                  height: 18,
-                  color: AppColors.border,
-                  margin:
-                      const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-                ),
-
-                // Preferred toggle
+                const SizedBox(width: 10),
                 _PreferredToggleChip(
                   isOn: provider.preferredOnly,
                   onTap: () =>
                       provider.setPreferredOnly(!provider.preferredOnly),
                 ),
-
-                // Clear filters
                 if (provider.hasActiveFilters) ...[
                   const SizedBox(width: AppSpacing.sm),
                   GestureDetector(
@@ -85,81 +54,159 @@ class SupplierFilterBar extends StatelessWidget {
               ],
             ),
           ),
-          // Subtle hairline separator from content area
           const Divider(height: 1, color: AppColors.divider),
         ],
       ),
     );
   }
-
-  // Compact label for filter bar chips (Experience Providers → Experience)
-  String _shortLabel(SupplierType type) => switch (type) {
-        SupplierType.accommodation      => 'Accommodation',
-        SupplierType.dining             => 'Dining',
-        SupplierType.transport          => 'Transport',
-        SupplierType.guide              => 'Guides',
-        SupplierType.experienceProvider => 'Experience',
-        SupplierType.specialistServices => 'Specialist',
-        SupplierType.venue              => 'Venues',
-        SupplierType.other              => 'Other',
-      };
 }
 
-// ── Filter chip ───────────────────────────────────────────────────────────────
+// ── Type dropdown ─────────────────────────────────────────────────────────────
 
-class _FilterChip extends StatelessWidget {
-  final String label;
-  final IconData? icon;
-  final Color? color;
-  final bool isSelected;
-  final VoidCallback onTap;
+class _SupplierTypeDropdown extends StatelessWidget {
+  final SupplierType? selected;
+  final ValueChanged<SupplierType?> onChanged;
 
-  const _FilterChip({
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-    this.icon,
-    this.color,
+  const _SupplierTypeDropdown({
+    required this.selected,
+    required this.onChanged,
   });
+
+  static const _typeLabels = {
+    SupplierType.accommodation:      'Accommodation',
+    SupplierType.dining:             'Dining',
+    SupplierType.transport:          'Transport',
+    SupplierType.guide:              'Guides',
+    SupplierType.experienceProvider: 'Experience',
+    SupplierType.specialistServices: 'Specialist',
+    SupplierType.venue:              'Venues',
+    SupplierType.other:              'Other',
+  };
+
+  Color get _dotColor =>
+      selected != null ? selected!.color : AppColors.textMuted;
 
   @override
   Widget build(BuildContext context) {
-    final c = color ?? AppColors.accent;
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 140),
-        padding:
-            const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
-        decoration: BoxDecoration(
-          color: isSelected ? c.withAlpha(20) : AppColors.surface,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected ? c.withAlpha(120) : AppColors.border,
-            width: isSelected ? 1.2 : 0.8,
+    final hasSelection = selected != null;
+    final label = hasSelection ? _typeLabels[selected]! : 'Type';
+    final dotColor = _dotColor;
+    final borderColor =
+        hasSelection ? dotColor.withAlpha(100) : AppColors.border;
+    final bgColor =
+        hasSelection ? dotColor.withAlpha(18) : AppColors.surface;
+
+    return PopupMenuButton<SupplierType?>(
+      onSelected: onChanged,
+      offset: const Offset(0, 54),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      elevation: 8,
+      shadowColor: const Color(0x18000000),
+      constraints: const BoxConstraints(minWidth: 200),
+      itemBuilder: (_) => [
+        PopupMenuItem<SupplierType?>(
+          value: null,
+          child: _DropdownItem(
+            label: 'All Types',
+            dotColor: AppColors.textMuted,
+            isSelected: selected == null,
           ),
+        ),
+        const PopupMenuDivider(height: 1),
+        ...SupplierType.values.map(
+          (t) => PopupMenuItem<SupplierType?>(
+            value: t,
+            child: _DropdownItem(
+              label: _typeLabels[t]!,
+              dotColor: t.color,
+              isSelected: selected == t,
+            ),
+          ),
+        ),
+      ],
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 120),
+        height: 40,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: borderColor, width: 0.75),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x09000000),
+              blurRadius: 8,
+              offset: Offset(0, 2),
+            ),
+          ],
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (icon != null) ...[
-              Icon(icon, size: 11,
-                  color: isSelected ? c : AppColors.textMuted),
-              const SizedBox(width: 4),
-            ],
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: dotColor,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 8),
             Text(
               label,
               style: GoogleFonts.inter(
-                fontSize: 12,
+                fontSize: 13,
                 fontWeight:
-                    isSelected ? FontWeight.w600 : FontWeight.w400,
-                color: isSelected ? c : AppColors.textSecondary,
-                height: 1.3,
+                    hasSelection ? FontWeight.w600 : FontWeight.w400,
+                color: hasSelection ? dotColor : AppColors.textSecondary,
               ),
+            ),
+            const SizedBox(width: 6),
+            Icon(
+              Icons.keyboard_arrow_down_rounded,
+              size: 16,
+              color: hasSelection ? dotColor : AppColors.textMuted,
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _DropdownItem extends StatelessWidget {
+  final String label;
+  final Color dotColor;
+  final bool isSelected;
+  const _DropdownItem({
+    required this.label,
+    required this.dotColor,
+    required this.isSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 10),
+        Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 13,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+            color: isSelected ? dotColor : AppColors.textSecondary,
+          ),
+        ),
+        if (isSelected) ...[
+          const Spacer(),
+          Icon(Icons.check_rounded, size: 14, color: dotColor),
+        ],
+      ],
     );
   }
 }
@@ -177,39 +224,40 @@ class _PreferredToggleChip extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 140),
-        padding:
-            const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
+        height: 40,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(
-          color: isOn
-              ? AppColors.accent.withAlpha(20)
-              : AppColors.surface,
-          borderRadius: BorderRadius.circular(20),
+          color: isOn ? AppColors.accent.withAlpha(20) : AppColors.surface,
+          borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: isOn
-                ? AppColors.accent.withAlpha(120)
+                ? AppColors.accent.withAlpha(100)
                 : AppColors.border,
-            width: isOn ? 1.2 : 0.8,
+            width: 0.75,
           ),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x09000000),
+              blurRadius: 8,
+              offset: Offset(0, 2),
+            ),
+          ],
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               Icons.diamond_outlined,
-              size: 11,
+              size: 13,
               color: isOn ? AppColors.accent : AppColors.textMuted,
             ),
-            const SizedBox(width: 4),
+            const SizedBox(width: 6),
             Text(
               'Preferred',
               style: GoogleFonts.inter(
-                fontSize: 12,
-                fontWeight:
-                    isOn ? FontWeight.w600 : FontWeight.w400,
-                color: isOn
-                    ? AppColors.accent
-                    : AppColors.textSecondary,
-                height: 1.3,
+                fontSize: 13,
+                fontWeight: isOn ? FontWeight.w600 : FontWeight.w400,
+                color: isOn ? AppColors.accent : AppColors.textSecondary,
               ),
             ),
           ],
