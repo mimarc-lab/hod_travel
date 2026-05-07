@@ -112,6 +112,10 @@ class _TripBudgetScreenState extends State<TripBudgetScreen>
         final currency = dominantCurrency(items);
         final isMobile = Responsive.isMobile(context);
 
+        final hPad = isMobile
+            ? AppSpacing.pagePaddingHMobile
+            : AppSpacing.pagePaddingH;
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -125,6 +129,7 @@ class _TripBudgetScreenState extends State<TripBudgetScreen>
             if (isMobile)
               BudgetSummaryCards(summary: summary, currency: currency),
             BudgetFilterBar(provider: _provider),
+            if (items.isNotEmpty) BudgetColumnHeader(hPad: hPad),
             Expanded(
               child: items.isEmpty
                   ? BudgetEmptyState(
@@ -137,6 +142,7 @@ class _TripBudgetScreenState extends State<TripBudgetScreen>
                   : _BudgetItemList(
                       items:    items,
                       isMobile: isMobile,
+                      hPad:     hPad,
                       onTap:    (item) => _openEditor(context, existing: item),
                       onDelete: (item) => _provider.deleteItem(item.id),
                     ),
@@ -153,41 +159,31 @@ class _TripBudgetScreenState extends State<TripBudgetScreen>
 class _BudgetItemList extends StatelessWidget {
   final List<CostItem> items;
   final bool isMobile;
+  final double hPad;
   final void Function(CostItem) onTap;
   final void Function(CostItem) onDelete;
 
   const _BudgetItemList({
     required this.items,
     required this.isMobile,
+    required this.hPad,
     required this.onTap,
     required this.onDelete,
   });
 
   @override
   Widget build(BuildContext context) {
-    final hPad = isMobile
-        ? AppSpacing.pagePaddingHMobile
-        : AppSpacing.pagePaddingH;
-
-    return Column(
-      children: [
-        BudgetColumnHeader(hPad: hPad),
-        Expanded(
-          child: ListView.separated(
-            padding: EdgeInsets.fromLTRB(
-                hPad, 4, hPad, AppSpacing.massive),
-            itemCount: items.length,
-            separatorBuilder: (_, _) =>
-                const SizedBox(height: AdaptiveSpacing.rowGap),
-            itemBuilder: (context, i) => BudgetRow(
-              key:      ValueKey(items[i].id),
-              item:     items[i],
-              onTap:    () => onTap(items[i]),
-              onDelete: () => onDelete(items[i]),
-            ),
-          ),
-        ),
-      ],
+    return ListView.separated(
+      padding: EdgeInsets.fromLTRB(hPad, 4, hPad, AppSpacing.massive),
+      itemCount: items.length,
+      separatorBuilder: (_, _) =>
+          const SizedBox(height: AdaptiveSpacing.rowGap),
+      itemBuilder: (context, i) => BudgetRow(
+        key:      ValueKey(items[i].id),
+        item:     items[i],
+        onTap:    () => onTap(items[i]),
+        onDelete: () => onDelete(items[i]),
+      ),
     );
   }
 }
