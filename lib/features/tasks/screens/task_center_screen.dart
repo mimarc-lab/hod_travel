@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
@@ -8,56 +7,15 @@ import '../../../core/supabase/app_db.dart';
 import '../../../core/utils/responsive.dart';
 import '../../../data/models/task_model.dart';
 import '../../../features/trip_board/screens/trip_board_screen.dart';
+import '../../../shared/adaptive_table/adaptive_group_header.dart';
 import '../../../shared/widgets/app_header.dart';
 import '../../../shared/widgets/empty_state.dart';
-import '../../../shared/widgets/user_avatar.dart';
 import '../providers/task_center_provider.dart';
-
-// ── Shared helpers (file-private) ─────────────────────────────────────────────
-
-const _kCardRadius = 16.0;
-
-bool _isTerminal(TaskStatus s) =>
-    s == TaskStatus.confirmed || s == TaskStatus.cancelled;
-
-bool _isOverdue(Task t) =>
-    t.dueDate != null &&
-    t.dueDate!.isBefore(DateTime.now()) &&
-    !_isTerminal(t.status);
-
-/// 4px accent bar colour — drives at-a-glance status scanning.
-Color _accentColor(TaskStatus status, bool isOverdue) {
-  if (isOverdue) return const Color(0xFFEF4444);
-  switch (status) {
-    case TaskStatus.notStarted:     return const Color(0xFFD1D5DB);
-    case TaskStatus.researching:    return const Color(0xFF3B82F6);
-    case TaskStatus.awaitingReply:  return const Color(0xFFF59E0B);
-    case TaskStatus.readyForReview: return const Color(0xFF8B5CF6);
-    case TaskStatus.approved:       return const Color(0xFF059669);
-    case TaskStatus.sentToClient:   return const Color(0xFFC9A96E);
-    case TaskStatus.confirmed:      return const Color(0xFF10B981);
-    case TaskStatus.cancelled:      return const Color(0xFF9CA3AF);
-  }
-}
-
-/// Human-readable operational state — more meaningful than raw status labels.
-String _operationalLabel(TaskStatus status, bool isOverdue) {
-  if (isOverdue) return 'Overdue';
-  switch (status) {
-    case TaskStatus.notStarted:     return 'Not started';
-    case TaskStatus.researching:    return 'In research';
-    case TaskStatus.awaitingReply:  return 'Waiting on supplier';
-    case TaskStatus.readyForReview: return 'Ready for review';
-    case TaskStatus.approved:       return 'Approved';
-    case TaskStatus.sentToClient:   return 'Sent to client';
-    case TaskStatus.confirmed:      return 'Confirmed';
-    case TaskStatus.cancelled:      return 'Cancelled';
-  }
-}
+import '../widgets/task_row.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TaskCenterScreen
-// Future architecture: add Kanban / Timeline / Calendar tabs here by extending
+// Future architecture: add Kanban / Timeline / Calendar tabs by extending
 // _tabLabels and adding corresponding views inside TabBarView.
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -175,7 +133,7 @@ class _TaskCenterScreenState extends State<TaskCenterScreen>
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Search + filter bar
+// Search + filter bar (unchanged logic)
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _SearchFilterBar extends StatelessWidget {
@@ -387,7 +345,7 @@ class _FilterChip extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Tab bar with overdue badge
+// Tab bar with overdue badge (unchanged)
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _TaskTabBar extends StatelessWidget {
@@ -463,7 +421,6 @@ class _TaskTabBar extends StatelessWidget {
               const Tab(text: 'By Status', height: 44),
             ],
           ),
-          // Subtle bottom shadow separating header from content
           Container(
             height: 1,
             decoration: const BoxDecoration(
@@ -507,7 +464,6 @@ class _TodayFocusSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
           Row(
             children: [
               const Icon(Icons.bolt_rounded,
@@ -543,7 +499,6 @@ class _TodayFocusSection extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 10),
-          // Task rows
           ...tasks.map((t) => _FocusRow(task: t, onTap: () => onTap(t))),
         ],
       ),
@@ -558,8 +513,8 @@ class _FocusRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final overdue = _isOverdue(task);
-    final dueText = overdue ? 'Overdue' : 'Due Today';
+    final overdue  = taskIsOverdue(task);
+    final dueText  = overdue ? 'Overdue' : 'Due Today';
     final dueColor = overdue
         ? const Color(0xFFEF4444)
         : const Color(0xFFF59E0B);
@@ -632,13 +587,12 @@ class _MyTasksView extends StatelessWidget {
 
     // Today Focus: overdue OR due today, non-terminal, up to 5
     final now = DateTime.now();
-    final tomorrowStart =
-        DateTime(now.year, now.month, now.day + 1);
+    final tomorrowStart = DateTime(now.year, now.month, now.day + 1);
     final focusTasks = tasks
         .where((t) =>
             t.dueDate != null &&
             t.dueDate!.isBefore(tomorrowStart) &&
-            !_isTerminal(t.status))
+            !taskIsTerminal(t.status))
         .take(5)
         .toList();
 
@@ -650,15 +604,15 @@ class _MyTasksView extends StatelessWidget {
           _TodayFocusSection(tasks: focusTasks, onTap: onTap),
           const SizedBox(height: 16),
         ],
-        ...tasks.asMap().entries.map((e) => Padding(
-              padding:
-                  EdgeInsets.only(bottom: e.key < tasks.length - 1 ? 12 : 0),
-              child: _TaskCard(
-                task: e.value,
-                tripName: provider.tripsById[e.value.tripId]?.name,
-                onTap: () => onTap(e.value),
-              ),
-            )),
+        for (int i = 0; i < tasks.length; i++) ...[
+          TaskRow(
+            key: ValueKey(tasks[i].id),
+            task: tasks[i],
+            tripName: provider.tripsById[tasks[i].tripId]?.name,
+            onTap: () => onTap(tasks[i]),
+          ),
+          if (i < tasks.length - 1) const SizedBox(height: 8),
+        ],
         const SizedBox(height: AppSpacing.massive),
       ],
     );
@@ -666,7 +620,7 @@ class _MyTasksView extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Overdue view — grouped by trip
+// Overdue view — grouped by trip, collapsible sections
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _OverdueView extends StatelessWidget {
@@ -694,28 +648,30 @@ class _OverdueView extends StatelessWidget {
       grouped.putIfAbsent(t.tripId ?? '__no_trip__', () => []).add(t);
     }
 
-    final items = <Widget>[];
-    grouped.forEach((tripId, tripTasks) {
-      final tripName =
-          provider.tripsById[tripId]?.name ?? 'Unknown Trip';
-      items.add(_SectionHeader(label: tripName, count: tripTasks.length));
-      items.addAll(tripTasks.map((t) => Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: _TaskCard(
-              task: t,
-              tripName: tripName,
-              showTrip: false,
-              onTap: () => onTap(t),
-            ),
-          )));
-      items.add(const SizedBox(height: AppSpacing.md));
-    });
-
     return ListView(
       padding:
           EdgeInsets.symmetric(horizontal: hPad, vertical: AppSpacing.base),
       children: [
-        ...items,
+        for (final entry in grouped.entries) ...[
+          AdaptiveGroupHeader(
+            title: provider.tripsById[entry.key]?.name ?? 'Unknown Trip',
+            count: entry.value.length,
+            accentColor: const Color(0xFFEF4444),
+            children: [
+              for (int i = 0; i < entry.value.length; i++) ...[
+                TaskRow(
+                  key: ValueKey(entry.value[i].id),
+                  task: entry.value[i],
+                  tripName: provider.tripsById[entry.key]?.name,
+                  showTrip: false,
+                  onTap: () => onTap(entry.value[i]),
+                ),
+                if (i < entry.value.length - 1) const SizedBox(height: 8),
+              ],
+            ],
+          ),
+          const SizedBox(height: 16),
+        ],
         const SizedBox(height: AppSpacing.massive),
       ],
     );
@@ -723,7 +679,7 @@ class _OverdueView extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// By Trip view — all tasks grouped by trip name
+// By Trip view — collapsible group per trip
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _ByTripView extends StatelessWidget {
@@ -745,28 +701,29 @@ class _ByTripView extends StatelessWidget {
       );
     }
 
-    final items = <Widget>[];
-    grouped.forEach((tripId, tasks) {
-      final tripName =
-          provider.tripsById[tripId]?.name ?? 'Unassigned';
-      items.add(_SectionHeader(label: tripName, count: tasks.length));
-      items.addAll(tasks.map((t) => Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: _TaskCard(
-              task: t,
-              tripName: tripName,
-              showTrip: false,
-              onTap: () => onTap(t),
-            ),
-          )));
-      items.add(const SizedBox(height: AppSpacing.md));
-    });
-
     return ListView(
       padding:
           EdgeInsets.symmetric(horizontal: hPad, vertical: AppSpacing.base),
       children: [
-        ...items,
+        for (final entry in grouped.entries) ...[
+          AdaptiveGroupHeader(
+            title: provider.tripsById[entry.key]?.name ?? 'Unassigned',
+            count: entry.value.length,
+            children: [
+              for (int i = 0; i < entry.value.length; i++) ...[
+                TaskRow(
+                  key: ValueKey(entry.value[i].id),
+                  task: entry.value[i],
+                  tripName: provider.tripsById[entry.key]?.name,
+                  showTrip: false,
+                  onTap: () => onTap(entry.value[i]),
+                ),
+                if (i < entry.value.length - 1) const SizedBox(height: 8),
+              ],
+            ],
+          ),
+          const SizedBox(height: 16),
+        ],
         const SizedBox(height: AppSpacing.massive),
       ],
     );
@@ -774,7 +731,7 @@ class _ByTripView extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// By Status view — tasks grouped by status in workflow order
+// By Status view — collapsible group per workflow status
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _ByStatusView extends StatelessWidget {
@@ -796,355 +753,31 @@ class _ByStatusView extends StatelessWidget {
       );
     }
 
-    final items = <Widget>[];
-    grouped.forEach((status, tasks) {
-      items.add(_SectionHeader(
-        label: status.label,
-        count: tasks.length,
-        dotColor: _accentColor(status, false),
-      ));
-      items.addAll(tasks.map((t) => Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: _TaskCard(
-              task: t,
-              tripName: provider.tripsById[t.tripId]?.name,
-              onTap: () => onTap(t),
-            ),
-          )));
-      items.add(const SizedBox(height: AppSpacing.md));
-    });
-
     return ListView(
       padding:
           EdgeInsets.symmetric(horizontal: hPad, vertical: AppSpacing.base),
       children: [
-        ...items,
+        for (final entry in grouped.entries) ...[
+          AdaptiveGroupHeader(
+            title: entry.key.label,
+            count: entry.value.length,
+            accentColor: taskAccentColor(entry.key, false),
+            children: [
+              for (int i = 0; i < entry.value.length; i++) ...[
+                TaskRow(
+                  key: ValueKey(entry.value[i].id),
+                  task: entry.value[i],
+                  tripName: provider.tripsById[entry.value[i].tripId]?.name,
+                  onTap: () => onTap(entry.value[i]),
+                ),
+                if (i < entry.value.length - 1) const SizedBox(height: 8),
+              ],
+            ],
+          ),
+          const SizedBox(height: 16),
+        ],
         const SizedBox(height: AppSpacing.massive),
       ],
     );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Section header — group label with count badge
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _SectionHeader extends StatelessWidget {
-  final String label;
-  final int count;
-  final Color? dotColor;
-
-  const _SectionHeader(
-      {required this.label, required this.count, this.dotColor});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10, top: 8),
-      child: Row(
-        children: [
-          if (dotColor != null) ...[
-            Container(
-              width: 7,
-              height: 7,
-              decoration:
-                  BoxDecoration(color: dotColor, shape: BoxShape.circle),
-            ),
-            const SizedBox(width: 8),
-          ],
-          Text(
-            label,
-            style: GoogleFonts.inter(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: const Color(0xFF6B7280),
-              letterSpacing: 0.2,
-              height: 1.4,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-            decoration: BoxDecoration(
-              color: AppColors.surfaceAlt,
-              borderRadius: BorderRadius.circular(99),
-            ),
-            child: Text(
-              '$count',
-              style: GoogleFonts.inter(
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
-                color: const Color(0xFF9CA3AF),
-                height: 1.2,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Task card — replaces _TaskRow
-// Architecture note: entire card is tappable. Left accent bar visually encodes
-// status for instant scanning. Designed to be extensible for swipe gestures
-// and inline status editing in future iterations.
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _TaskCard extends StatefulWidget {
-  final Task task;
-  final String? tripName;
-  final bool showTrip;
-  final VoidCallback onTap;
-
-  const _TaskCard({
-    required this.task,
-    required this.onTap,
-    this.tripName,
-    this.showTrip = true,
-  });
-
-  @override
-  State<_TaskCard> createState() => _TaskCardState();
-}
-
-class _TaskCardState extends State<_TaskCard> {
-  bool _hovered = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final task = widget.task;
-    final overdue = _isOverdue(task);
-    final accent = _accentColor(task.status, overdue);
-
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      child: GestureDetector(
-        onTap: widget.onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(_kCardRadius),
-            boxShadow: [
-              BoxShadow(
-                color: Color(_hovered ? 0x0E000000 : 0x07000000),
-                blurRadius: _hovered ? 16 : 8,
-                offset: Offset(0, _hovered ? 4 : 2),
-              ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(_kCardRadius),
-            child: Stack(
-              children: [
-                // Main content — defines card height
-                Padding(
-                  padding:
-                      const EdgeInsets.fromLTRB(18, 14, 14, 14),
-                  child: _CardContent(
-                    task: task,
-                    tripName: widget.tripName,
-                    showTrip: widget.showTrip,
-                    isOverdue: overdue,
-                  ),
-                ),
-                // Left accent bar — stretches to full card height via Positioned
-                Positioned(
-                  left: 0,
-                  top: 0,
-                  bottom: 0,
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 150),
-                    width: 4,
-                    color: accent,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ── Card content ──────────────────────────────────────────────────────────────
-
-class _CardContent extends StatelessWidget {
-  final Task task;
-  final String? tripName;
-  final bool showTrip;
-  final bool isOverdue;
-
-  const _CardContent({
-    required this.task,
-    required this.isOverdue,
-    this.tripName,
-    this.showTrip = true,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Title + assignee avatar
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Text(
-                task.name,
-                style: GoogleFonts.inter(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFF111111),
-                  height: 1.3,
-                  letterSpacing: -0.1,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            if (task.assignedTo != null) ...[
-              const SizedBox(width: 10),
-              UserAvatar(user: task.assignedTo!, size: 28),
-            ],
-          ],
-        ),
-
-        // Trip name
-        if (showTrip && tripName != null && tripName!.isNotEmpty) ...[
-          const SizedBox(height: 4),
-          Text(
-            tripName!,
-            style: GoogleFonts.inter(
-              fontSize: 13,
-              color: const Color(0xFF777777),
-              height: 1.3,
-            ),
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
-
-        const SizedBox(height: 8),
-
-        // Due date + priority chip row
-        Row(
-          children: [
-            if (task.dueDate != null) ...[
-              _DueLabel(dueDate: task.dueDate!, isOverdue: isOverdue),
-              const SizedBox(width: 8),
-              Container(
-                  width: 3,
-                  height: 3,
-                  decoration: const BoxDecoration(
-                      color: Color(0xFFD1D5DB), shape: BoxShape.circle)),
-              const SizedBox(width: 8),
-            ],
-            _PriorityPill(priority: task.priority),
-          ],
-        ),
-
-        const SizedBox(height: 5),
-
-        // Operational state label
-        Text(
-          _operationalLabel(task.status, isOverdue),
-          style: GoogleFonts.inter(
-            fontSize: 12,
-            color: const Color(0xFFABAFBB),
-            fontWeight: FontWeight.w400,
-            height: 1.3,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ── Due date label ────────────────────────────────────────────────────────────
-
-class _DueLabel extends StatelessWidget {
-  final DateTime dueDate;
-  final bool isOverdue;
-
-  const _DueLabel({required this.dueDate, required this.isOverdue});
-
-  @override
-  Widget build(BuildContext context) {
-    final text = _format(dueDate, isOverdue);
-    final isToday = text == 'Due Today';
-    final color = isOverdue
-        ? const Color(0xFFEF4444)
-        : isToday
-            ? const Color(0xFFF59E0B)
-            : const Color(0xFF9CA3AF);
-
-    return Text(
-      text,
-      style: GoogleFonts.inter(
-        fontSize: 12,
-        fontWeight:
-            (isOverdue || isToday) ? FontWeight.w600 : FontWeight.w400,
-        color: color,
-        height: 1.3,
-      ),
-    );
-  }
-
-  static String _format(DateTime d, bool overdue) {
-    if (overdue) return 'Overdue';
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final diff = d.difference(today).inDays;
-    if (diff == 0) return 'Due Today';
-    if (diff == 1) return 'Due Tomorrow';
-    return DateFormat('d MMM').format(d);
-  }
-}
-
-// ── Priority pill ─────────────────────────────────────────────────────────────
-
-class _PriorityPill extends StatelessWidget {
-  final TaskPriority priority;
-  const _PriorityPill({required this.priority});
-
-  @override
-  Widget build(BuildContext context) {
-    final (bg, fg) = _colors(priority);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(99),
-      ),
-      child: Text(
-        priority.label,
-        style: GoogleFonts.inter(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          color: fg,
-          height: 1.2,
-        ),
-      ),
-    );
-  }
-
-  static (Color, Color) _colors(TaskPriority p) {
-    switch (p) {
-      case TaskPriority.low:
-        return (const Color(0xFFF3F4F6), const Color(0xFF9CA3AF));
-      case TaskPriority.medium:
-        return (const Color(0xFFFDF3DC), const Color(0xFFB45309));
-      case TaskPriority.high:
-        return (const Color(0xFFFEE2E2), const Color(0xFFDC2626));
-    }
   }
 }
