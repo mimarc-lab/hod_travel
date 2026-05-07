@@ -570,13 +570,63 @@ class _NavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = Responsive.isMobile(context);
     return ListenableBuilder(
       listenable: controller,
       builder: (context, _) {
         final idx        = controller.index;
-        final currentTab = tabs[idx];
         final isBoardTab = idx == 0;
+        final addGroupBtn = _PrimaryBtn(
+          bgColor: AppColors.accentFaint,
+          borderColor: AppColors.accent,
+          iconColor: AppColors.accent,
+          textColor: AppColors.accent,
+          icon: Icons.add,
+          label: 'Add Group',
+        );
 
+        if (!isMobile) {
+          // ── Desktop / tablet: scrollable tab bar + Add Group on right ────
+          return Container(
+            color: AppColors.surface,
+            child: Column(
+              children: [
+                const Divider(height: 1, color: AppColors.divider),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TabBar(
+                        controller: controller,
+                        isScrollable: true,
+                        tabAlignment: TabAlignment.start,
+                        labelStyle: AppTextStyles.bodySmall.copyWith(
+                            fontWeight: FontWeight.w600),
+                        unselectedLabelStyle: AppTextStyles.bodySmall,
+                        labelColor: AppColors.accent,
+                        unselectedLabelColor: AppColors.textSecondary,
+                        indicatorColor: AppColors.accent,
+                        indicatorWeight: 2,
+                        dividerColor: Colors.transparent,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.pagePaddingH),
+                        tabs: tabs
+                            .map((t) => Tab(text: t, height: 42))
+                            .toList(),
+                      ),
+                    ),
+                    if (isBoardTab) ...[
+                      addGroupBtn,
+                      const SizedBox(width: AppSpacing.pagePaddingH),
+                    ],
+                  ],
+                ),
+              ],
+            ),
+          );
+        }
+
+        // ── Mobile: dropdown + Add Group ─────────────────────────────────
+        final currentTab = tabs[idx];
         return Container(
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.pagePaddingH,
@@ -591,7 +641,6 @@ class _NavBar extends StatelessWidget {
           ),
           child: Row(
             children: [
-              // ── Tab dropdown ─────────────────────────────────────────────
               PopupMenuButton<int>(
                 onSelected: controller.animateTo,
                 shape: RoundedRectangleBorder(
@@ -602,13 +651,11 @@ class _NavBar extends StatelessWidget {
                     value: e.key,
                     child: Row(
                       children: [
-                        Icon(
-                          _tabIcons[e.key],
-                          size: 15,
-                          color: selected
-                              ? AppColors.accent
-                              : AppColors.textSecondary,
-                        ),
+                        Icon(_tabIcons[e.key],
+                            size: 15,
+                            color: selected
+                                ? AppColors.accent
+                                : AppColors.textSecondary),
                         const SizedBox(width: 10),
                         Text(
                           e.value,
@@ -658,19 +705,8 @@ class _NavBar extends StatelessWidget {
                   ),
                 ),
               ),
-
               const Spacer(),
-
-              // ── Add Group (Board tab only) ────────────────────────────────
-              if (isBoardTab)
-                _PrimaryBtn(
-                  bgColor: AppColors.accentFaint,
-                  borderColor: AppColors.accent,
-                  iconColor: AppColors.accent,
-                  textColor: AppColors.accent,
-                  icon: Icons.add,
-                  label: 'Add Group',
-                ),
+              if (isBoardTab) addGroupBtn,
             ],
           ),
         );
