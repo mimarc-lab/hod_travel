@@ -4,10 +4,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../data/models/signature_experience.dart';
 
-/// Refined search + filter bar for the Experience Library.
-///
-/// Search: 48px height, 14px radius, subtle shadow, full-width.
-/// Status + category filters: horizontally scrollable chip rows.
+/// Search + category dropdown (inline row) + status chips.
 class SignatureExperienceFilterBar extends StatelessWidget {
   final String search;
   final ValueChanged<String> onSearchChanged;
@@ -31,11 +28,22 @@ class SignatureExperienceFilterBar extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ── Search bar ──────────────────────────────────────────────────────
-        _EditorialSearchBar(onChanged: onSearchChanged),
-        const SizedBox(height: 12),
+        // ── Row 1: Search + Category dropdown ──────────────────────────────
+        Row(
+          children: [
+            Expanded(
+              child: _EditorialSearchBar(onChanged: onSearchChanged),
+            ),
+            const SizedBox(width: 10),
+            _CategoryDropdown(
+              selected: filterCategory,
+              onChanged: onCategoryChanged,
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
 
-        // ── Status chips ─────────────────────────────────────────────────────
+        // ── Row 2: Status chips ─────────────────────────────────────────────
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           clipBehavior: Clip.none,
@@ -65,32 +73,6 @@ class SignatureExperienceFilterBar extends StatelessWidget {
                   ),
                 ),
               ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 8),
-
-        // ── Category chips ───────────────────────────────────────────────────
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          clipBehavior: Clip.none,
-          child: Row(
-            children: [
-              for (int i = 0; i < ExperienceCategory.values.length; i++) ...[
-                if (i > 0) const SizedBox(width: 6),
-                _FilterChip(
-                  label: ExperienceCategory.values[i].label,
-                  selected: filterCategory == ExperienceCategory.values[i],
-                  activeColor: ExperienceCategory.values[i].color,
-                  activeBg:
-                      ExperienceCategory.values[i].color.withAlpha(26),
-                  onTap: () => onCategoryChanged(
-                    filterCategory == ExperienceCategory.values[i]
-                        ? null
-                        : ExperienceCategory.values[i],
-                  ),
-                ),
-              ],
             ],
           ),
         ),
@@ -126,8 +108,8 @@ class _EditorialSearchBar extends StatelessWidget {
         style: AppTextStyles.bodyMedium,
         decoration: InputDecoration(
           hintText: 'Search experiences, destinations, themes...',
-          hintStyle: AppTextStyles.bodySmall
-              .copyWith(color: AppColors.textMuted),
+          hintStyle:
+              AppTextStyles.bodySmall.copyWith(color: AppColors.textMuted),
           prefixIcon: const Icon(
             Icons.search_rounded,
             size: 20,
@@ -145,7 +127,158 @@ class _EditorialSearchBar extends StatelessWidget {
   }
 }
 
-// ── Filter chip ───────────────────────────────────────────────────────────────
+// ── Category dropdown button ──────────────────────────────────────────────────
+
+class _CategoryDropdown extends StatelessWidget {
+  final ExperienceCategory? selected;
+  final ValueChanged<ExperienceCategory?> onChanged;
+
+  const _CategoryDropdown({
+    required this.selected,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final hasSelection = selected != null;
+    final label = selected?.label ?? 'Category';
+    final dotColor = selected?.color ?? AppColors.textMuted;
+    final borderColor =
+        hasSelection ? selected!.color.withAlpha(100) : AppColors.border;
+    final bgColor =
+        hasSelection ? selected!.color.withAlpha(18) : Colors.white;
+
+    return PopupMenuButton<ExperienceCategory?>(
+      onSelected: onChanged,
+      offset: const Offset(0, 54),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      elevation: 8,
+      shadowColor: const Color(0x18000000),
+      constraints: const BoxConstraints(minWidth: 200),
+      itemBuilder: (_) => [
+        // All categories option
+        PopupMenuItem<ExperienceCategory?>(
+          value: null,
+          child: Row(
+            children: [
+              Container(
+                width: 8,
+                height: 8,
+                decoration: const BoxDecoration(
+                  color: AppColors.textMuted,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                'All Categories',
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  fontWeight: selected == null
+                      ? FontWeight.w600
+                      : FontWeight.w400,
+                  color: selected == null
+                      ? AppColors.textPrimary
+                      : AppColors.textSecondary,
+                ),
+              ),
+              if (selected == null) ...[
+                const Spacer(),
+                const Icon(Icons.check_rounded,
+                    size: 14, color: AppColors.accent),
+              ],
+            ],
+          ),
+        ),
+        const PopupMenuDivider(height: 1),
+        // Individual categories
+        ...ExperienceCategory.values.map(
+          (c) => PopupMenuItem<ExperienceCategory?>(
+            value: c,
+            child: Row(
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: c.color,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  c.label,
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    fontWeight: selected == c
+                        ? FontWeight.w600
+                        : FontWeight.w400,
+                    color: selected == c
+                        ? c.color
+                        : AppColors.textSecondary,
+                  ),
+                ),
+                if (selected == c) ...[
+                  const Spacer(),
+                  Icon(Icons.check_rounded, size: 14, color: c.color),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ],
+      // Trigger button
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 120),
+        height: 48,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: borderColor, width: 0.75),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x09000000),
+              blurRadius: 8,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: dotColor,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                fontWeight:
+                    hasSelection ? FontWeight.w600 : FontWeight.w400,
+                color: hasSelection ? selected!.color : AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Icon(
+              Icons.keyboard_arrow_down_rounded,
+              size: 16,
+              color: hasSelection ? selected!.color : AppColors.textMuted,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Status filter chip ────────────────────────────────────────────────────────
 
 class _FilterChip extends StatelessWidget {
   final String label;
@@ -188,8 +321,7 @@ class _FilterChip extends StatelessWidget {
           label,
           style: GoogleFonts.inter(
             fontSize: 12,
-            fontWeight:
-                selected ? FontWeight.w600 : FontWeight.w400,
+            fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
             color: fg,
             height: 1.3,
           ),
