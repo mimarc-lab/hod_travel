@@ -83,41 +83,38 @@ class PlanningTimelineBanner extends StatelessWidget {
         color: isPast ? const Color(0xFFFFF7ED) : const Color(0xFFF0F9FF),
         border: const Border(bottom: BorderSide(color: AppColors.border)),
       ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.schedule_outlined, size: 13,
-                color: isPast ? const Color(0xFFB45309) : const Color(0xFF0369A1)),
-            const SizedBox(width: 6),
-            Text(
-              'Planning Timeline',
-              style: AppTextStyles.labelSmall.copyWith(
-                fontWeight: FontWeight.w600,
-                color: isPast ? const Color(0xFFB45309) : const Color(0xFF0369A1),
-              ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.schedule_outlined, size: 13,
+              color: isPast ? const Color(0xFFB45309) : const Color(0xFF0369A1)),
+          const SizedBox(width: 6),
+          Text(
+            'Planning Timeline',
+            style: AppTextStyles.labelSmall.copyWith(
+              fontWeight: FontWeight.w600,
+              color: isPast ? const Color(0xFFB45309) : const Color(0xFF0369A1),
             ),
-            const SizedBox(width: 16),
-            _Stat(label: 'Start', value: _fmt(earliest)),
-            _Divider(),
-            _Stat(
-              label: 'Complete By',
-              value: deadline != null ? _fmt(deadline) : '—',
-              valueColor: isPast ? const Color(0xFFEF4444) : null,
-            ),
-            _Divider(),
-            _Stat(label: 'Duration', value: '$durationDays days'),
-            _Divider(),
-            _Stat(
-              label: 'Team Effort',
-              value: '$totalEffort task-days  (~${approxHours}h)',
-              tooltip: 'Sum of all individual task durations — '
-                  'larger than the timeline span because tasks run in parallel. '
-                  'Working hours assume 8h per task-day.',
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(width: 16),
+          _Stat(label: 'Start', value: _fmt(earliest)),
+          _Divider(),
+          _Stat(
+            label: 'Complete By',
+            value: deadline != null ? _fmt(deadline) : '—',
+            valueColor: isPast ? const Color(0xFFEF4444) : null,
+          ),
+          _Divider(),
+          _Stat(label: 'Duration', value: '$durationDays days'),
+          _Divider(),
+          _Stat(
+            label: 'Team Effort',
+            value: '$totalEffort task-days  (~${approxHours}h)',
+            tooltip: 'Sum of all individual task durations — '
+                'larger than the timeline span because tasks run in parallel. '
+                'Working hours assume 8h per task-day.',
+          ),
+        ],
       ),
     );
   }
