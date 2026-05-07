@@ -132,99 +132,6 @@ class _TripBoardScreenState extends State<TripBoardScreen>
     }
   }
 
-  Future<void> _onRecalculate(BuildContext context) async {
-    if (_currentTrip.startDate == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Trip has no start date — cannot recalculate schedule.',
-          ),
-        ),
-      );
-      return;
-    }
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Recalculate Schedule?'),
-        content: const Text(
-          'This will re-run the planning engine and update the start date and '
-          'due date of every task based on their current durations.\n\n'
-          'Any manual date adjustments will be overwritten.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Recalculate'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true || !mounted) return;
-
-    try {
-      final analysis = await _provider.recalculateSchedule();
-      if (!mounted) return;
-      if (analysis == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No tasks to reschedule.')),
-        );
-        return;
-      }
-      final start = analysis.earliestStartDate;
-      final deadline = analysis.planningDeadline;
-      final msg = analysis.hasWarnings
-          ? analysis.warnings.first
-          : 'Schedule updated — ${analysis.tasks.length} tasks rescheduled. '
-                'Planning: ${_fmtDate(start)} → ${_fmtDate(deadline)}  ·  '
-                '${analysis.timelineDurationDays} days  ·  ${analysis.totalEffortDays} task-days';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(msg),
-          backgroundColor: analysis.isCompressed
-              ? Colors.orange.shade700
-              : Colors.green.shade700,
-          behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 8),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        ),
-      );
-    } catch (e) {
-      debugPrint('[Recalculate] error: $e');
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Could not recalculate schedule. Please try again.'),
-        ),
-      );
-    }
-  }
-
-  static String _fmtDate(DateTime? d) {
-    if (d == null) return '—';
-    const m = [
-      '',
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    return '${m[d.month]} ${d.day}';
-  }
-
   void _openRunSheet(BuildContext context) {
     Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => RunSheetScreen(trip: widget.trip)),
@@ -303,12 +210,7 @@ class _TripBoardScreenState extends State<TripBoardScreen>
                     controller: _tabController,
                     physics: const NeverScrollableScrollPhysics(),
                     children: [
-                      _BoardTab(
-                        provider: _provider,
-                        onAiAssist: () =>
-                            _tabController.animateTo(6), // Intelligence tab
-                        onRecalculate: () => _onRecalculate(context),
-                      ),
+                      _BoardTab(provider: _provider),
                       TimelineScreen(
                         trip: widget.trip,
                         provider: _provider,
@@ -688,13 +590,7 @@ class _BoardTabBar extends StatelessWidget {
 
 class _BoardTab extends StatelessWidget {
   final BoardProvider provider;
-  final VoidCallback? onAiAssist;
-  final VoidCallback? onRecalculate;
-  const _BoardTab({
-    required this.provider,
-    this.onAiAssist,
-    this.onRecalculate,
-  });
+  const _BoardTab({required this.provider});
 
   @override
   Widget build(BuildContext context) {
@@ -705,11 +601,7 @@ class _BoardTab extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _BoardToolbar(
-              onAiAssist:    onAiAssist,
-              onRecalculate: onRecalculate,
-              provider:      provider,
-            ),
+            const _BoardToolbar(),
 
             // ── Sticky header — sits above the scroll area, never scrolls away.
             // Mirrors BudgetColumnHeader placement in TripBudgetScreen.
@@ -755,14 +647,7 @@ class _BoardTab extends StatelessWidget {
 // ── Toolbar ───────────────────────────────────────────────────────────────────
 
 class _BoardToolbar extends StatelessWidget {
-  final BoardProvider provider;
-  final VoidCallback? onAiAssist;
-  final VoidCallback? onRecalculate;
-  const _BoardToolbar({
-    required this.provider,
-    this.onAiAssist,
-    this.onRecalculate,
-  });
+  const _BoardToolbar();
 
   @override
   Widget build(BuildContext context) {
@@ -778,54 +663,6 @@ class _BoardToolbar extends StatelessWidget {
       child: Row(
         children: [
           const Spacer(),
-
-          // ── Actions ───────────────────────────────────────────────────────
-
-          // Recalculate Schedule
-          if (onRecalculate != null) ...[
-            ListenableBuilder(
-              listenable: provider,
-              builder: (_, _) {
-                final busy = provider.isRecalculating;
-                return _PrimaryBtn(
-                  onTap: busy ? null : onRecalculate,
-                  bgColor: const Color(0xFFF0FDF4),
-                  borderColor: const Color(0xFF16A34A),
-                  iconColor: const Color(0xFF16A34A),
-                  textColor: const Color(0xFF16A34A),
-                  icon: busy ? null : Icons.refresh_rounded,
-                  label: busy ? 'Recalculating…' : 'Recalculate Schedule',
-                  loadingIndicator: busy
-                      ? const SizedBox(
-                          width: 11,
-                          height: 11,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 1.5,
-                            color: Color(0xFF16A34A),
-                          ),
-                        )
-                      : null,
-                );
-              },
-            ),
-            const SizedBox(width: 6),
-          ],
-
-          // AI Assist
-          if (onAiAssist != null) ...[
-            _PrimaryBtn(
-              onTap: onAiAssist,
-              bgColor: const Color(0xFFF5F3FF),
-              borderColor: const Color(0xFF7C3AED),
-              iconColor: const Color(0xFF7C3AED),
-              textColor: const Color(0xFF7C3AED),
-              icon: Icons.auto_awesome_rounded,
-              label: 'AI Assist',
-            ),
-            const SizedBox(width: 6),
-          ],
-
-          // Add Group
           _PrimaryBtn(
             bgColor: AppColors.accentFaint,
             borderColor: AppColors.accent,
@@ -842,14 +679,12 @@ class _BoardToolbar extends StatelessWidget {
 
 
 class _PrimaryBtn extends StatelessWidget {
-  final VoidCallback? onTap;
   final Color bgColor;
   final Color borderColor;
   final Color iconColor;
   final Color textColor;
   final IconData? icon;
   final String label;
-  final Widget? loadingIndicator;
 
   const _PrimaryBtn({
     required this.bgColor,
@@ -857,38 +692,30 @@ class _PrimaryBtn extends StatelessWidget {
     required this.iconColor,
     required this.textColor,
     required this.label,
-    this.onTap,
     this.icon,
-    this.loadingIndicator,
   });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
-        decoration: BoxDecoration(
-          color: bgColor,
-          borderRadius: BorderRadius.circular(7),
-          border: Border.all(color: borderColor.withAlpha(70), width: 0.75),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (loadingIndicator != null) ...[
-              loadingIndicator!,
-              const SizedBox(width: 5),
-            ] else if (icon != null) ...[
-              Icon(icon, size: 13, color: iconColor),
-              const SizedBox(width: 5),
-            ],
-            Text(
-              label,
-              style: AppTextStyles.labelMedium.copyWith(color: textColor),
-            ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(7),
+        border: Border.all(color: borderColor.withAlpha(70), width: 0.75),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 13, color: iconColor),
+            const SizedBox(width: 5),
           ],
-        ),
+          Text(
+            label,
+            style: AppTextStyles.labelMedium.copyWith(color: textColor),
+          ),
+        ],
       ),
     );
   }
