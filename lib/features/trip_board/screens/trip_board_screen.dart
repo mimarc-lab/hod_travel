@@ -26,7 +26,7 @@ import '../../../features/trips/screens/edit_trip_screen.dart';
 import '../widgets/board_group.dart';
 import '../widgets/planning_timeline_banner.dart';
 import '../widgets/task_detail/task_detail_panel.dart';
-import '../widgets/task_row.dart';
+import '../widgets/task_row.dart' show BoardTableHeader, boardLayoutFor, BoardLayout;
 
 class TripBoardScreen extends StatefulWidget {
   final Trip trip;
@@ -627,44 +627,48 @@ class _BoardTab extends StatelessWidget {
     this.onRecalculate,
   });
 
-  static const double _totalWidth = BoardColumns.totalWidth;
-
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
         _BoardToolbar(
-          onAiAssist: onAiAssist,
+          onAiAssist:    onAiAssist,
           onRecalculate: onRecalculate,
-          provider: provider,
+          provider:      provider,
         ),
         Expanded(
-          child: ListenableBuilder(
-            listenable: provider,
-            builder: (context, _) {
-              final selectedId = provider.selectedTask?.id;
-              return SingleChildScrollView(
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(minWidth: _totalWidth),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final layout = boardLayoutFor(constraints.maxWidth);
+              return ListenableBuilder(
+                listenable: provider,
+                builder: (context, _) {
+                  final selectedId = provider.selectedTask?.id;
+                  // Mobile: no header, padding between groups via card margins
+                  final topPad = layout == BoardLayout.mobile ? 8.0 : 0.0;
+                  return SingleChildScrollView(
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const BoardTableHeader(),
-                        const Divider(height: 1, color: AppColors.border),
+                        SizedBox(height: topPad),
+                        BoardTableHeader(layout: layout),
+                        if (layout != BoardLayout.mobile)
+                          const Divider(
+                              height: 1, color: AppColors.border),
                         ...provider.groups.map(
                           (g) => BoardGroupWidget(
-                            key: ValueKey(g.id),
-                            group: g,
-                            provider: provider,
+                            key:            ValueKey(g.id),
+                            group:          g,
+                            provider:       provider,
+                            layout:         layout,
                             selectedTaskId: selectedId,
                           ),
                         ),
+                        const SizedBox(height: AppSpacing.massive),
                       ],
                     ),
-                  ),
-                ),
+                  );
+                },
               );
             },
           ),
@@ -691,7 +695,7 @@ class _BoardToolbar extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.pagePaddingH,
-        vertical: AppSpacing.sm,
+        vertical: 10,
       ),
       decoration: const BoxDecoration(
         color: AppColors.surface,
@@ -699,113 +703,69 @@ class _BoardToolbar extends StatelessWidget {
       ),
       child: Row(
         children: [
-          _ToolbarBtn(icon: Icons.filter_list_rounded, label: 'Filter'),
-          const SizedBox(width: AppSpacing.sm),
-          _ToolbarBtn(icon: Icons.group_outlined, label: 'Group by'),
-          const SizedBox(width: AppSpacing.sm),
-          _ToolbarBtn(icon: Icons.sort_rounded, label: 'Sort'),
+          // ── Left: secondary actions ──────────────────────────────────────
+          _ToolbarBtn(icon: Icons.filter_list_rounded,  label: 'Filter'),
+          const SizedBox(width: 6),
+          _ToolbarBtn(icon: Icons.group_outlined,       label: 'Group by'),
+          const SizedBox(width: 6),
+          _ToolbarBtn(icon: Icons.sort_rounded,         label: 'Sort'),
+
           const Spacer(),
-          // Recalculate Schedule button
+
+          // ── Right: primary actions ───────────────────────────────────────
+
+          // Recalculate Schedule
           if (onRecalculate != null) ...[
             ListenableBuilder(
               listenable: provider,
               builder: (_, _) {
                 final busy = provider.isRecalculating;
-                return GestureDetector(
+                return _PrimaryBtn(
                   onTap: busy ? null : onRecalculate,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF0FDF4),
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(
-                        color: const Color(0xFF16A34A).withAlpha(60),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (busy)
-                          const SizedBox(
-                            width: 11,
-                            height: 11,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 1.5,
-                              color: Color(0xFF16A34A),
-                            ),
-                          )
-                        else
-                          const Icon(
-                            Icons.refresh_rounded,
-                            size: 13,
+                  bgColor: const Color(0xFFF0FDF4),
+                  borderColor: const Color(0xFF16A34A),
+                  iconColor: const Color(0xFF16A34A),
+                  textColor: const Color(0xFF16A34A),
+                  icon: busy ? null : Icons.refresh_rounded,
+                  label: busy ? 'Recalculating…' : 'Recalculate Schedule',
+                  loadingIndicator: busy
+                      ? const SizedBox(
+                          width: 11,
+                          height: 11,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 1.5,
                             color: Color(0xFF16A34A),
                           ),
-                        const SizedBox(width: 5),
-                        Text(
-                          busy ? 'Recalculating…' : 'Recalculate Schedule',
-                          style: AppTextStyles.labelMedium.copyWith(
-                            color: const Color(0xFF16A34A),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                        )
+                      : null,
                 );
               },
             ),
-            const SizedBox(width: AppSpacing.sm),
+            const SizedBox(width: 6),
           ],
+
+          // AI Assist
           if (onAiAssist != null) ...[
-            GestureDetector(
+            _PrimaryBtn(
               onTap: onAiAssist,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF5F3FF),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(
-                    color: const Color(0xFF7C3AED).withAlpha(60),
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.auto_awesome_rounded,
-                      size: 13,
-                      color: Color(0xFF7C3AED),
-                    ),
-                    const SizedBox(width: 5),
-                    Text(
-                      'AI Assist',
-                      style: AppTextStyles.labelMedium.copyWith(
-                        color: const Color(0xFF7C3AED),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              bgColor: const Color(0xFFF5F3FF),
+              borderColor: const Color(0xFF7C3AED),
+              iconColor: const Color(0xFF7C3AED),
+              textColor: const Color(0xFF7C3AED),
+              icon: Icons.auto_awesome_rounded,
+              label: 'AI Assist',
             ),
-            const SizedBox(width: AppSpacing.sm),
+            const SizedBox(width: 6),
           ],
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.add, size: 15, color: AppColors.accent),
-              const SizedBox(width: 4),
-              Text(
-                'Add Group',
-                style: AppTextStyles.labelMedium.copyWith(
-                  color: AppColors.accent,
-                ),
-              ),
-            ],
+
+          // Add Group
+          _PrimaryBtn(
+            bgColor: AppColors.accentFaint,
+            borderColor: AppColors.accent,
+            iconColor: AppColors.accent,
+            textColor: AppColors.accent,
+            icon: Icons.add,
+            label: 'Add Group',
           ),
         ],
       ),
@@ -821,19 +781,72 @@ class _ToolbarBtn extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
         color: AppColors.surfaceAlt,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: AppColors.border),
+        borderRadius: BorderRadius.circular(7),
+        border: Border.all(color: AppColors.border, width: 0.75),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: AppColors.textSecondary),
+          Icon(icon, size: 13, color: AppColors.textSecondary),
           const SizedBox(width: 5),
           Text(label, style: AppTextStyles.labelMedium),
         ],
+      ),
+    );
+  }
+}
+
+class _PrimaryBtn extends StatelessWidget {
+  final VoidCallback? onTap;
+  final Color bgColor;
+  final Color borderColor;
+  final Color iconColor;
+  final Color textColor;
+  final IconData? icon;
+  final String label;
+  final Widget? loadingIndicator;
+
+  const _PrimaryBtn({
+    required this.bgColor,
+    required this.borderColor,
+    required this.iconColor,
+    required this.textColor,
+    required this.label,
+    this.onTap,
+    this.icon,
+    this.loadingIndicator,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(7),
+          border: Border.all(color: borderColor.withAlpha(70), width: 0.75),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (loadingIndicator != null) ...[
+              loadingIndicator!,
+              const SizedBox(width: 5),
+            ] else if (icon != null) ...[
+              Icon(icon, size: 13, color: iconColor),
+              const SizedBox(width: 5),
+            ],
+            Text(
+              label,
+              style: AppTextStyles.labelMedium.copyWith(color: textColor),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -78,7 +78,9 @@ class PlanningTimelineBanner extends StatelessWidget {
           bottom: BorderSide(color: AppColors.border),
         ),
       ),
-      child: Row(
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
             Icon(
@@ -114,6 +116,7 @@ class PlanningTimelineBanner extends StatelessWidget {
             ),
           ],
         ),
+      ),
     );
   }
 
