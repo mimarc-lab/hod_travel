@@ -629,32 +629,37 @@ class _BoardTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        _BoardToolbar(
-          onAiAssist:    onAiAssist,
-          onRecalculate: onRecalculate,
-          provider:      provider,
-        ),
-        Expanded(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final layout = boardLayoutFor(constraints.maxWidth);
-              return ListenableBuilder(
+    // LayoutBuilder wraps everything so header + rows share the same layout tier.
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final layout = boardLayoutFor(constraints.maxWidth);
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _BoardToolbar(
+              onAiAssist:    onAiAssist,
+              onRecalculate: onRecalculate,
+              provider:      provider,
+            ),
+
+            // ── Sticky header — sits above the scroll area, never scrolls away.
+            // Mirrors BudgetColumnHeader placement in TripBudgetScreen.
+            BoardTableHeader(layout: layout),
+            if (layout != BoardLayout.mobile)
+              const Divider(height: 1, color: AppColors.border),
+
+            // ── Scrollable content
+            Expanded(
+              child: ListenableBuilder(
                 listenable: provider,
                 builder: (context, _) {
                   final selectedId = provider.selectedTask?.id;
-                  // Mobile: no header, padding between groups via card margins
-                  final topPad = layout == BoardLayout.mobile ? 8.0 : 0.0;
                   return SingleChildScrollView(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        SizedBox(height: topPad),
-                        BoardTableHeader(layout: layout),
-                        if (layout != BoardLayout.mobile)
-                          const Divider(
-                              height: 1, color: AppColors.border),
+                        if (layout == BoardLayout.mobile)
+                          const SizedBox(height: 8),
                         ...provider.groups.map(
                           (g) => BoardGroupWidget(
                             key:            ValueKey(g.id),
@@ -669,11 +674,11 @@ class _BoardTab extends StatelessWidget {
                     ),
                   );
                 },
-              );
-            },
-          ),
-        ),
-      ],
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

@@ -92,7 +92,6 @@ class BudgetSummaryCards extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           content,
-          _HealthIndicator(summary: summary),
           const SizedBox(height: 12),
         ],
       ),
@@ -199,67 +198,6 @@ class _KpiCardState extends State<_KpiCard> {
             ],
           ],
         ),
-      ),
-    );
-  }
-}
-
-// ── Financial health indicator ────────────────────────────────────────────────
-
-class _HealthIndicator extends StatelessWidget {
-  final BudgetSummary summary;
-  const _HealthIndicator({required this.summary});
-
-  String get _label {
-    if (summary.totalSellPrice <= 0) return '';
-    final pct = summary.totalMargin / summary.totalSellPrice * 100;
-    if (pct >= 25) return 'Healthy Margin — ${pct.toStringAsFixed(1)}%';
-    if (pct >= 15) return 'Solid Margin — ${pct.toStringAsFixed(1)}%';
-    if (summary.outstandingAmount > summary.totalSellPrice * 0.6) {
-      return 'Outstanding payments require attention';
-    }
-    return '';
-  }
-
-  Color get _color {
-    if (summary.totalSellPrice <= 0) return AppColors.textMuted;
-    final pct = summary.totalMargin / summary.totalSellPrice * 100;
-    if (pct >= 25) return const Color(0xFF5A9E6F);
-    if (pct >= 15) return const Color(0xFF5A9E6F);
-    if (summary.outstandingAmount > summary.totalSellPrice * 0.6) {
-      return const Color(0xFFD4845A);
-    }
-    return AppColors.textMuted;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final label = _label;
-    if (label.isEmpty) return const SizedBox(height: 8);
-
-    return Padding(
-      padding: const EdgeInsets.only(top: 10),
-      child: Row(
-        children: [
-          Container(
-            width: 5,
-            height: 5,
-            decoration: BoxDecoration(
-              color: _color,
-              shape: BoxShape.circle,
-            ),
-          ),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: GoogleFonts.inter(
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              color: _color,
-              height: 1.3,
-            ),
-          ),
-        ],
       ),
     );
   }

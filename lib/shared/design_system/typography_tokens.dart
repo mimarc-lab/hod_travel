@@ -7,10 +7,10 @@ import '../../core/constants/app_colors.dart';
 abstract class AdaptiveTypography {
   // ── Column header row ─────────────────────────────────────────────────────
   static TextStyle get columnHeader => GoogleFonts.inter(
-        fontSize: 11,
+        fontSize: 12,
         fontWeight: FontWeight.w600,
-        color: AppColors.textMuted,
-        letterSpacing: 0.4,
+        color: const Color(0xFF9AA1AE),
+        letterSpacing: 0.04,
         height: 1.4,
       );
 

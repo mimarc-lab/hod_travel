@@ -5,6 +5,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../data/models/task_model.dart';
+import '../../../shared/design_system/spacing_tokens.dart';
 import '../../../shared/widgets/status_chip.dart';
 import '../../../shared/widgets/stacked_avatars.dart';
 import '../providers/board_provider.dart';
@@ -38,10 +39,12 @@ abstract class _BC {
 }
 
 // Shared layout constants — header and rows must use exactly these values.
+// _kAccentW + AdaptiveSpacing.rowPaddingH = 19px: where task-name text begins.
+// The header spacer uses the same 19px so labels land on the same pixel.
 const double _kAccentW  = 3.0;   // left accent bar width
-const double _kCellPadH = 10.0;  // horizontal padding inside each cell
-const double _kNameLPad = 16.0;  // extra left pad in task name cell
+const double _kCellPadH = 10.0;  // horizontal padding inside each fixed cell
 const double _kRightPad = 8.0;   // trailing padding on every row
+// _kNameLPad intentionally removed — use AdaptiveSpacing.rowPaddingH (16) directly.
 
 // ── Header row ────────────────────────────────────────────────────────────────
 
@@ -80,7 +83,8 @@ class BoardTableHeader extends StatelessWidget {
       child: Row(
         children: [
           // Mirrors the accent bar + name-cell left padding on every task row.
-          const SizedBox(width: _kAccentW + _kNameLPad + _kCellPadH),
+          // 3px accent + 16px rowPaddingH = 19px — matches where task-name text starts in rows.
+          const SizedBox(width: _kAccentW + AdaptiveSpacing.rowPaddingH),
           // Task Name — Expanded (same as in task rows)
           const Expanded(
             child: Padding(
@@ -236,7 +240,10 @@ class _TaskRowState extends State<TaskRow> {
                       Expanded(
                         child: Padding(
                           padding: const EdgeInsets.fromLTRB(
-                              _kNameLPad, 12, _kCellPadH, 12),
+                              AdaptiveSpacing.rowPaddingH,
+                              AdaptiveSpacing.rowPaddingV,
+                              _kCellPadH,
+                              AdaptiveSpacing.rowPaddingV),
                           child: _TaskNameCell(
                             task: task,
                             isSelected: widget.isSelected,
@@ -714,7 +721,7 @@ class _InlineSubtaskRowState extends State<_InlineSubtaskRow> {
             Container(
                 width: 1, height: 32, color: const Color(0xFFECEAE7)),
             // Indent to sit under the task name text
-            const SizedBox(width: _kNameLPad + 8),
+            const SizedBox(width: AdaptiveSpacing.rowPaddingH + 8),
 
             // Checkbox
             GestureDetector(
