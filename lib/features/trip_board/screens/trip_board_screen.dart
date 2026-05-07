@@ -284,13 +284,14 @@ class _TripBoardScreenState extends State<TripBoardScreen>
           if (!_isClientView)
             _TripHeader(
               trip: _currentTrip,
+              provider: _provider,
               onBack: () => Navigator.of(context).pop(),
               onEdit: () => _openEditTrip(context),
               onDelete: () => _deleteTrip(context),
               onRunSheet: () => _openRunSheet(context),
             ),
           _BoardTabBar(controller: _tabController, tabs: _tabs),
-          if (!_isClientView)
+          if (!_isClientView && !Responsive.isMobile(context))
             PlanningTimelineBanner(trip: _currentTrip, provider: _provider),
           Expanded(
             child: Row(
@@ -390,163 +391,233 @@ class _PanelSlot extends StatelessWidget {
 
 // ── Trip Header ───────────────────────────────────────────────────────────────
 
-class _TripHeader extends StatelessWidget {
+class _TripHeader extends StatefulWidget {
   final Trip trip;
   final VoidCallback onBack;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
   final VoidCallback onRunSheet;
+  final BoardProvider provider;
+
   const _TripHeader({
     required this.trip,
     required this.onBack,
     required this.onEdit,
     required this.onDelete,
     required this.onRunSheet,
+    required this.provider,
   });
 
   @override
+  State<_TripHeader> createState() => _TripHeaderState();
+}
+
+class _TripHeaderState extends State<_TripHeader> {
+  bool _expanded = false;
+
+  @override
   Widget build(BuildContext context) {
+    final isMobile = Responsive.isMobile(context);
+    final trip = widget.trip;
+
     final dateStr = trip.startDate != null && trip.endDate != null
         ? '${DateFormat('d MMM').format(trip.startDate!)} – ${DateFormat('d MMM yyyy').format(trip.endDate!)}'
         : 'Dates TBD';
 
+    final topRow = Row(
+      children: [
+        GestureDetector(
+          onTap: widget.onBack,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.arrow_back_rounded, size: 16, color: AppColors.textSecondary),
+              const SizedBox(width: 4),
+              Text('Trips', style: AppTextStyles.bodySmall),
+              Text(' / ', style: AppTextStyles.bodySmall),
+              Text(
+                trip.name,
+                style: AppTextStyles.bodySmall.copyWith(color: AppColors.textPrimary),
+              ),
+            ],
+          ),
+        ),
+        const Spacer(),
+        TripStatusChip(status: trip.status),
+        const SizedBox(width: AppSpacing.sm),
+        _TripOptionsMenu(
+          onEdit: widget.onEdit,
+          onRunSheet: widget.onRunSheet,
+          onDelete: widget.onDelete,
+        ),
+      ],
+    );
+
+    final metaContent = Wrap(
+      spacing: AppSpacing.lg,
+      runSpacing: 6,
+      children: [
+        _MetaItem(icon: Icons.person_outline_rounded, label: trip.clientName),
+        _MetaItem(icon: Icons.calendar_today_outlined, label: dateStr),
+        _MetaItem(icon: Icons.location_on_outlined, label: trip.destinationSummary),
+        _MetaItem(icon: Icons.people_outline_rounded, label: '${trip.guestCount} guests'),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            UserAvatar(user: trip.tripLead, size: 18),
+            const SizedBox(width: 5),
+            Text(trip.tripLead.name, style: AppTextStyles.bodySmall),
+          ],
+        ),
+      ],
+    );
+
+    if (!isMobile) {
+      return Container(
+        color: AppColors.surface,
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.pagePaddingH,
+          vertical: AppSpacing.base,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            topRow,
+            const SizedBox(height: AppSpacing.sm),
+            metaContent,
+          ],
+        ),
+      );
+    }
+
+    // Mobile: collapsible details card
     return Container(
       color: AppColors.surface,
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.pagePaddingH,
-        vertical: AppSpacing.base,
-      ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Breadcrumb + status + options
-          Row(
-            children: [
-              GestureDetector(
-                onTap: onBack,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.arrow_back_rounded,
-                      size: 16,
-                      color: AppColors.textSecondary,
-                    ),
-                    const SizedBox(width: 4),
-                    Text('Trips', style: AppTextStyles.bodySmall),
-                    Text(' / ', style: AppTextStyles.bodySmall),
-                    Text(
-                      trip.name,
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Spacer(),
-              TripStatusChip(status: trip.status),
-              const SizedBox(width: AppSpacing.sm),
-              PopupMenuButton<String>(
-                onSelected: (value) {
-                  if (value == 'edit') onEdit();
-                  if (value == 'run_sheet') onRunSheet();
-                  if (value == 'delete') onDelete();
-                },
-                itemBuilder: (_) => [
-                  const PopupMenuItem(
-                    value: 'edit',
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.edit_outlined,
-                          size: 16,
-                          color: AppColors.textSecondary,
-                        ),
-                        SizedBox(width: 8),
-                        Text('Edit Trip'),
-                      ],
-                    ),
-                  ),
-                  const PopupMenuItem(
-                    value: 'run_sheet',
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.assignment_outlined,
-                          size: 16,
-                          color: AppColors.textSecondary,
-                        ),
-                        SizedBox(width: 8),
-                        Text('Run Sheet'),
-                      ],
-                    ),
-                  ),
-                  const PopupMenuDivider(),
-                  const PopupMenuItem(
-                    value: 'delete',
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.delete_outline_rounded,
-                          size: 16,
-                          color: Colors.red,
-                        ),
-                        SizedBox(width: 8),
-                        Text(
-                          'Delete trip',
-                          style: TextStyle(color: Colors.red),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-                child: Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceAlt,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: const Icon(
-                    Icons.more_horiz_rounded,
-                    size: 16,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ),
-            ],
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.pagePaddingH, AppSpacing.base,
+              AppSpacing.pagePaddingH, AppSpacing.sm,
+            ),
+            child: topRow,
           ),
-          const SizedBox(height: AppSpacing.sm),
-          // Meta row
-          Wrap(
-            spacing: AppSpacing.lg,
-            runSpacing: 6,
-            children: [
-              _MetaItem(
-                icon: Icons.person_outline_rounded,
-                label: trip.clientName,
+
+          // Animated details section
+          AnimatedCrossFade(
+            duration: const Duration(milliseconds: 220),
+            crossFadeState: _expanded
+                ? CrossFadeState.showSecond
+                : CrossFadeState.showFirst,
+            firstChild: const SizedBox.shrink(),
+            secondChild: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.pagePaddingH, 0,
+                    AppSpacing.pagePaddingH, AppSpacing.base,
+                  ),
+                  child: metaContent,
+                ),
+                PlanningTimelineBanner(trip: trip, provider: widget.provider),
+              ],
+            ),
+          ),
+
+          // Expand / collapse toggle strip
+          InkWell(
+            onTap: () => setState(() => _expanded = !_expanded),
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 7),
+              decoration: const BoxDecoration(
+                border: Border(top: BorderSide(color: AppColors.divider)),
               ),
-              _MetaItem(icon: Icons.calendar_today_outlined, label: dateStr),
-              _MetaItem(
-                icon: Icons.location_on_outlined,
-                label: trip.destinationSummary,
-              ),
-              _MetaItem(
-                icon: Icons.people_outline_rounded,
-                label: '${trip.guestCount} guests',
-              ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  UserAvatar(user: trip.tripLead, size: 18),
-                  const SizedBox(width: 5),
-                  Text(trip.tripLead.name, style: AppTextStyles.bodySmall),
+                  Text(
+                    _expanded ? 'Hide details' : 'Trip details',
+                    style: AppTextStyles.labelSmall.copyWith(color: AppColors.accent),
+                  ),
+                  const SizedBox(width: 3),
+                  AnimatedRotation(
+                    turns: _expanded ? 0.5 : 0.0,
+                    duration: const Duration(milliseconds: 220),
+                    child: Icon(Icons.expand_more_rounded, size: 14, color: AppColors.accent),
+                  ),
                 ],
               ),
-            ],
+            ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// Extracted popup menu so it can be reused without duplication
+class _TripOptionsMenu extends StatelessWidget {
+  final VoidCallback onEdit;
+  final VoidCallback onRunSheet;
+  final VoidCallback onDelete;
+
+  const _TripOptionsMenu({
+    required this.onEdit,
+    required this.onRunSheet,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<String>(
+      onSelected: (value) {
+        if (value == 'edit') onEdit();
+        if (value == 'run_sheet') onRunSheet();
+        if (value == 'delete') onDelete();
+      },
+      itemBuilder: (_) => [
+        const PopupMenuItem(
+          value: 'edit',
+          child: Row(
+            children: [
+              Icon(Icons.edit_outlined, size: 16, color: AppColors.textSecondary),
+              SizedBox(width: 8),
+              Text('Edit Trip'),
+            ],
+          ),
+        ),
+        const PopupMenuItem(
+          value: 'run_sheet',
+          child: Row(
+            children: [
+              Icon(Icons.assignment_outlined, size: 16, color: AppColors.textSecondary),
+              SizedBox(width: 8),
+              Text('Run Sheet'),
+            ],
+          ),
+        ),
+        const PopupMenuDivider(),
+        const PopupMenuItem(
+          value: 'delete',
+          child: Row(
+            children: [
+              Icon(Icons.delete_outline_rounded, size: 16, color: Colors.red),
+              SizedBox(width: 8),
+              Text('Delete trip', style: TextStyle(color: Colors.red)),
+            ],
+          ),
+        ),
+      ],
+      child: Container(
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(
+          color: AppColors.surfaceAlt,
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: const Icon(Icons.more_horiz_rounded, size: 16, color: AppColors.textSecondary),
       ),
     );
   }
