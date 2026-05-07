@@ -197,7 +197,7 @@ class _TripBoardScreenState extends State<TripBoardScreen>
               onDelete: () => _deleteTrip(context),
               onRunSheet: () => _openRunSheet(context),
             ),
-          _BoardTabBar(controller: _tabController, tabs: _tabs),
+          _NavBar(controller: _tabController, tabs: _tabs),
           if (!_isClientView && !Responsive.isMobile(context))
             PlanningTimelineBanner(trip: _currentTrip, provider: _provider),
           Expanded(
@@ -548,40 +548,133 @@ class _MetaItem extends StatelessWidget {
   }
 }
 
-// ── Tab bar ───────────────────────────────────────────────────────────────────
+// ── Navigation bar (tab dropdown + contextual actions) ───────────────────────
 
-class _BoardTabBar extends StatelessWidget {
+class _NavBar extends StatelessWidget {
   final TabController controller;
   final List<String> tabs;
-  const _BoardTabBar({required this.controller, required this.tabs});
+  const _NavBar({required this.controller, required this.tabs});
+
+  static const _tabIcons = <IconData>[
+    Icons.grid_view_rounded,           // Board
+    Icons.linear_scale_rounded,        // Timeline
+    Icons.map_outlined,                // Map
+    Icons.format_list_bulleted_rounded,// Itinerary
+    Icons.widgets_outlined,            // Components
+    Icons.account_balance_wallet_outlined, // Budget
+    Icons.folder_outlined,             // Documents
+    Icons.auto_awesome_rounded,        // Intelligence
+    Icons.visibility_outlined,         // Client View
+    Icons.monitor_heart_outlined,      // Health
+  ];
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: AppColors.surface,
-      child: Column(
-        children: [
-          const Divider(height: 1, color: AppColors.divider),
-          TabBar(
-            controller: controller,
-            isScrollable: true,
-            tabAlignment: TabAlignment.start,
-            labelStyle: AppTextStyles.bodySmall.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-            unselectedLabelStyle: AppTextStyles.bodySmall,
-            labelColor: AppColors.accent,
-            unselectedLabelColor: AppColors.textSecondary,
-            indicatorColor: AppColors.accent,
-            indicatorWeight: 2,
-            dividerColor: Colors.transparent,
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.pagePaddingH,
-            ),
-            tabs: tabs.map((t) => Tab(text: t, height: 42)).toList(),
+    return ListenableBuilder(
+      listenable: controller,
+      builder: (context, _) {
+        final idx        = controller.index;
+        final currentTab = tabs[idx];
+        final isBoardTab = idx == 0;
+
+        return Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.pagePaddingH,
+            vertical: 10,
           ),
-        ],
-      ),
+          decoration: const BoxDecoration(
+            color: AppColors.surface,
+            border: Border(
+              top:    BorderSide(color: AppColors.divider),
+              bottom: BorderSide(color: AppColors.border),
+            ),
+          ),
+          child: Row(
+            children: [
+              // ── Tab dropdown ─────────────────────────────────────────────
+              PopupMenuButton<int>(
+                onSelected: controller.animateTo,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
+                itemBuilder: (_) => tabs.asMap().entries.map((e) {
+                  final selected = e.key == idx;
+                  return PopupMenuItem<int>(
+                    value: e.key,
+                    child: Row(
+                      children: [
+                        Icon(
+                          _tabIcons[e.key],
+                          size: 15,
+                          color: selected
+                              ? AppColors.accent
+                              : AppColors.textSecondary,
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          e.value,
+                          style: AppTextStyles.bodySmall.copyWith(
+                            fontWeight: selected
+                                ? FontWeight.w600
+                                : FontWeight.w400,
+                            color: selected
+                                ? AppColors.accent
+                                : AppColors.textPrimary,
+                          ),
+                        ),
+                        if (selected) ...[
+                          const Spacer(),
+                          Icon(Icons.check_rounded,
+                              size: 14, color: AppColors.accent),
+                        ],
+                      ],
+                    ),
+                  );
+                }).toList(),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceAlt,
+                    borderRadius: BorderRadius.circular(7),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(_tabIcons[idx],
+                          size: 14, color: AppColors.textSecondary),
+                      const SizedBox(width: 7),
+                      Text(
+                        currentTab,
+                        style: AppTextStyles.bodySmall.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(width: 5),
+                      Icon(Icons.expand_more_rounded,
+                          size: 14, color: AppColors.textSecondary),
+                    ],
+                  ),
+                ),
+              ),
+
+              const Spacer(),
+
+              // ── Add Group (Board tab only) ────────────────────────────────
+              if (isBoardTab)
+                _PrimaryBtn(
+                  bgColor: AppColors.accentFaint,
+                  borderColor: AppColors.accent,
+                  iconColor: AppColors.accent,
+                  textColor: AppColors.accent,
+                  icon: Icons.add,
+                  label: 'Add Group',
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
@@ -601,8 +694,6 @@ class _BoardTab extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const _BoardToolbar(),
-
             // ── Sticky header — sits above the scroll area, never scrolls away.
             // Mirrors BudgetColumnHeader placement in TripBudgetScreen.
             BoardTableHeader(layout: layout),
@@ -644,38 +735,7 @@ class _BoardTab extends StatelessWidget {
   }
 }
 
-// ── Toolbar ───────────────────────────────────────────────────────────────────
 
-class _BoardToolbar extends StatelessWidget {
-  const _BoardToolbar();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.pagePaddingH,
-        vertical: 10,
-      ),
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        border: Border(bottom: BorderSide(color: AppColors.border)),
-      ),
-      child: Row(
-        children: [
-          const Spacer(),
-          _PrimaryBtn(
-            bgColor: AppColors.accentFaint,
-            borderColor: AppColors.accent,
-            iconColor: AppColors.accent,
-            textColor: AppColors.accent,
-            icon: Icons.add,
-            label: 'Add Group',
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 
 class _PrimaryBtn extends StatelessWidget {
