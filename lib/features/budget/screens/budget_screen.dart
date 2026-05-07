@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
-import '../../../core/constants/app_text_styles.dart';
 import '../../../core/supabase/app_db.dart';
 import '../../../core/utils/responsive.dart';
+import '../../../data/models/cost_item_model.dart';
 import '../../../data/models/supplier_model.dart';
 import '../../../data/models/trip_model.dart';
 import '../../../data/repositories/supplier_repository.dart';
 import '../../../data/repositories/trip_repository.dart';
+import '../../../shared/widgets/app_header.dart';
 import '../providers/budget_provider.dart';
 import '../widgets/budget_filter_bar.dart';
 import '../widgets/budget_summary_cards.dart';
@@ -30,8 +32,8 @@ class _BudgetScreenState extends State<BudgetScreen> {
   @override
   void initState() {
     super.initState();
-    final repos   = AppRepositories.instance;
-    final teamId  = repos?.currentTeamId ?? '';
+    final repos  = AppRepositories.instance;
+    final teamId = repos?.currentTeamId ?? '';
     _provider = BudgetProvider(
       repository: repos?.budget,
       teamId:     teamId,
@@ -62,76 +64,100 @@ class _BudgetScreenState extends State<BudgetScreen> {
     super.dispose();
   }
 
+  void _openEditor(BuildContext context, {CostItem? existing}) {
+    showCostItemEditor(
+      context,
+      provider:  _provider,
+      existing:  existing,
+      trips:     _trips,
+      suppliers: _suppliers,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isMobile = Responsive.isMobile(context);
+
     return Scaffold(
       backgroundColor: AppColors.background,
+      appBar: AppHeader(
+        title: 'Budget',
+        showMenuButton: isMobile,
+        onMenuTap: () => Scaffold.of(context).openDrawer(),
+        actions: [
+          BudgetAddButton(onTap: () => _openEditor(context)),
+        ],
+      ),
       body: Column(
         children: [
-          _BudgetHeader(
-            provider: _provider,
-            trips: _trips,
-            onAdd: () => showCostItemEditor(
-            context,
-            provider: _provider,
-            trips: _trips,
-            suppliers: _suppliers,
-          ),
-          ),
+          // Trip filter chips
           ListenableBuilder(
             listenable: _provider,
-            builder: (context, _) => BudgetFilterBar(provider: _provider),
+            builder: (context, _) => _TripFilterSection(
+              provider: _provider,
+              trips:    _trips,
+              isMobile: isMobile,
+            ),
           ),
+          // Category + status filters
+          ListenableBuilder(
+            listenable: _provider,
+            builder: (context, _) =>
+                BudgetFilterBar(provider: _provider),
+          ),
+          // Content
           Expanded(
             child: ListenableBuilder(
               listenable: _provider,
               builder: (context, _) {
-                final items   = _provider.filteredItems;
-                final summary = _provider.summary;
+                if (_provider.isLoading &&
+                    _provider.filteredItems.isEmpty) {
+                  return const Center(
+                    child: CircularProgressIndicator(
+                        color: AppColors.accent, strokeWidth: 2),
+                  );
+                }
+
+                final items    = _provider.filteredItems;
+                final summary  = _provider.summary;
                 final currency = dominantCurrency(items);
 
-                return Column(
-                  children: [
-                    BudgetSummaryCards(summary: summary, currency: currency),
-                    if (items.isEmpty)
-                      Expanded(
-                        child: BudgetEmptyState(
-                          hasFilters: _provider.hasActiveFilters,
-                          onClear: _provider.clearFilters,
-                          onAdd: () => showCostItemEditor(
-                        context,
-                        provider: _provider,
-                        trips: _trips,
-                        suppliers: _suppliers,
-                      ),
-                        ),
-                      )
-                    else ...[
-                      if (Responsive.showSidebar(context))
-                        const BudgetTableHeader(),
-                      Expanded(
-                        child: ListView.builder(
-                          padding: Responsive.isMobile(context)
-                              ? const EdgeInsets.symmetric(
-                                  vertical: AppSpacing.sm)
-                              : EdgeInsets.zero,
-                          itemCount: items.length,
-                          itemBuilder: (context, i) => CostItemRow(
-                            item: items[i],
-                            onTap: () => showCostItemEditor(
-                              context,
-                              provider: _provider,
-                              existing: items[i],
-                              trips: _trips,
-                              suppliers: _suppliers,
+                if (items.isEmpty) {
+                  return BudgetEmptyState(
+                    hasFilters: _provider.hasActiveFilters,
+                    onClear: _provider.clearFilters,
+                    onAdd:   () => _openEditor(context),
+                  );
+                }
+
+                return LayoutBuilder(
+                  builder: (context, constraints) {
+                    final hPad = constraints.maxWidth > 600
+                        ? AppSpacing.pagePaddingH
+                        : AppSpacing.pagePaddingHMobile;
+
+                    return Column(
+                      children: [
+                        BudgetSummaryCards(
+                            summary: summary, currency: currency),
+                        Expanded(
+                          child: ListView.builder(
+                            padding: EdgeInsets.fromLTRB(
+                                hPad, 4, hPad, AppSpacing.massive),
+                            itemCount: items.length,
+                            itemBuilder: (context, i) => BudgetItemCard(
+                              key: ValueKey(items[i].id),
+                              item: items[i],
+                              onTap: () =>
+                                  _openEditor(context, existing: items[i]),
+                              onDelete: () =>
+                                  _provider.deleteItem(items[i].id),
                             ),
-                            onDelete: () =>
-                                _provider.deleteItem(items[i].id),
                           ),
                         ),
-                      ),
-                    ],
-                  ],
+                      ],
+                    );
+                  },
                 );
               },
             ),
@@ -142,81 +168,54 @@ class _BudgetScreenState extends State<BudgetScreen> {
   }
 }
 
-// ── Header ────────────────────────────────────────────────────────────────────
+// ── Trip filter section ───────────────────────────────────────────────────────
 
-class _BudgetHeader extends StatelessWidget {
+class _TripFilterSection extends StatelessWidget {
   final BudgetProvider provider;
   final List<Trip> trips;
-  final VoidCallback onAdd;
-  const _BudgetHeader({required this.provider, required this.trips, required this.onAdd});
+  final bool isMobile;
+
+  const _TripFilterSection({
+    required this.provider,
+    required this.trips,
+    required this.isMobile,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final hPad = Responsive.isMobile(context)
+    final hPad = isMobile
         ? AppSpacing.pagePaddingHMobile
         : AppSpacing.pagePaddingH;
 
     return Container(
-      color: AppColors.surface,
-      padding: EdgeInsets.symmetric(horizontal: hPad, vertical: AppSpacing.base),
+      color: AppColors.background,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Budget', style: AppTextStyles.displayMedium),
-                    ListenableBuilder(
-                      listenable: provider,
-                      builder: (context, _) => Text(
-                        '${provider.filteredItems.length} cost items across all trips',
-                        style: AppTextStyles.bodySmall,
-                      ),
-                    ),
-                  ],
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: EdgeInsets.fromLTRB(hPad, 10, hPad, 10),
+            child: Row(
+              children: [
+                _TripChip(
+                  label: 'All Trips',
+                  isSelected: provider.tripFilter == null,
+                  onTap: () => provider.setTripFilter(null),
                 ),
-              ),
-              BudgetAddButton(onTap: onAdd),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.base),
-          _TripFilterRow(provider: provider, trips: trips),
-        ],
-      ),
-    );
-  }
-}
-
-/// Horizontal trip selector chips in the header.
-class _TripFilterRow extends StatelessWidget {
-  final BudgetProvider provider;
-  final List<Trip> trips;
-  const _TripFilterRow({required this.provider, required this.trips});
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: [
-          _TripChip(
-            label: 'All Trips',
-            isSelected: provider.tripFilter == null,
-            onTap: () => provider.setTripFilter(null),
-          ),
-          const SizedBox(width: AppSpacing.xs),
-          ...trips.map((t) => Padding(
-            padding: const EdgeInsets.only(right: AppSpacing.xs),
-            child: _TripChip(
-              label: t.name,
-              isSelected: provider.tripFilter == t.id,
-              onTap: () => provider.setTripFilter(
-                  provider.tripFilter == t.id ? null : t.id),
+                const SizedBox(width: 6),
+                ...trips.map((t) => Padding(
+                      padding: const EdgeInsets.only(right: 6),
+                      child: _TripChip(
+                        label: t.name,
+                        isSelected: provider.tripFilter == t.id,
+                        onTap: () => provider.setTripFilter(
+                            provider.tripFilter == t.id ? null : t.id),
+                      ),
+                    )),
+              ],
             ),
-          )),
+          ),
+          const Divider(height: 1, color: AppColors.divider),
         ],
       ),
     );
@@ -227,28 +226,41 @@ class _TripChip extends StatelessWidget {
   final String label;
   final bool isSelected;
   final VoidCallback onTap;
-  const _TripChip({required this.label, required this.isSelected, required this.onTap});
+  const _TripChip(
+      {required this.label,
+      required this.isSelected,
+      required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 130),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        duration: const Duration(milliseconds: 140),
+        padding:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.accent : AppColors.surfaceAlt,
+          color: isSelected
+              ? AppColors.accent.withAlpha(20)
+              : AppColors.surface,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? AppColors.accent : AppColors.border,
-            width: isSelected ? 1.5 : 1,
+            color: isSelected
+                ? AppColors.accent.withAlpha(120)
+                : AppColors.border,
+            width: isSelected ? 1.2 : 0.8,
           ),
         ),
         child: Text(
           label,
-          style: AppTextStyles.labelSmall.copyWith(
-            color: isSelected ? Colors.white : AppColors.textSecondary,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+          style: GoogleFonts.inter(
+            fontSize: 12,
+            fontWeight:
+                isSelected ? FontWeight.w600 : FontWeight.w400,
+            color: isSelected
+                ? AppColors.accent
+                : AppColors.textSecondary,
+            height: 1.3,
           ),
         ),
       ),
