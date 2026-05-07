@@ -32,9 +32,7 @@ abstract class _BC {
   static const double assigned   = 160.0;
   static const double startDate  = 100.0;
   static const double dueDate    = 100.0;
-  static const double supplier   = 140.0;
   static const double priority   =  90.0;
-  static const double costStatus = 110.0;
   static const double client     =  72.0;
 }
 
@@ -97,13 +95,9 @@ class BoardTableHeader extends StatelessWidget {
           if (layout == BoardLayout.desktop)
             _cell('Start Date', _BC.startDate),
           _cell('Due Date',     _BC.dueDate),
-          if (layout == BoardLayout.desktop)
-            _cell('Supplier',   _BC.supplier),
           _cell('Priority',     _BC.priority),
-          if (layout == BoardLayout.desktop) ...[
-            _cell('Cost Status', _BC.costStatus),
-            _cell('Client',      _BC.client),
-          ],
+          if (layout == BoardLayout.desktop)
+            _cell('Client', _BC.client),
           const SizedBox(width: _kRightPad),
         ],
       ),
@@ -329,25 +323,6 @@ class _TaskRowState extends State<TaskRow> {
                         ),
                       ),
 
-                      // ── Supplier (desktop only) ────────────────────────────
-                      if (layout == BoardLayout.desktop)
-                        SizedBox(
-                          width: _BC.supplier,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: _kCellPadH),
-                            child: Text(
-                              task.supplierId ?? '—',
-                              style: AppTextStyles.tableCell.copyWith(
-                                color: task.supplierId != null
-                                    ? AppColors.textPrimary
-                                    : AppColors.textMuted,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ),
-
                       // ── Priority ───────────────────────────────────────────
                       SizedBox(
                         width: _BC.priority,
@@ -360,20 +335,6 @@ class _TaskRowState extends State<TaskRow> {
                           ),
                         ),
                       ),
-
-                      // ── Cost Status (desktop only) ─────────────────────────
-                      if (layout == BoardLayout.desktop)
-                        SizedBox(
-                          width: _BC.costStatus,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: _kCellPadH),
-                            child: Align(
-                              alignment: Alignment.centerLeft,
-                              child: CostStatusChip(status: task.costStatus),
-                            ),
-                          ),
-                        ),
 
                       // ── Client (desktop only) ──────────────────────────────
                       if (layout == BoardLayout.desktop)
