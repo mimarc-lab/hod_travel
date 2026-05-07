@@ -419,38 +419,32 @@ class _TripHeader extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Breadcrumb
-          GestureDetector(
-            onTap: onBack,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.arrow_back_rounded,
-                  size: 16,
-                  color: AppColors.textSecondary,
-                ),
-                const SizedBox(width: 4),
-                Text('Trips', style: AppTextStyles.bodySmall),
-                Text(' / ', style: AppTextStyles.bodySmall),
-                Text(
-                  trip.name,
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-
-          // Trip name + status + options
+          // Breadcrumb + status + options
           Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Expanded(
-                child: Text(trip.name, style: AppTextStyles.displayMedium),
+              GestureDetector(
+                onTap: onBack,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.arrow_back_rounded,
+                      size: 16,
+                      color: AppColors.textSecondary,
+                    ),
+                    const SizedBox(width: 4),
+                    Text('Trips', style: AppTextStyles.bodySmall),
+                    Text(' / ', style: AppTextStyles.bodySmall),
+                    Text(
+                      trip.name,
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ],
+                ),
               ),
+              const Spacer(),
               TripStatusChip(status: trip.status),
               const SizedBox(width: AppSpacing.sm),
               PopupMenuButton<String>(
@@ -524,7 +518,6 @@ class _TripHeader extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppSpacing.sm),
-
           // Meta row
           Wrap(
             spacing: AppSpacing.lg,
@@ -708,16 +701,9 @@ class _BoardToolbar extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // ── Left: secondary actions ──────────────────────────────────────
-          _ToolbarBtn(icon: Icons.filter_list_rounded,  label: 'Filter'),
-          const SizedBox(width: 6),
-          _ToolbarBtn(icon: Icons.group_outlined,       label: 'Group by'),
-          const SizedBox(width: 6),
-          _ToolbarBtn(icon: Icons.sort_rounded,         label: 'Sort'),
-
           const Spacer(),
 
-          // ── Right: primary actions ───────────────────────────────────────
+          // ── Actions ───────────────────────────────────────────────────────
 
           // Recalculate Schedule
           if (onRecalculate != null) ...[
@@ -778,31 +764,6 @@ class _BoardToolbar extends StatelessWidget {
   }
 }
 
-class _ToolbarBtn extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  const _ToolbarBtn({required this.icon, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceAlt,
-        borderRadius: BorderRadius.circular(7),
-        border: Border.all(color: AppColors.border, width: 0.75),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 13, color: AppColors.textSecondary),
-          const SizedBox(width: 5),
-          Text(label, style: AppTextStyles.labelMedium),
-        ],
-      ),
-    );
-  }
-}
 
 class _PrimaryBtn extends StatelessWidget {
   final VoidCallback? onTap;
