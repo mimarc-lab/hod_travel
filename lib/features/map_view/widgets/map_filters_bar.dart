@@ -40,16 +40,17 @@ class MapFiltersBar extends StatelessWidget {
     return Container(
       height: 44,
       decoration: BoxDecoration(
-        color: AppColors.surface.withAlpha(236),
-        borderRadius: BorderRadius.circular(10),
+        color: AppColors.surface.withAlpha(242),
+        borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(16),
-            blurRadius: 12,
-            offset: const Offset(0, 2),
+            color:      Colors.black.withAlpha(12),
+            blurRadius: 20,
+            spreadRadius: 0,
+            offset: const Offset(0, 3),
           ),
         ],
-        border: Border.all(color: AppColors.border, width: 0.75),
+        border: Border.all(color: AppColors.borderSubtle, width: 0.75),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -116,7 +117,7 @@ class _TypeChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
         decoration: BoxDecoration(
           color:        selected ? activeColor.withAlpha(22) : Colors.transparent,
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color:  selected ? activeColor.withAlpha(80) : Colors.transparent,
             width:  0.75,
@@ -165,7 +166,7 @@ class _RouteToggle extends StatelessWidget {
           color:        active
               ? AppColors.accent.withAlpha(22)
               : Colors.transparent,
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color:  active ? AppColors.accent.withAlpha(80) : Colors.transparent,
             width:  0.75,

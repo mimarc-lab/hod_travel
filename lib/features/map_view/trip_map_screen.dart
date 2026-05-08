@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart' show LatLng;
 
 import '../../core/constants/app_colors.dart';
@@ -44,6 +45,9 @@ class _TripMapScreenState extends State<TripMapScreen>
   final MapController _mapController = MapController();
   late final MapTransitionController _transition;
   bool _mapReady = false;
+
+  // ── Mobile bottom sheet ────────────────────────────────────────────────────
+  bool _mobilePanelExpanded = false;
 
   // ── Filter state ───────────────────────────────────────────────────────────
   String?   _selectedDayId;
@@ -299,7 +303,7 @@ class _TripMapScreenState extends State<TripMapScreen>
   // [DayNavigatorPanel 260px] | [Map area fills remaining]
 
   Widget _buildDesktopLayout() {
-    final panelW = Responsive.isDesktop(context) ? 260.0 : 220.0;
+    final panelW = Responsive.isDesktop(context) ? 280.0 : 220.0;
 
     return Row(
       children: [
@@ -341,44 +345,55 @@ class _TripMapScreenState extends State<TripMapScreen>
   }
 
   // ── Mobile layout ──────────────────────────────────────────────────────────
-  // [Map ~55%] / [Bottom day panel ~45%]
+  // Full-screen map with AnimatedPositioned bottom sheet for the day navigator.
 
   Widget _buildMobileLayout() {
-    return Column(
-      children: [
-        // Map
-        Expanded(
-          flex: 55,
-          child: _MapArea(
-            displayMarkers: _displayMarkers,
-            routeMarkers:   _routeMarkers,
+    final screenH      = MediaQuery.of(context).size.height;
+    const collapsedH   = 108.0;
+    final expandedH    = screenH * 0.56;
+    final panelH       = _mobilePanelExpanded ? expandedH : collapsedH;
 
-            focusedMarker:  _focusedMarker,
-            showRoute:      _showRoute,
-            selectedType:   _selectedType,
-            mapController:  _mapController,
-            onPinTap:       _onPinTap,
-            onDismissCard:  _dismissCard,
-            onFitAll:       _fitVisible,
-            onTypeChanged:  (t) => setState(() {
+    return Stack(
+      children: [
+        // Full-screen map
+        Positioned.fill(
+          child: _MapArea(
+            displayMarkers:     _displayMarkers,
+            routeMarkers:       _routeMarkers,
+            focusedMarker:      _focusedMarker,
+            showRoute:          _showRoute,
+            selectedType:       _selectedType,
+            mapController:      _mapController,
+            relocating:         _relocating,
+            bottomInset:        panelH,
+            onPinTap:           _onPinTap,
+            onDismissCard:      _dismissCard,
+            onMovePinRequested: _onMovePinRequested,
+            onMapTap:           _onMapTap,
+            onFitAll:           _fitVisible,
+            onTypeChanged: (t) => setState(() {
               _selectedType    = t;
               _focusedMarkerId = null;
             }),
-            onRouteToggled:      (v) => setState(() => _showRoute = v),
-            relocating:          _relocating,
-            onMovePinRequested:  _onMovePinRequested,
-            onMapTap:            _onMapTap,
+            onRouteToggled: (v) => setState(() => _showRoute = v),
           ),
         ),
-        // Bottom day panel
-        Expanded(
-          flex: 45,
-          child: DayNavigatorPanel(
+        // Expandable bottom panel
+        AnimatedPositioned(
+          duration: const Duration(milliseconds: 280),
+          curve:    Curves.easeOutCubic,
+          bottom:   0,
+          left:     0,
+          right:    0,
+          height:   panelH,
+          child: _MobileBottomPanel(
             days:          _itinerary.days,
             itemsByDayId:  _itineraryItemsByDayId,
             allMarkers:    _allMarkers,
             selectedDayId: _selectedDayId,
             focusedItemId: _focusedMarkerId,
+            expanded:      _mobilePanelExpanded,
+            onToggle:      () => setState(() => _mobilePanelExpanded = !_mobilePanelExpanded),
             onDayTap:      _onDayTap,
             onItemTap:     _onItemTap,
           ),
@@ -404,6 +419,7 @@ class _MapArea extends StatefulWidget {
   final ItemType?            selectedType;
   final MapController        mapController;
   final bool                 relocating;
+  final double               bottomInset;
   final ValueChanged<TripMapMarker> onPinTap;
   final VoidCallback         onDismissCard;
   final VoidCallback         onMovePinRequested;
@@ -427,6 +443,7 @@ class _MapArea extends StatefulWidget {
     required this.onFitAll,
     required this.onTypeChanged,
     required this.onRouteToggled,
+    this.bottomInset = 0,
   });
 
   @override
@@ -497,9 +514,9 @@ class _MapAreaState extends State<_MapArea> {
                 polylines: [
                   Polyline(
                     points:      MapViewMapperService.routePoints(routeMarkers),
-                    color:       AppColors.accent.withAlpha(140),
-                    strokeWidth: 1.8,
-                    pattern:     const StrokePattern.dotted(spacingFactor: 3),
+                    color:       AppColors.accent.withAlpha(200),
+                    strokeWidth: 2.5,
+                    pattern:     const StrokePattern.dotted(spacingFactor: 2.5),
                   ),
                 ],
               ),
@@ -557,7 +574,7 @@ class _MapAreaState extends State<_MapArea> {
 
         // ── Attribution (required) ──────────────────────────────────────────
         Positioned(
-          bottom: 4,
+          bottom: 4 + widget.bottomInset,
           right:  4,
           child: _Attribution(),
         ),
@@ -585,7 +602,7 @@ class _MapAreaState extends State<_MapArea> {
         // ── Pin detail card ─────────────────────────────────────────────────
         if (focusedMarker != null)
           Positioned(
-            bottom: 24,
+            bottom: 24 + widget.bottomInset,
             right:  16,
             child:  AnimatedSlide(
               duration: const Duration(milliseconds: 200),
@@ -674,13 +691,19 @@ class _MapPin extends StatelessWidget {
                   width:    pinSize,
                   height:   pinSize,
                   decoration: BoxDecoration(
-                    color:  color.withAlpha(focused ? 230 : 200),
+                    color:  color.withAlpha(focused ? 240 : 200),
                     shape:  BoxShape.circle,
                     border: Border.all(
                       color: focused ? AppColors.accent : Colors.white,
-                      width: focused ? 2.5 : 1.5,
+                      width: focused ? 3.0 : 1.5,
                     ),
                     boxShadow: [
+                      if (focused)
+                        BoxShadow(
+                          color:        AppColors.accent.withAlpha(60),
+                          blurRadius:   14,
+                          spreadRadius: 2,
+                        ),
                       BoxShadow(
                         color:      Colors.black.withAlpha(focused ? 40 : 22),
                         blurRadius: focused ? 10 : 5,
@@ -929,6 +952,223 @@ class _DistanceLabel extends StatelessWidget {
         ),
         textAlign: TextAlign.center,
       ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Mobile bottom panel — collapsible day navigator sheet
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _MobileBottomPanel extends StatelessWidget {
+  final List<TripDay> days;
+  final Map<String, List<ItineraryItem>> itemsByDayId;
+  final List<TripMapMarker> allMarkers;
+  final String? selectedDayId;
+  final String? focusedItemId;
+  final bool expanded;
+  final VoidCallback onToggle;
+  final ValueChanged<String?> onDayTap;
+  final ValueChanged<String>  onItemTap;
+
+  const _MobileBottomPanel({
+    required this.days,
+    required this.itemsByDayId,
+    required this.allMarkers,
+    required this.selectedDayId,
+    required this.focusedItemId,
+    required this.expanded,
+    required this.onToggle,
+    required this.onDayTap,
+    required this.onItemTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+        border: const Border(top: BorderSide(color: AppColors.border)),
+        boxShadow: [
+          BoxShadow(
+            color:      Colors.black.withAlpha(20),
+            blurRadius: 16,
+            offset:     const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          _PanelHandle(expanded: expanded, onToggle: onToggle),
+          const Divider(height: 1, color: AppColors.border),
+          Expanded(
+            child: expanded
+                ? DayNavigatorPanel(
+                    days:          days,
+                    itemsByDayId:  itemsByDayId,
+                    allMarkers:    allMarkers,
+                    selectedDayId: selectedDayId,
+                    focusedItemId: focusedItemId,
+                    onDayTap:      onDayTap,
+                    onItemTap:     onItemTap,
+                    showBorder:    false,
+                    showHeader:    false,
+                  )
+                : _DayCarousel(
+                    days:          days,
+                    selectedDayId: selectedDayId,
+                    onDayTap:      onDayTap,
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── _PanelHandle ──────────────────────────────────────────────────────────────
+
+class _PanelHandle extends StatelessWidget {
+  final bool expanded;
+  final VoidCallback onToggle;
+
+  const _PanelHandle({required this.expanded, required this.onToggle});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onToggle,
+      behavior: HitTestBehavior.opaque,
+      child: SizedBox(
+        height: 44,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width:  36,
+              height: 4,
+              decoration: BoxDecoration(
+                color:        AppColors.border,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  Icon(Icons.route_outlined, size: 12, color: AppColors.accent),
+                  const SizedBox(width: 6),
+                  Text(
+                    'JOURNEY',
+                    style: AppTextStyles.overline.copyWith(
+                      color:        AppColors.accentDark,
+                      fontSize:     10,
+                      letterSpacing: 1.2,
+                      fontWeight:   FontWeight.w700,
+                    ),
+                  ),
+                  const Spacer(),
+                  Icon(
+                    expanded
+                        ? Icons.keyboard_arrow_down
+                        : Icons.keyboard_arrow_up,
+                    size:  18,
+                    color: AppColors.textMuted,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── _DayCarousel ──────────────────────────────────────────────────────────────
+
+/// Horizontal scrollable row of day cards shown in the collapsed bottom sheet.
+class _DayCarousel extends StatelessWidget {
+  final List<TripDay> days;
+  final String? selectedDayId;
+  final ValueChanged<String?> onDayTap;
+
+  const _DayCarousel({
+    required this.days,
+    required this.selectedDayId,
+    required this.onDayTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.builder(
+      scrollDirection: Axis.horizontal,
+      padding:         const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      itemCount:       days.length,
+      itemBuilder:     (_, i) {
+        final day        = days[i];
+        final isSelected = selectedDayId == day.id;
+
+        return GestureDetector(
+          onTap: () => onDayTap(isSelected ? null : day.id),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            width:  84,
+            margin: const EdgeInsets.only(right: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            decoration: BoxDecoration(
+              color: isSelected ? AppColors.accentFaint : AppColors.surfaceAlt,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: isSelected
+                    ? AppColors.accent.withAlpha(120)
+                    : AppColors.border,
+                width: isSelected ? 1.5 : 1.0,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'DAY ${day.dayNumber}',
+                  style: AppTextStyles.labelSmall.copyWith(
+                    color:      isSelected ? AppColors.accent : AppColors.textMuted,
+                    fontSize:   9,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  day.city.isNotEmpty ? day.city : 'Day ${day.dayNumber}',
+                  style: AppTextStyles.labelSmall.copyWith(
+                    color:      isSelected
+                        ? AppColors.textPrimary
+                        : AppColors.textSecondary,
+                    fontSize:   12,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (day.date != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    DateFormat('d MMM').format(day.date!),
+                    style: AppTextStyles.labelSmall.copyWith(
+                      fontSize: 9,
+                      color:    AppColors.textMuted,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
