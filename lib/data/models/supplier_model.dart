@@ -83,7 +83,7 @@ const Map<SupplierType, List<String>> kSupplierSubtypes = {
     'restaurant', 'private_dining', 'catering',
   ],
   SupplierType.transport: [
-    'airport_transfer', 'chauffeur', 'helicopter',
+    'flight', 'airport_transfer', 'chauffeur', 'helicopter',
     'yacht', 'private_aviation', 'rail',
   ],
   SupplierType.guide: [
