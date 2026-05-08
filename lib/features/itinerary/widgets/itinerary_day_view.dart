@@ -6,6 +6,7 @@ import '../../../core/constants/app_text_styles.dart';
 import '../../../core/utils/responsive.dart';
 import '../../../data/models/itinerary_models.dart';
 import '../providers/itinerary_provider.dart';
+import 'day_navigator.dart';
 import 'item_editor.dart';
 import 'itinerary_item_card.dart';
 
@@ -62,6 +63,17 @@ class _DayViewHeader extends StatelessWidget {
     final hPad = Responsive.isMobile(context)
         ? AppSpacing.pagePaddingHMobile
         : AppSpacing.pagePaddingH;
+
+    // Show the day theme/label as primary headline when available;
+    // fall back to city name so the header always has meaningful context.
+    final headline = (day.label != null && day.label!.isNotEmpty)
+        ? day.label!
+        : day.city;
+    // Show city as subtitle only when the label is shown as headline.
+    final subtitle = (day.label != null && day.label!.isNotEmpty)
+        ? day.city
+        : null;
+
     return Container(
       padding: EdgeInsets.symmetric(horizontal: hPad, vertical: AppSpacing.base),
       decoration: const BoxDecoration(
@@ -69,28 +81,32 @@ class _DayViewHeader extends StatelessWidget {
         border: Border(bottom: BorderSide(color: AppColors.border)),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  'Day ${day.dayNumber}  ·  ${day.date != null ? DateFormat('EEEE, d MMMM yyyy').format(day.date!) : ''}',
-                  style: AppTextStyles.labelMedium.copyWith(color: AppColors.textMuted),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  day.city,
-                  style: AppTextStyles.heading2,
-                ),
-                if (day.label != null)
-                  Text(day.label!, style: AppTextStyles.bodySmall),
+                Text(headline, style: AppTextStyles.heading2),
+                if (subtitle != null) ...[
+                  const SizedBox(height: 1),
+                  Text(subtitle,
+                      style: AppTextStyles.labelMedium
+                          .copyWith(color: AppColors.textSecondary)),
+                ],
+                if (day.date != null)
+                  Text(
+                    DateFormat('EEEE, d MMMM yyyy').format(day.date!),
+                    style: AppTextStyles.labelMedium
+                        .copyWith(color: AppColors.textMuted),
+                  ),
               ],
             ),
           ),
-          // Add item button
           _AddItemButton(
-            onTap: () => showItemEditor(context, provider: provider, dayId: day.id),
+            onTap: () =>
+                showItemEditor(context, provider: provider, dayId: day.id),
           ),
           const SizedBox(width: AppSpacing.xs),
           _DayMenuButton(day: day, provider: provider),
@@ -109,7 +125,9 @@ class _DayMenuButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return PopupMenuButton<String>(
       onSelected: (value) async {
-        if (value == 'delete') {
+        if (value == 'edit') {
+          showEditDaySheet(context, provider: provider, day: day);
+        } else if (value == 'delete') {
           final confirmed = await showDialog<bool>(
             context: context,
             builder: (_) => AlertDialog(
@@ -135,6 +153,7 @@ class _DayMenuButton extends StatelessWidget {
         }
       },
       itemBuilder: (_) => [
+        const PopupMenuItem(value: 'edit', child: Text('Edit Day')),
         const PopupMenuItem(
           value: 'delete',
           child: Text('Delete Day', style: TextStyle(color: Colors.red)),
@@ -225,7 +244,7 @@ class _TimeBlockSection extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _BlockHeader(block: block),
+            _BlockHeader(block: block, count: items.length),
             const SizedBox(height: AppSpacing.sm),
             _ReorderableItemList(
               block: block,
@@ -242,13 +261,30 @@ class _TimeBlockSection extends StatelessWidget {
 
 class _BlockHeader extends StatelessWidget {
   final TimeBlock block;
-  const _BlockHeader({required this.block});
+  final int count;
+  const _BlockHeader({required this.block, required this.count});
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
         Text(block.label.toUpperCase(), style: AppTextStyles.overline),
+        const SizedBox(width: 6),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+          decoration: BoxDecoration(
+            color:        AppColors.surfaceAlt,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Text(
+            '$count',
+            style: AppTextStyles.labelSmall.copyWith(
+              fontSize:   10,
+              color:      AppColors.textMuted,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
         const SizedBox(width: AppSpacing.sm),
         Expanded(child: Container(height: 1, color: AppColors.border)),
       ],
