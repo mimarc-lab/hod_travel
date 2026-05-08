@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import '../../../core/constants/app_text_styles.dart';
 import '../../../data/models/trip_component_model.dart';
 import '../../../shared/adaptive_table/adaptive_column.dart';
 import '../../../shared/adaptive_table/adaptive_mobile_card.dart';
@@ -15,23 +14,16 @@ import '../../../shared/design_system/typography_tokens.dart';
 
 /// Adaptive column set for trip components.
 ///
-/// PRIMARY   → always visible   (Component title, Category, Status)
+/// PRIMARY   → always visible   (Title, Status)
 /// SECONDARY → tablet + desktop (Supplier, Date, Start, City)
 /// TERTIARY  → desktop only     (End Time, Contact, Booking Ref)
 List<AdaptiveColumn<TripComponent>> componentColumns() => [
       AdaptiveColumn<TripComponent>(
-        key: 'component',
-        label: 'Component',
+        key: 'title',
+        label: 'Title',
         priority: ColumnPriority.primary,
         flex: 3,
-        builder: (item) => _ComponentCell(item: item),
-      ),
-      AdaptiveColumn<TripComponent>(
-        key: 'category',
-        label: 'Category',
-        priority: ColumnPriority.primary,
-        width: 130,
-        builder: (item) => _CategoryBadge(component: item),
+        builder: (item) => _TitleCell(item: item),
       ),
       AdaptiveColumn<TripComponent>(
         key: 'status',
@@ -249,47 +241,33 @@ class ComponentColumnHeader extends StatelessWidget {
   }
 }
 
-// ── Primary column cell ───────────────────────────────────────────────────────
+// ── Title column cell (desktop/tablet) ───────────────────────────────────────
 
-class _ComponentCell extends StatelessWidget {
+class _TitleCell extends StatelessWidget {
   final TripComponent item;
-  const _ComponentCell({required this.item});
+  const _TitleCell({required this.item});
 
   @override
   Widget build(BuildContext context) {
-    final subParts = [
-      if (item.city != null && item.city!.isNotEmpty) item.city!,
-      if (item.startDate != null) DateFormat('d MMM').format(item.startDate!),
-    ];
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        _TypeIconTile(type: item.componentType, effectiveIcon: item.effectiveIcon, effectiveColor: item.effectiveColor),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                item.title,
-                style: AdaptiveTypography.primaryCell.copyWith(
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: -0.1,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              if (subParts.isNotEmpty) ...[
-                const SizedBox(height: 2),
-                Text(
-                  subParts.join(' · '),
-                  style: AdaptiveTypography.primarySubCell,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ],
+        Text(
+          item.title,
+          style: AdaptiveTypography.primaryCell.copyWith(
+            fontWeight: FontWeight.w600,
+            letterSpacing: -0.1,
           ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        const SizedBox(height: 2),
+        Text(
+          item.componentType.label,
+          style: AdaptiveTypography.primarySubCell,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
       ],
     );
@@ -397,43 +375,6 @@ class _MobileMetaRow extends StatelessWidget {
       style: AdaptiveTypography.tertiaryCell,
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
-    );
-  }
-}
-
-// ── Category badge ────────────────────────────────────────────────────────────
-
-class _CategoryBadge extends StatelessWidget {
-  final TripComponent component;
-  const _CategoryBadge({required this.component});
-
-  @override
-  Widget build(BuildContext context) {
-    final effIcon  = component.effectiveIcon;
-    final effColor = component.effectiveColor;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-      decoration: BoxDecoration(
-        color: effColor.withAlpha(20),
-        borderRadius: BorderRadius.circular(5),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(effIcon, size: 11, color: effColor),
-          const SizedBox(width: 4),
-          Flexible(
-            child: Text(
-              component.componentType.label,
-              style: AppTextStyles.labelSmall.copyWith(
-                color: effColor,
-                fontWeight: FontWeight.w600,
-              ),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
