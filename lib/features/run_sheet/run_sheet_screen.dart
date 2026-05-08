@@ -132,11 +132,11 @@ class _RunSheetScreenState extends State<RunSheetScreen> {
               if (widget.viewMode.isRestricted)
                 RunSheetViewModeBanner(mode: widget.viewMode),
 
-              // Day chips (mobile) or nothing (desktop uses panel)
-              if (isMobile) RunSheetDayChips(provider: _provider),
-
-              // Filter bar
+              // Filter bar (search + filters) — before day chips on mobile
               RunSheetFilterBar(provider: _provider),
+
+              // Day chips carousel (mobile only — desktop uses panel)
+              if (isMobile) RunSheetDayChips(provider: _provider),
 
               // Body
               Expanded(
@@ -229,7 +229,7 @@ class _ViewBadge extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
           color:        Colors.orange.shade50,
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: BorderRadius.circular(20),
           border:       Border.all(color: Colors.orange.shade200),
         ),
         child: Row(
@@ -257,7 +257,7 @@ class _ViewBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
         color:        color.withAlpha(15),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(20),
         border:       Border.all(color: color.withAlpha(80)),
       ),
       child: Row(
