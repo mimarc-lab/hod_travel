@@ -1626,7 +1626,7 @@ class _SupplierSearchSheetState extends State<_SupplierSearchSheet> {
                         if (!_showAll) ...[
                           OutlinedButton.icon(
                             icon: const Icon(Icons.add_rounded, size: 15),
-                            label: const Text('+ Add New Supplier'),
+                            label: const Text('Add New Supplier'),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: AppColors.accent,
                               side: const BorderSide(color: AppColors.accent),
@@ -1723,7 +1723,7 @@ class _SupplierSearchSheetState extends State<_SupplierSearchSheet> {
                 child: OutlinedButton.icon(
                   icon:  const Icon(Icons.add_rounded, size: 16),
                   label: Text(
-                    '+ Add New Supplier',
+                    'Add New Supplier',
                     style: AppTextStyles.bodyMedium
                         .copyWith(fontWeight: FontWeight.w600),
                   ),
