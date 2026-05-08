@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
@@ -102,14 +103,16 @@ class _SupplierEditorFormState extends State<_SupplierEditorForm> {
 
   bool get _isEditing => widget.existing != null;
 
+  List<Supplier> _duplicates = [];
+
   @override
   void initState() {
     super.initState();
     final e = widget.existing;
-    _supplierType  = e?.supplierType  ?? widget.initialSupplierType ?? SupplierType.accommodation;
+    _supplierType    = e?.supplierType   ?? widget.initialSupplierType ?? SupplierType.accommodation;
     _supplierSubtype = e?.supplierSubtype;
-    _rating        = e?.internalRating ?? 3.0;
-    _preferred     = e?.preferred      ?? false;
+    _rating          = e?.internalRating ?? 3.0;
+    _preferred       = e?.preferred      ?? false;
 
     _nameCtrl         = TextEditingController(text: e?.name          ?? '');
     _cityCtrl         = TextEditingController(text: e?.city          ?? '');
@@ -121,10 +124,13 @@ class _SupplierEditorFormState extends State<_SupplierEditorForm> {
     _websiteCtrl      = TextEditingController(text: e?.website       ?? '');
     _notesCtrl        = TextEditingController(text: e?.notes         ?? '');
     _tagsCtrl         = TextEditingController(text: e?.tags.join(', ') ?? '');
+
+    _nameCtrl.addListener(_onNameChanged);
   }
 
   @override
   void dispose() {
+    _nameCtrl.removeListener(_onNameChanged);
     for (final ctrl in [
       _nameCtrl, _cityCtrl, _countryCtrl, _locationCtrl,
       _contactNameCtrl, _contactEmailCtrl, _contactPhoneCtrl,
@@ -133,6 +139,36 @@ class _SupplierEditorFormState extends State<_SupplierEditorForm> {
       ctrl.dispose();
     }
     super.dispose();
+  }
+
+  void _onNameChanged() {
+    final query = _nameCtrl.text.trim();
+    final results = query.length >= 3 ? _findSimilar(query) : <Supplier>[];
+    if (!_sameIds(results, _duplicates)) {
+      setState(() => _duplicates = results);
+    }
+  }
+
+  List<Supplier> _findSimilar(String query) {
+    final q = query.toLowerCase();
+    final excludeId = widget.existing?.id;
+    return widget.provider.suppliers.where((s) {
+      if (s.id == excludeId) return false;
+      final name = s.name.toLowerCase();
+      if (name.contains(q) || q.contains(name)) return true;
+      // word-level overlap: any significant query word (≥3 chars) found in name
+      return q.split(' ')
+          .where((w) => w.length >= 3)
+          .any((word) => name.contains(word));
+    }).take(4).toList();
+  }
+
+  bool _sameIds(List<Supplier> a, List<Supplier> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i].id != b[i].id) return false;
+    }
+    return true;
   }
 
   List<String> _parseTags(String raw) =>
@@ -233,6 +269,10 @@ class _SupplierEditorFormState extends State<_SupplierEditorForm> {
               children: [
                 // Name
                 _Field(label: 'NAME *', child: _textField(_nameCtrl, 'e.g. Belmond Hotel Caruso')),
+                if (_duplicates.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  _DuplicateHint(duplicates: _duplicates),
+                ],
                 const SizedBox(height: AppSpacing.base),
 
                 // Supplier Type
@@ -467,6 +507,85 @@ class _Field extends StatelessWidget {
         const SizedBox(height: 5),
         child,
       ],
+    );
+  }
+}
+
+// ── Duplicate hint ─────────────────────────────────────────────────────────────
+
+class _DuplicateHint extends StatelessWidget {
+  final List<Supplier> duplicates;
+  const _DuplicateHint({required this.duplicates});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFFBEB),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFFCD34D)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.info_outline_rounded,
+                  size: 13, color: Color(0xFF92400E)),
+              const SizedBox(width: 5),
+              Text(
+                'Possible duplicate${duplicates.length > 1 ? 's' : ''} already in your list',
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF92400E),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 7),
+          ...duplicates.map((s) => Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 5,
+                      height: 5,
+                      margin: const EdgeInsets.only(right: 7, top: 1),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFD97706),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    Expanded(
+                      child: Text(
+                        s.name,
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF78350F),
+                          height: 1.3,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      '${s.effectiveSupplierType.label} · ${s.city}',
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w400,
+                        color: const Color(0xFF92400E),
+                        height: 1.3,
+                      ),
+                    ),
+                  ],
+                ),
+              )),
+        ],
+      ),
     );
   }
 }
