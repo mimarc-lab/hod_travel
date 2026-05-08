@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
@@ -24,97 +25,138 @@ class TravelerProfileCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-      padding: const EdgeInsets.all(AppSpacing.base),
       decoration: BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-        border: Border.all(color: AppColors.border),
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFEDECEA)),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF000000).withAlpha(6),
+            blurRadius: 12,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Avatar
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: AppColors.accentFaint,
-              shape: BoxShape.circle,
-              border: Border.all(color: AppColors.accentLight),
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              traveler.name.isNotEmpty ? traveler.name[0].toUpperCase() : '?',
-              style: AppTextStyles.labelMedium.copyWith(
-                color: AppColors.accent,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-
-          // Details
-          Expanded(
-            child: Column(
+          Padding(
+            padding: const EdgeInsets.all(AppSpacing.base),
+            child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        traveler.name,
-                        style: AppTextStyles.labelMedium.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    _RoleBadge(label: traveler.role.label),
-                  ],
-                ),
-                if (traveler.ageBracket != null) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    traveler.ageBracket!.label,
-                    style: AppTextStyles.labelSmall.copyWith(
-                      color: AppColors.textMuted,
-                      fontSize: 11,
+                // Avatar
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: AppColors.accentFaint,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.accentLight, width: 1.5),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    traveler.name.isNotEmpty
+                        ? traveler.name[0].toUpperCase()
+                        : '?',
+                    style: GoogleFonts.inter(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.accent,
                     ),
                   ),
-                ],
-                if (_hasNotes) ...[
-                  const SizedBox(height: AppSpacing.sm),
-                  ..._buildNoteRows(),
+                ),
+                const SizedBox(width: AppSpacing.md),
+
+                // Name + role + age
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              traveler.name,
+                              style: GoogleFonts.inter(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textPrimary,
+                                height: 1.3,
+                              ),
+                            ),
+                          ),
+                          _RoleBadge(label: traveler.role.label),
+                        ],
+                      ),
+                      if (traveler.ageBracket != null) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          traveler.ageBracket!.label,
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w400,
+                            color: AppColors.textMuted,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+
+                // Actions
+                if (onEdit != null || onDelete != null) ...[
+                  const SizedBox(width: AppSpacing.sm),
+                  PopupMenuButton<String>(
+                    onSelected: (v) {
+                      if (v == 'edit') onEdit?.call();
+                      if (v == 'delete') onDelete?.call();
+                    },
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
+                    itemBuilder: (_) => [
+                      if (onEdit != null)
+                        const PopupMenuItem(
+                          value: 'edit',
+                          child: Row(children: [
+                            Icon(Icons.edit_outlined, size: 14),
+                            SizedBox(width: 8),
+                            Text('Edit'),
+                          ]),
+                        ),
+                      if (onDelete != null)
+                        const PopupMenuItem(
+                          value: 'delete',
+                          child: Row(children: [
+                            Icon(Icons.delete_outline_rounded,
+                                size: 14, color: Color(0xFFB00020)),
+                            SizedBox(width: 8),
+                            Text('Remove',
+                                style: TextStyle(color: Color(0xFFB00020))),
+                          ]),
+                        ),
+                    ],
+                    child: Icon(
+                      Icons.more_horiz_rounded,
+                      size: 18,
+                      color: AppColors.textMuted,
+                    ),
+                  ),
                 ],
               ],
             ),
           ),
 
-          // Actions
-          if (onEdit != null || onDelete != null) ...[
-            const SizedBox(width: AppSpacing.sm),
-            Column(
-              children: [
-                if (onEdit != null)
-                  GestureDetector(
-                    onTap: onEdit,
-                    child: Icon(
-                      Icons.edit_outlined,
-                      size: 14,
-                      color: AppColors.textMuted,
-                    ),
-                  ),
-                if (onDelete != null) ...[
-                  const SizedBox(height: 6),
-                  GestureDetector(
-                    onTap: onDelete,
-                    child: Icon(
-                      Icons.delete_outline_rounded,
-                      size: 14,
-                      color: AppColors.textMuted,
-                    ),
-                  ),
-                ],
-              ],
+          // Notes / flags section
+          if (_hasNotes) ...[
+            Divider(height: 1, color: AppColors.divider),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.base, AppSpacing.md, AppSpacing.base, AppSpacing.base),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: _buildNoteRows(),
+              ),
             ),
           ],
         ],
@@ -125,30 +167,42 @@ class TravelerProfileCard extends StatelessWidget {
   bool get _hasNotes =>
       traveler.dietaryNotes != null ||
       traveler.activityNotes != null ||
-      traveler.medicalNotes != null;
+      traveler.medicalNotes != null ||
+      traveler.roomingNotes != null;
 
   List<Widget> _buildNoteRows() {
     final rows = <Widget>[];
     if (traveler.dietaryNotes != null) {
-      rows.add(
-        _NoteRow(icon: Icons.restaurant_outlined, text: traveler.dietaryNotes!),
-      );
-    }
-    if (traveler.activityNotes != null) {
-      rows.add(
-        _NoteRow(
-          icon: Icons.directions_run_outlined,
-          text: traveler.activityNotes!,
-        ),
-      );
+      rows.add(_NoteRow(
+        icon: Icons.restaurant_outlined,
+        label: 'Dietary',
+        text: traveler.dietaryNotes!,
+        accent: const Color(0xFFF59E0B),
+      ));
     }
     if (traveler.medicalNotes != null) {
-      rows.add(
-        _NoteRow(
-          icon: Icons.medical_information_outlined,
-          text: traveler.medicalNotes!,
-        ),
-      );
+      rows.add(_NoteRow(
+        icon: Icons.medical_information_outlined,
+        label: 'Medical',
+        text: traveler.medicalNotes!,
+        accent: const Color(0xFFEF4444),
+      ));
+    }
+    if (traveler.roomingNotes != null) {
+      rows.add(_NoteRow(
+        icon: Icons.hotel_outlined,
+        label: 'Rooming',
+        text: traveler.roomingNotes!,
+        accent: AppColors.textMuted,
+      ));
+    }
+    if (traveler.activityNotes != null) {
+      rows.add(_NoteRow(
+        icon: Icons.directions_run_outlined,
+        label: 'Activities',
+        text: traveler.activityNotes!,
+        accent: AppColors.textMuted,
+      ));
     }
     return rows;
   }
@@ -161,17 +215,19 @@ class _RoleBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: AppColors.surfaceAlt,
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: AppColors.border),
+        color: AppColors.accentFaint,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.accentLight),
       ),
       child: Text(
         label,
-        style: AppTextStyles.labelSmall.copyWith(
-          color: AppColors.textSecondary,
+        style: GoogleFonts.inter(
           fontSize: 10,
+          fontWeight: FontWeight.w600,
+          color: AppColors.accent,
+          letterSpacing: 0.1,
         ),
       ),
     );
@@ -180,26 +236,51 @@ class _RoleBadge extends StatelessWidget {
 
 class _NoteRow extends StatelessWidget {
   final IconData icon;
+  final String label;
   final String text;
-  const _NoteRow({required this.icon, required this.text});
+  final Color accent;
+
+  const _NoteRow({
+    required this.icon,
+    required this.label,
+    required this.text,
+    required this.accent,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(top: 3),
+      padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 11, color: AppColors.textMuted),
-          const SizedBox(width: 5),
+          Icon(icon, size: 13, color: accent),
+          const SizedBox(width: 7),
           Expanded(
-            child: Text(
-              text,
-              style: AppTextStyles.labelSmall.copyWith(
-                color: AppColors.textSecondary,
-                fontSize: 11,
+            child: RichText(
+              text: TextSpan(
+                children: [
+                  TextSpan(
+                    text: '$label: ',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textSecondary,
+                      height: 1.5,
+                    ),
+                  ),
+                  TextSpan(
+                    text: text,
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w400,
+                      color: AppColors.textPrimary,
+                      height: 1.5,
+                    ),
+                  ),
+                ],
               ),
-              maxLines: 2,
+              maxLines: 3,
               overflow: TextOverflow.ellipsis,
             ),
           ),
@@ -428,7 +509,7 @@ class _SheetField extends StatelessWidget {
   final TextEditingController ctrl;
   final int? maxLines;
 
-  const _SheetField({required this.label, required this.ctrl, this.maxLines});
+  const _SheetField({required this.label, required this.ctrl});
 
   @override
   Widget build(BuildContext context) {

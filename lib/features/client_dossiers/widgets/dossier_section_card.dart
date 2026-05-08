@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
 
 // ── DossierSectionCard ────────────────────────────────────────────────────────
-/// Premium section wrapper used throughout the dossier detail and form screens.
 
 class DossierSectionCard extends StatelessWidget {
   final String title;
@@ -27,15 +27,23 @@ class DossierSectionCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: isInternal ? const Color(0xFFFFFBF5) : AppColors.surface,
-        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isInternal ? AppColors.accentLight : AppColors.border,
+          color: isInternal
+              ? AppColors.accentLight
+              : const Color(0xFFEDECEA),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF000000).withAlpha(10),
+            blurRadius: 20,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Section header
           Padding(
             padding: const EdgeInsets.fromLTRB(
               AppSpacing.cardPaddingH,
@@ -44,27 +52,38 @@ class DossierSectionCard extends StatelessWidget {
               AppSpacing.sm,
             ),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 if (isInternal) ...[
-                  Icon(
-                    Icons.lock_outline_rounded,
-                    size: 12,
-                    color: AppColors.accent,
+                  Container(
+                    width: 22,
+                    height: 22,
+                    decoration: BoxDecoration(
+                      color: AppColors.accentFaint,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Icon(
+                      Icons.lock_outline_rounded,
+                      size: 12,
+                      color: AppColors.accent,
+                    ),
                   ),
-                  const SizedBox(width: AppSpacing.xs),
+                  const SizedBox(width: AppSpacing.sm),
                 ],
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        title.toUpperCase(),
-                        style: AppTextStyles.overline.copyWith(
+                        title,
+                        style: GoogleFonts.inter(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
                           color: isInternal
                               ? AppColors.accent
-                              : AppColors.textSecondary,
-                          letterSpacing: 1.1,
-                          fontSize: 10,
+                              : AppColors.textPrimary,
+                          letterSpacing: -0.1,
+                          height: 1.3,
                         ),
                       ),
                       if (subtitle != null) ...[
@@ -80,11 +99,17 @@ class DossierSectionCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                ?trailing,
+                if (trailing != null) trailing!,
               ],
             ),
           ),
-          Divider(height: 1, thickness: 1, color: AppColors.divider),
+          Divider(
+            height: 1,
+            thickness: 1,
+            color: isInternal
+                ? AppColors.accentLight.withAlpha(120)
+                : AppColors.divider,
+          ),
           Padding(
             padding: const EdgeInsets.all(AppSpacing.cardPaddingH),
             child: child,
@@ -121,18 +146,23 @@ class DossierInfoRow extends StatelessWidget {
             width: 140,
             child: Text(
               label,
-              style: AppTextStyles.labelSmall.copyWith(
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
                 color: AppColors.textSecondary,
+                height: 1.4,
               ),
             ),
           ),
           Expanded(
-            child:
-                valueWidget ??
+            child: valueWidget ??
                 Text(
                   value!,
-                  style: AppTextStyles.labelSmall.copyWith(
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w400,
                     color: AppColors.textPrimary,
+                    height: 1.5,
                   ),
                 ),
           ),
@@ -143,11 +173,10 @@ class DossierInfoRow extends StatelessWidget {
 }
 
 // ── InterestBar ───────────────────────────────────────────────────────────────
-/// Visual 1–5 interest level indicator.
 
 class InterestBar extends StatelessWidget {
   final String label;
-  final int level; // 1–5
+  final int level;
 
   const InterestBar({super.key, required this.label, required this.level});
 
@@ -162,15 +191,18 @@ class InterestBar extends StatelessWidget {
             width: 140,
             child: Text(
               label,
-              style: AppTextStyles.labelSmall.copyWith(
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
                 color: AppColors.textSecondary,
+                height: 1.4,
               ),
             ),
           ),
           ...List.generate(5, (i) {
             final filled = i < clamped;
             return Container(
-              width: 20,
+              width: 22,
               height: 6,
               margin: const EdgeInsets.only(right: 3),
               decoration: BoxDecoration(
@@ -182,12 +214,13 @@ class InterestBar extends StatelessWidget {
               ),
             );
           }),
-          const SizedBox(width: 8),
+          const SizedBox(width: 10),
           Text(
             _label(clamped),
-            style: AppTextStyles.labelSmall.copyWith(
+            style: GoogleFonts.inter(
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
               color: AppColors.textMuted,
-              fontSize: 10,
             ),
           ),
         ],
@@ -196,13 +229,13 @@ class InterestBar extends StatelessWidget {
   }
 
   String _label(int v) => switch (v) {
-    1 => 'None',
-    2 => 'Low',
-    3 => 'Moderate',
-    4 => 'High',
-    5 => 'Essential',
-    _ => '',
-  };
+        1 => 'None',
+        2 => 'Low',
+        3 => 'Moderate',
+        4 => 'High',
+        5 => 'Essential',
+        _ => '',
+      };
 }
 
 // ── PreferenceChip ────────────────────────────────────────────────────────────
@@ -218,18 +251,20 @@ class PreferenceChip extends StatelessWidget {
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: small ? 8 : 10,
-        vertical: small ? 3 : 4,
+        vertical: small ? 3 : 5,
       ),
       decoration: BoxDecoration(
         color: AppColors.surfaceAlt,
-        borderRadius: BorderRadius.circular(AppSpacing.chipRadius),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: AppColors.border),
       ),
       child: Text(
         label,
-        style: AppTextStyles.labelSmall.copyWith(
-          color: AppColors.textSecondary,
+        style: GoogleFonts.inter(
           fontSize: small ? 11 : 12,
+          fontWeight: FontWeight.w400,
+          color: AppColors.textSecondary,
+          height: 1.3,
         ),
       ),
     );
@@ -244,17 +279,19 @@ class AlertChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
         color: const Color(0xFFFEF3C7),
-        borderRadius: BorderRadius.circular(AppSpacing.chipRadius),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: const Color(0xFFFCD34D)),
       ),
       child: Text(
         label,
-        style: AppTextStyles.labelSmall.copyWith(
-          color: const Color(0xFF92400E),
+        style: GoogleFonts.inter(
           fontSize: 11,
+          fontWeight: FontWeight.w500,
+          color: const Color(0xFF92400E),
+          height: 1.3,
         ),
       ),
     );

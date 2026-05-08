@@ -128,6 +128,13 @@ class _HODAppState extends State<HODApp> {
       ),
     );
 
+    const buttonShape = StadiumBorder();
+    const buttonPadding =
+        EdgeInsets.symmetric(horizontal: 20, vertical: 12);
+    const buttonMinSize = Size(0, 44);
+    final buttonText =
+        GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600);
+
     return base.copyWith(
       textTheme: GoogleFonts.interTextTheme(base.textTheme),
       appBarTheme: const AppBarTheme(
@@ -141,6 +148,41 @@ class _HODAppState extends State<HODApp> {
         labelColor: AppColors.accent,
         unselectedLabelColor: AppColors.textSecondary,
         dividerColor: Colors.transparent,
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          shape: buttonShape,
+          minimumSize: buttonMinSize,
+          padding: buttonPadding,
+          textStyle: buttonText,
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          shape: buttonShape,
+          minimumSize: buttonMinSize,
+          padding: buttonPadding,
+          side: const BorderSide(color: AppColors.border),
+          foregroundColor: AppColors.textSecondary,
+          textStyle: buttonText,
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          shape: buttonShape,
+          minimumSize: buttonMinSize,
+          padding: buttonPadding,
+          elevation: 0,
+          textStyle: buttonText,
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          shape: buttonShape,
+          foregroundColor: AppColors.accent,
+          textStyle:
+              GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500),
+        ),
       ),
     );
   }
