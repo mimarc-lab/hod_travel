@@ -139,6 +139,11 @@ class ComponentCard extends StatelessWidget {
                         ],
                       ),
 
+                      // Transport-specific detail chips
+                      if (component.componentType == ComponentType.transport) ...[
+                        ..._transportChips(component.detailsJson),
+                      ],
+
                       // Cost + confirmation row
                       if (component.netCost != null || component.confirmationNumber != null) ...[
                         const SizedBox(height: AppSpacing.sm),
@@ -179,6 +184,26 @@ class ComponentCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  List<Widget> _transportChips(Map<String, dynamic> d) {
+    final chips = <Widget>[];
+    void add(IconData icon, String? val) {
+      if (val != null && val.trim().isNotEmpty) {
+        chips.add(_MetaChip(icon: icon, label: val.trim()));
+      }
+    }
+    add(Icons.business_rounded,                   d['carrier']            as String?);
+    add(Icons.flight_takeoff_rounded,             d['flight_number']      as String?);
+    add(Icons.airline_seat_recline_extra_rounded, d['class_of_service']   as String?);
+    add(Icons.login_rounded,                      d['departure_terminal'] as String?);
+    add(Icons.logout_rounded,                     d['arrival_location']   as String?);
+    add(Icons.event_seat_rounded,                 d['seat_number']        as String?);
+    if (chips.isEmpty) return const [];
+    return [
+      const SizedBox(height: AppSpacing.sm),
+      Wrap(spacing: AppSpacing.base, runSpacing: AppSpacing.xs, children: chips),
+    ];
   }
 
   String _formatDateRange(TripComponent c) {

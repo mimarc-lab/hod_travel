@@ -22,6 +22,28 @@ import 'client_gallery_section.dart';
 // Accommodation items delegate to AccommodationFeatureSection.
 // ─────────────────────────────────────────────────────────────────────────────
 
+class _TransportMeta extends StatelessWidget {
+  final Map<String, dynamic> details;
+  const _TransportMeta({required this.details});
+
+  @override
+  Widget build(BuildContext context) {
+    final parts = <String>[];
+    void add(String? v) { if (v != null && v.trim().isNotEmpty) parts.add(v.trim()); }
+    add(details['carrier']            as String?);
+    add(details['flight_number']      as String?);
+    add(details['class_of_service']   as String?);
+    add(details['departure_terminal'] as String?);
+    add(details['arrival_location']   as String?);
+    add(details['seat_number']        as String?);
+    if (parts.isEmpty) return const SizedBox.shrink();
+    return Text(
+      parts.join('  ·  '),
+      style: ClientViewTheme.itemMeta,
+    );
+  }
+}
+
 class RefinedItineraryItemBlock extends StatelessWidget {
   final ItineraryItem         item;
   final bool                  showTopRule;
@@ -105,6 +127,12 @@ class _StandardBlock extends StatelessWidget {
               if (desc != null) ...[
                 const SizedBox(height: 8),
                 Text(desc, style: ClientViewTheme.itemDescription),
+              ],
+
+              // Transport details (carrier, flight number, class, etc.)
+              if (item.hasTransportDetails) ...[
+                const SizedBox(height: 8),
+                _TransportMeta(details: item.detailsJson),
               ],
 
               // Place meta

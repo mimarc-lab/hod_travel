@@ -96,6 +96,12 @@ class ItineraryItemCard extends StatelessWidget {
                       _MetaRow(item: item),
                     ],
 
+                    // Transport detail row
+                    if (item.hasTransportDetails) ...[
+                      const SizedBox(height: 4),
+                      _TransportRow(details: item.detailsJson),
+                    ],
+
                     // Description / notes snippet
                     if (item.description != null) ...[
                       const SizedBox(height: 4),
@@ -206,6 +212,37 @@ class _MetaRow extends StatelessWidget {
             ),
           ),
         ],
+      ],
+    );
+  }
+}
+
+class _TransportRow extends StatelessWidget {
+  final Map<String, dynamic> details;
+  const _TransportRow({required this.details});
+
+  @override
+  Widget build(BuildContext context) {
+    final parts = <String>[];
+    void add(String? v) { if (v != null && v.trim().isNotEmpty) parts.add(v.trim()); }
+    add(details['carrier']            as String?);
+    add(details['flight_number']      as String?);
+    add(details['class_of_service']   as String?);
+    add(details['departure_terminal'] as String?);
+    add(details['arrival_location']   as String?);
+    add(details['seat_number']        as String?);
+    if (parts.isEmpty) return const SizedBox.shrink();
+    return Row(
+      children: [
+        Icon(Icons.flight_takeoff_rounded, size: 11, color: AppColors.textMuted),
+        const SizedBox(width: 4),
+        Flexible(
+          child: Text(
+            parts.join('  ·  '),
+            style: AppTextStyles.labelSmall.copyWith(color: AppColors.textSecondary),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
       ],
     );
   }

@@ -95,6 +95,7 @@ ItineraryItem _itemFromRow(Map<String, dynamic> r) {
     notes:        r['notes'] as String?,
     latitude:     (r['latitude']  as num?)?.toDouble(),
     longitude:    (r['longitude'] as num?)?.toDouble(),
+    detailsJson:  (r['details_json'] as Map<String, dynamic>?) ?? const {},
   );
 }
 
@@ -120,6 +121,7 @@ Map<String, dynamic> _itemToRow(ItineraryItem i, {String? teamId}) {
     'notes': i.notes,
     'latitude':  i.latitude,
     'longitude': i.longitude,
+    if (i.detailsJson.isNotEmpty) 'details_json': i.detailsJson,
     // Use epoch-seconds so each insert gets a unique sort_order even if the
     // column has a UNIQUE constraint on (trip_day_id, sort_order).
     'sort_order': DateTime.now().millisecondsSinceEpoch ~/ 1000,

@@ -82,6 +82,7 @@ class ItineraryItem {
   final String? notes;
   final double? latitude;
   final double? longitude;
+  final Map<String, dynamic> detailsJson;
 
   const ItineraryItem({
     required this.id,
@@ -102,6 +103,7 @@ class ItineraryItem {
     this.notes,
     this.latitude,
     this.longitude,
+    this.detailsJson = const {},
   });
 
   /// Returns the effective display type.
@@ -171,6 +173,13 @@ class ItineraryItem {
     return displayType.color;
   }
 
+  bool get hasTransportDetails {
+    if (type != ItemType.transport && type != ItemType.flight) return false;
+    final d = detailsJson;
+    return (d['carrier'] ?? d['flight_number'] ?? d['class_of_service'] ??
+            d['departure_terminal'] ?? d['arrival_location'] ?? d['seat_number']) != null;
+  }
+
   ItineraryItem copyWith({
     String? tripDayId,
     ItemType? type,
@@ -196,6 +205,7 @@ class ItineraryItem {
     bool clearLatitude = false,
     double? longitude,
     bool clearLongitude = false,
+    Map<String, dynamic>? detailsJson,
   }) {
     return ItineraryItem(
       id:           id,
@@ -216,6 +226,7 @@ class ItineraryItem {
       notes:        clearNotes        ? null : (notes        ?? this.notes),
       latitude:     clearLatitude     ? null : (latitude     ?? this.latitude),
       longitude:    clearLongitude    ? null : (longitude    ?? this.longitude),
+      detailsJson:  detailsJson  ?? this.detailsJson,
     );
   }
 }

@@ -250,6 +250,7 @@ class ComponentsProvider extends ChangeNotifier {
               status:         ItemStatus.confirmed,
               approvalStatus: ApprovalStatus.approved,
               notes:          component.notesInternal,
+              detailsJson:    component.detailsJson,
             ),
             teamId!,
           );
@@ -354,6 +355,7 @@ class ComponentsProvider extends ChangeNotifier {
             clearSupplierId: component.supplierId == null,
             supplierName: component.supplierName,
             clearSupplierName: component.supplierName == null,
+            detailsJson:  component.detailsJson,
           ));
           return updated;
         }
