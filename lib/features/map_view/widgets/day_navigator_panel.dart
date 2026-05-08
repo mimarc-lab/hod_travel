@@ -217,10 +217,6 @@ class _DayCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final presentTypes = items
-        .where((it) => mappedIds.contains(it.id))
-        .map((it) => it.type)
-        .toSet();
     final mappedCount = items.where((it) => mappedIds.contains(it.id)).length;
 
     return Column(
@@ -312,12 +308,6 @@ class _DayCard extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          // Type indicator icons
-                          if (presentTypes.isNotEmpty) ...[
-                            const SizedBox(height: 6),
-                            _TypeIndicators(
-                                types: presentTypes, active: isSelected),
-                          ],
                         ],
                       ),
                     ),
@@ -433,47 +423,6 @@ class _TimelinePainter extends CustomPainter {
       old.isFirst  != isFirst  ||
       old.isLast   != isLast   ||
       old.isActive != isActive;
-}
-
-// ── _TypeIndicators ───────────────────────────────────────────────────────────
-
-/// Row of small colored type-icon squares showing which categories exist in a day.
-class _TypeIndicators extends StatelessWidget {
-  final Set<ItemType> types;
-  final bool active;
-
-  const _TypeIndicators({required this.types, required this.active});
-
-  static const _order = [
-    ItemType.hotel,
-    ItemType.flight,
-    ItemType.transport,
-    ItemType.experience,
-    ItemType.dining,
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    final ordered = _order.where((t) => types.contains(t)).toList();
-    return Row(
-      children: ordered.map((t) => Padding(
-        padding: const EdgeInsets.only(right: 4),
-        child: Container(
-          width:  18,
-          height: 18,
-          decoration: BoxDecoration(
-            color: t.color.withAlpha(active ? 32 : 20),
-            borderRadius: BorderRadius.circular(4),
-            border: Border.all(
-              color: t.color.withAlpha(active ? 60 : 35),
-              width: 0.75,
-            ),
-          ),
-          child: Icon(t.icon, size: 10, color: t.color),
-        ),
-      )).toList(),
-    );
-  }
 }
 
 // ── _ItemRow ──────────────────────────────────────────────────────────────────
