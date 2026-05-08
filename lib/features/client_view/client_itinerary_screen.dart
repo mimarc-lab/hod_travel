@@ -68,9 +68,32 @@ class _ClientItineraryScreenState extends State<ClientItineraryScreen> {
       }
       // Load media in background — failure is non-fatal
       _loadMedia(items);
+      _augmentTransportDetails(items);
     } catch (_) {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  Future<void> _augmentTransportDetails(Map<String, List<ItineraryItem>> itemsByDayId) async {
+    final compsRepo = AppRepositories.instance?.components;
+    if (compsRepo == null) return;
+    try {
+      final components = await compsRepo.fetchForTrip(widget.trip.id);
+      final byItemId = <String, Map<String, dynamic>>{
+        for (final c in components)
+          if (c.itineraryItemId != null && c.detailsJson.isNotEmpty)
+            c.itineraryItemId!: c.detailsJson,
+      };
+      if (byItemId.isEmpty || !mounted) return;
+      final augmented = <String, List<ItineraryItem>>{};
+      for (final entry in itemsByDayId.entries) {
+        augmented[entry.key] = entry.value.map((item) {
+          final d = byItemId[item.id];
+          return d != null ? item.copyWith(detailsJson: d) : item;
+        }).toList();
+      }
+      if (mounted) setState(() => _itemsByDayId = augmented);
+    } catch (_) {}
   }
 
   Future<void> _loadMedia(Map<String, List<ItineraryItem>> itemsByDayId) async {

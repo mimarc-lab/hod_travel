@@ -90,6 +90,7 @@ class ItineraryProvider extends ChangeNotifier {
         _isLoading = false;
         _error = null;
         notifyListeners();
+        _augmentTransportDetails();
       },
       onError: (_) {
         _error = 'Could not load itinerary.';
@@ -117,8 +118,36 @@ class ItineraryProvider extends ChangeNotifier {
       }
       _error = null;
       notifyListeners();
+      await _augmentTransportDetails();
     } catch (e) {
       debugPrint('[ItineraryProvider.reload] $e');
+    }
+  }
+
+  /// Loads linked TripComponents and merges transport detailsJson into items
+  /// in memory so the itinerary view can show carrier, flight number, etc.
+  Future<void> _augmentTransportDetails() async {
+    final compsRepo = AppRepositories.instance?.components;
+    if (compsRepo == null) return;
+    try {
+      final components = await compsRepo.fetchForTrip(trip.id);
+      final byItemId = <String, Map<String, dynamic>>{
+        for (final c in components)
+          if (c.itineraryItemId != null && c.detailsJson.isNotEmpty)
+            c.itineraryItemId!: c.detailsJson,
+      };
+      if (byItemId.isEmpty) return;
+      bool changed = false;
+      for (final key in _itemsByDayId.keys) {
+        _itemsByDayId[key] = _itemsByDayId[key]!.map((item) {
+          final d = byItemId[item.id];
+          if (d != null) { changed = true; return item.copyWith(detailsJson: d); }
+          return item;
+        }).toList();
+      }
+      if (changed) notifyListeners();
+    } catch (e) {
+      debugPrint('[ItineraryProvider._augmentTransportDetails] $e');
     }
   }
 
