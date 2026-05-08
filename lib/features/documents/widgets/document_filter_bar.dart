@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
-import '../../../core/constants/app_text_styles.dart';
 import '../../../data/models/trip_document.dart';
 import '../providers/documents_provider.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// DocumentFilterBar — search box + type/status filter chips.
+// DocumentFilterBar — horizontally scrollable status + type filter chips.
 // ─────────────────────────────────────────────────────────────────────────────
 
 class DocumentFilterBar extends StatelessWidget {
@@ -18,70 +18,64 @@ class DocumentFilterBar extends StatelessWidget {
     return ListenableBuilder(
       listenable: provider,
       builder: (context, _) {
-        return Container(
-          color: AppColors.surface,
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.pagePaddingH, AppSpacing.sm,
-              AppSpacing.pagePaddingH, AppSpacing.sm,
-            ),
-            child: Row(
-              children: [
-                // Clear all
-                if (provider.filterType != null || provider.filterStatus != null)
-                  Padding(
-                    padding: const EdgeInsets.only(right: AppSpacing.sm),
-                    child: GestureDetector(
-                      onTap: provider.clearFilters,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 5),
-                        decoration: BoxDecoration(
-                          color:        AppColors.surfaceAlt,
-                          borderRadius: BorderRadius.circular(20),
-                          border:       Border.all(color: AppColors.border),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.close_rounded,
-                                size: 12, color: AppColors.textMuted),
-                            const SizedBox(width: 4),
-                            Text('Clear', style: AppTextStyles.labelSmall),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
+        final hasFilter =
+            provider.filterType != null || provider.filterStatus != null;
 
-                // Status filters
-                ...DocumentStatus.values
-                    .where((s) => s != DocumentStatus.archived)
-                    .map((s) => _FilterChip(
-                          label:      s.label,
-                          isSelected: provider.filterStatus == s,
-                          color:      s.color,
-                          onTap: () => provider.setFilterStatus(
-                            provider.filterStatus == s ? null : s,
+        return Container(
+          color: AppColors.background,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.pagePaddingH, 10,
+                    AppSpacing.pagePaddingH, 10),
+                child: Row(
+                  children: [
+                    // All / Clear
+                    _Chip(
+                      label:      'All',
+                      isSelected: !hasFilter,
+                      color:      AppColors.accent,
+                      onTap:      provider.clearFilters,
+                    ),
+                    const SizedBox(width: 6),
+
+                    // Status chips (exclude archived — operational statuses only)
+                    ...DocumentStatus.values
+                        .where((s) => s != DocumentStatus.archived)
+                        .map((s) => Padding(
+                              padding: const EdgeInsets.only(right: 6),
+                              child: _Chip(
+                                label:      s.label,
+                                isSelected: provider.filterStatus == s,
+                                color:      s.color,
+                                onTap: () => provider.setFilterStatus(
+                                  provider.filterStatus == s ? null : s,
+                                ),
+                              ),
+                            )),
+
+                    _BarDivider(),
+
+                    // Type chips
+                    ...DocumentType.values.map((t) => Padding(
+                          padding: const EdgeInsets.only(right: 6),
+                          child: _Chip(
+                            label:      t.label,
+                            isSelected: provider.filterType == t,
+                            color:      t.color,
+                            onTap: () => provider.setFilterType(
+                              provider.filterType == t ? null : t,
+                            ),
                           ),
                         )),
-
-                const SizedBox(width: AppSpacing.xs),
-                Container(width: 1, height: 16, color: AppColors.border),
-                const SizedBox(width: AppSpacing.xs),
-
-                // Type filters
-                ...DocumentType.values.map((t) => _FilterChip(
-                      label:      t.label,
-                      isSelected: provider.filterType == t,
-                      color:      t.color,
-                      onTap: () => provider.setFilterType(
-                        provider.filterType == t ? null : t,
-                      ),
-                    )),
-              ],
-            ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1, color: AppColors.divider),
+            ],
           ),
         );
       },
@@ -89,12 +83,23 @@ class DocumentFilterBar extends StatelessWidget {
   }
 }
 
-class _FilterChip extends StatelessWidget {
-  final String     label;
-  final bool       isSelected;
-  final Color      color;
+class _BarDivider extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) => Container(
+        width:  1,
+        height: 18,
+        color:  AppColors.border,
+        margin: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+      );
+}
+
+class _Chip extends StatelessWidget {
+  final String label;
+  final bool   isSelected;
+  final Color  color;
   final VoidCallback onTap;
-  const _FilterChip({
+
+  const _Chip({
     required this.label,
     required this.isSelected,
     required this.color,
@@ -106,21 +111,23 @@ class _FilterChip extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 100),
-        margin: const EdgeInsets.only(right: AppSpacing.xs),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        duration: const Duration(milliseconds: 140),
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
         decoration: BoxDecoration(
-          color:        isSelected ? color.withAlpha(20) : AppColors.surfaceAlt,
+          color: isSelected ? color.withAlpha(20) : AppColors.surface,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected ? color.withAlpha(120) : AppColors.border,
+            width: isSelected ? 1.2 : 0.8,
           ),
         ),
         child: Text(
           label,
-          style: AppTextStyles.labelSmall.copyWith(
+          style: GoogleFonts.inter(
+            fontSize:   12,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
             color:      isSelected ? color : AppColors.textSecondary,
-            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+            height:     1.3,
           ),
         ),
       ),
