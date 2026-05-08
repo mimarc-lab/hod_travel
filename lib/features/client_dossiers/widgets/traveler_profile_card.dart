@@ -507,7 +507,6 @@ class _TravelerFormSheetState extends State<_TravelerFormSheet> {
 class _SheetField extends StatelessWidget {
   final String label;
   final TextEditingController ctrl;
-  final int? maxLines;
 
   const _SheetField({required this.label, required this.ctrl});
 
@@ -525,7 +524,7 @@ class _SheetField extends StatelessWidget {
         const SizedBox(height: 5),
         TextField(
           controller: ctrl,
-          maxLines: maxLines,
+          maxLines: null,
           style: AppTextStyles.bodySmall.copyWith(color: AppColors.textPrimary),
           decoration: InputDecoration(
             isDense: true,
