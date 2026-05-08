@@ -110,6 +110,7 @@ class _TripComponentsScreenState extends State<TripComponentsScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _ComponentsToolbar(
+          provider:     _provider,
           onAdd:        _openAddSheet,
           onRefresh:    _provider.refresh,
           onBuildDraft: _openSequenceDraft,
@@ -203,11 +204,13 @@ class _TripComponentsScreenState extends State<TripComponentsScreen>
 // ── Toolbar ───────────────────────────────────────────────────────────────────
 
 class _ComponentsToolbar extends StatelessWidget {
+  final ComponentsProvider provider;
   final VoidCallback onAdd;
   final VoidCallback onBuildDraft;
   final Future<void> Function() onRefresh;
 
   const _ComponentsToolbar({
+    required this.provider,
     required this.onAdd,
     required this.onRefresh,
     required this.onBuildDraft,
@@ -225,72 +228,177 @@ class _ComponentsToolbar extends StatelessWidget {
         color: AppColors.background,
         border: Border(bottom: BorderSide(color: AppColors.border)),
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      child: isMobile
+          ? ListenableBuilder(
+              listenable: provider,
+              builder: (context, _) => Row(
+                children: [
+                  _MobileStatusButton(
+                    selected: provider.filterStatus,
+                    onSelected: provider.setFilterStatus,
+                  ),
+                  const Spacer(),
+                  FilledButton.icon(
+                    onPressed: onAdd,
+                    icon: const Icon(Icons.add, size: 16),
+                    label: const Text('Add'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.accent,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.base,
+                          vertical: AppSpacing.md),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          : Row(
               children: [
-                Text('Confirmed Trip Components',
-                    style: AppTextStyles.heading2),
-                const SizedBox(height: 2),
-                Text(
-                  'Track all accommodation, experiences, transport and services',
-                  style: AppTextStyles.bodySmall,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Confirmed Trip Components',
+                          style: AppTextStyles.heading2),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Track all accommodation, experiences, transport and services',
+                        style: AppTextStyles.bodySmall,
+                      ),
+                    ],
+                  ),
+                ),
+                GestureDetector(
+                  onTap: onBuildDraft,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF0FDFA),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                          color: const Color(0xFF0F766E).withAlpha(60)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.view_timeline_rounded,
+                            size: 13, color: Color(0xFF0F766E)),
+                        const SizedBox(width: 5),
+                        Text(
+                          'Build Itinerary Draft',
+                          style: AppTextStyles.labelMedium
+                              .copyWith(color: const Color(0xFF0F766E)),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                IconButton(
+                  onPressed: onRefresh,
+                  icon: const Icon(Icons.refresh_rounded, size: 18),
+                  color: AppColors.textSecondary,
+                  tooltip: 'Refresh',
+                ),
+                const SizedBox(width: AppSpacing.xs),
+                FilledButton.icon(
+                  onPressed: onAdd,
+                  icon: const Icon(Icons.add, size: 16),
+                  label: const Text('Add Component'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.accent,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.base,
+                        vertical: AppSpacing.md),
+                  ),
                 ),
               ],
             ),
+    );
+  }
+}
+
+class _MobileStatusButton extends StatelessWidget {
+  final ComponentStatus? selected;
+  final ValueChanged<ComponentStatus?> onSelected;
+
+  const _MobileStatusButton(
+      {required this.selected, required this.onSelected});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = selected?.color ?? AppColors.textSecondary;
+    return PopupMenuButton<ComponentStatus?>(
+      initialValue: selected,
+      onSelected: onSelected,
+      itemBuilder: (_) => [
+        const PopupMenuItem<ComponentStatus?>(
+          value: null,
+          child: Text('All statuses'),
+        ),
+        const PopupMenuDivider(),
+        ...ComponentStatus.values.map(
+          (s) => PopupMenuItem<ComponentStatus?>(
+            value: s,
+            child: Row(
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration:
+                      BoxDecoration(color: s.color, shape: BoxShape.circle),
+                ),
+                const SizedBox(width: 8),
+                Text(s.label),
+              ],
+            ),
           ),
-          if (!isMobile) ...[
-            GestureDetector(
-              onTap: onBuildDraft,
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color:        const Color(0xFFF0FDFA),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(
-                      color: const Color(0xFF0F766E).withAlpha(60)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.view_timeline_rounded,
-                        size: 13, color: Color(0xFF0F766E)),
-                    const SizedBox(width: 5),
-                    Text(
-                      'Build Itinerary Draft',
-                      style: AppTextStyles.labelMedium
-                          .copyWith(color: const Color(0xFF0F766E)),
-                    ),
-                  ],
-                ),
+        ),
+      ],
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      child: Container(
+        padding:
+            const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
+        decoration: BoxDecoration(
+          color: selected != null
+              ? selected!.color.withAlpha(20)
+              : AppColors.surface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: selected != null
+                ? selected!.color.withAlpha(120)
+                : AppColors.border,
+            width: selected != null ? 1.2 : 0.8,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 7,
+              height: 7,
+              decoration: BoxDecoration(
+                color: selected?.color ?? AppColors.textMuted,
+                shape: BoxShape.circle,
               ),
             ),
-            const SizedBox(width: AppSpacing.sm),
-            IconButton(
-              onPressed: onRefresh,
-              icon: const Icon(Icons.refresh_rounded, size: 18),
-              color: AppColors.textSecondary,
-              tooltip: 'Refresh',
+            const SizedBox(width: 6),
+            Text(
+              selected?.label ?? 'Status',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight:
+                    selected != null ? FontWeight.w600 : FontWeight.w400,
+                color: color,
+              ),
             ),
-            const SizedBox(width: AppSpacing.xs),
+            const SizedBox(width: 4),
+            Icon(Icons.keyboard_arrow_down_rounded, size: 14, color: color),
           ],
-          FilledButton.icon(
-            onPressed: onAdd,
-            icon: const Icon(Icons.add, size: 16),
-            label: isMobile
-                ? const Text('Add')
-                : const Text('Add Component'),
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.accent,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.base, vertical: AppSpacing.md),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

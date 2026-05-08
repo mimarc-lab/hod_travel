@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
+import '../../../core/utils/responsive.dart';
 import '../../../data/models/trip_component_model.dart';
 import '../providers/components_provider.dart';
 
@@ -59,13 +60,14 @@ class ComponentFilterBar extends StatelessWidget {
                       );
                     }),
 
-                    _BarDivider(),
-
-                    // Status filter
-                    _StatusChip(
-                      selected: selectedStatus,
-                      onSelected: provider.setFilterStatus,
-                    ),
+                    // Status filter — hidden on mobile (shown in toolbar)
+                    if (!Responsive.isMobile(context)) ...[
+                      _BarDivider(),
+                      _StatusChip(
+                        selected: selectedStatus,
+                        onSelected: provider.setFilterStatus,
+                      ),
+                    ],
 
                     // Clear
                     if (selectedType != null || selectedStatus != null) ...[
