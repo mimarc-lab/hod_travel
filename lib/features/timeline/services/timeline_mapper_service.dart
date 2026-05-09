@@ -9,13 +9,13 @@ import '../../../data/models/trip_model.dart';
 const double kDayWidth = 44.0;
 
 /// Height of a single task row.
-const double kRowHeight = 40.0;
+const double kRowHeight = 48.0;
 
 /// Height of a board-group section header row.
-const double kGroupHeaderHeight = 36.0;
+const double kGroupHeaderHeight = 42.0;
 
 /// Height of the date scale header (month row + day row).
-const double kHeaderHeight = 56.0;
+const double kHeaderHeight = 68.0;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TimelineDateRange
@@ -176,6 +176,7 @@ abstract class TimelineMapperService {
     required bool grouped,
     required String? filterUserId,
     required bool overdueOnly,
+    Set<String> collapsedGroupIds = const {},
   }) {
     final rows = <TimelineRow>[];
 
@@ -187,7 +188,10 @@ abstract class TimelineMapperService {
         return true;
       }).toList();
 
-      if (tasks.isEmpty) continue;
+      // Show header for collapsed groups even if they'd otherwise be skipped
+      final isCollapsed = grouped && collapsedGroupIds.contains(g.id);
+
+      if (tasks.isEmpty && !isCollapsed) continue;
 
       if (grouped) {
         rows.add(GroupHeaderRow(
@@ -197,8 +201,10 @@ abstract class TimelineMapperService {
         ));
       }
 
-      for (final t in tasks) {
-        rows.add(TaskRow(task: t, bar: computeBar(t, range)));
+      if (!isCollapsed) {
+        for (final t in tasks) {
+          rows.add(TaskRow(task: t, bar: computeBar(t, range)));
+        }
       }
     }
 

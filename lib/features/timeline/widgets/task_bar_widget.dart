@@ -156,7 +156,7 @@ class _TaskBarWidgetState extends State<TaskBarWidget> {
               color: _isDragging
                   ? _darken(bgColor, 0.08)
                   : (_isHovered ? _darken(bgColor, 0.05) : bgColor),
-              borderRadius: BorderRadius.circular(5),
+              borderRadius: BorderRadius.circular(10),
               border: Border(
                 left: isOverdue
                     ? const BorderSide(color: Color(0xFFEF4444), width: 3)
@@ -221,8 +221,8 @@ class _MiniAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 16,
-      height: 16,
+      width: 18,
+      height: 18,
       decoration: const BoxDecoration(
         color: Color(0xFFC9A96E),
         shape: BoxShape.circle,
@@ -231,7 +231,7 @@ class _MiniAvatar extends StatelessWidget {
         child: Text(
           name.isNotEmpty ? name[0] : '?',
           style: const TextStyle(
-            fontSize: 8,
+            fontSize: 9,
             fontWeight: FontWeight.w700,
             color: Colors.white,
           ),
@@ -351,21 +351,23 @@ class UnscheduledBarPlaceholder extends StatelessWidget {
           onTap: onTap,
           child: Container(
             height: kBarHeight,
-            padding: const EdgeInsets.symmetric(horizontal: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 10),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(5),
+              borderRadius: BorderRadius.circular(10),
               border: Border.all(
                 color: AppColors.border,
+                style: BorderStyle.solid,
                 width: 1,
               ),
+              color: const Color(0xFFF5F4F2),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Icon(Icons.schedule_outlined,
-                    size: 10, color: AppColors.textMuted),
-                const SizedBox(width: 4),
-                Text('No dates',
+                    size: 11, color: AppColors.textMuted),
+                const SizedBox(width: 5),
+                Text('Unscheduled',
                     style: AppTextStyles.labelSmall.copyWith(
                         color: AppColors.textMuted, fontSize: 10)),
               ],
@@ -381,7 +383,7 @@ class UnscheduledBarPlaceholder extends StatelessWidget {
 // Color mapping — intentionally muted, not saturated
 // ─────────────────────────────────────────────────────────────────────────────
 
-const double kBarHeight = 26.0;
+const double kBarHeight = 30.0;
 
 Color _barBg(TaskStatus status) => switch (status) {
   TaskStatus.notStarted     => const Color(0xFFEAE9E6),

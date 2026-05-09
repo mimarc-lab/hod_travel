@@ -36,8 +36,8 @@ class _HeaderPainter extends CustomPainter {
 
   _HeaderPainter({required this.range});
 
-  static const double _monthRowH = 22.0;
-  static const double _dayRowH   = 34.0;
+  static const double _monthRowH = 26.0;
+  static const double _dayRowH   = 42.0;
 
   final _dayNumFmt  = DateFormat('d');
   final _dayAbbrFmt = DateFormat('E'); // Mon, Tue …
@@ -51,12 +51,12 @@ class _HeaderPainter extends CustomPainter {
   }
 
   void _drawBackground(Canvas canvas, Size size) {
-    final paint = Paint()..color = AppColors.surface;
+    final paint = Paint()..color = const Color(0xFFFAF9F7);
     canvas.drawRect(Offset.zero & size, paint);
 
     // Bottom divider
     final div = Paint()
-      ..color = AppColors.border
+      ..color = const Color(0xFFDDD9D3)
       ..strokeWidth = 1;
     canvas.drawLine(
         Offset(0, size.height - 1), Offset(size.width, size.height - 1), div);
@@ -98,7 +98,7 @@ class _HeaderPainter extends CustomPainter {
               Offset(spanEnd, 0),
               Offset(spanEnd, _monthRowH),
               Paint()
-                ..color = AppColors.border
+                ..color = const Color(0xFFDDD9D3)
                 ..strokeWidth = 0.75,
             );
           }
@@ -123,15 +123,15 @@ class _HeaderPainter extends CustomPainter {
       if (isWeekend) {
         canvas.drawRect(
           Rect.fromLTWH(x, _monthRowH, kDayWidth, _dayRowH),
-          Paint()..color = const Color(0x06000000),
+          Paint()..color = const Color(0x05000000),
         );
       }
 
       // Today highlight background
       if (isToday) {
         final rr = RRect.fromRectAndRadius(
-          Rect.fromLTWH(x + 2, _monthRowH + 3, kDayWidth - 4, _dayRowH - 6),
-          const Radius.circular(4),
+          Rect.fromLTWH(x + 3, _monthRowH + 4, kDayWidth - 6, _dayRowH - 8),
+          const Radius.circular(6),
         );
         canvas.drawRRect(rr, Paint()..color = AppColors.accentFaint);
       }
@@ -142,7 +142,7 @@ class _HeaderPainter extends CustomPainter {
           Offset(x, _monthRowH),
           Offset(x, size.height),
           Paint()
-            ..color = AppColors.border.withAlpha(120)
+            ..color = const Color(0xFFECEAE7)
             ..strokeWidth = 0.5,
         );
       }
@@ -156,11 +156,9 @@ class _HeaderPainter extends CustomPainter {
         _drawText(
           canvas,
           abbr,
-          Offset(x + kDayWidth / 2, _monthRowH + 12),
+          Offset(x + kDayWidth / 2, _monthRowH + 14),
           style: AppTextStyles.labelSmall.copyWith(
-            color: isToday
-                ? AppColors.accent
-                : (isWeekend ? AppColors.textMuted : AppColors.textMuted),
+            color: isToday ? AppColors.accent : AppColors.textMuted,
             fontSize: 9,
           ),
         );
@@ -169,7 +167,7 @@ class _HeaderPainter extends CustomPainter {
         _drawText(
           canvas,
           numStr,
-          Offset(x + kDayWidth / 2, _monthRowH + 26),
+          Offset(x + kDayWidth / 2, _monthRowH + 30),
           style: AppTextStyles.labelSmall.copyWith(
             color: isToday ? AppColors.accent : AppColors.textSecondary,
             fontWeight: isToday ? FontWeight.w700 : FontWeight.w500,
@@ -185,11 +183,20 @@ class _HeaderPainter extends CustomPainter {
     if (!range.contains(today)) return;
     final x = range.offsetForDate(today) + kDayWidth / 2;
 
-    // Small gold triangle at bottom of header pointing down
+    // Glow halo — blurred soft circle behind triangle
+    canvas.drawCircle(
+      Offset(x, size.height - 2),
+      8,
+      Paint()
+        ..color = AppColors.accent.withAlpha(40)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
+    );
+
+    // Solid gold triangle pointing down into the grid
     final path = Path()
-      ..moveTo(x - 4, size.height - 6)
-      ..lineTo(x + 4, size.height - 6)
-      ..lineTo(x, size.height)
+      ..moveTo(x - 5, size.height - 8)
+      ..lineTo(x + 5, size.height - 8)
+      ..lineTo(x,     size.height)
       ..close();
     canvas.drawPath(path, Paint()..color = AppColors.accent);
   }
@@ -269,7 +276,7 @@ class TimelineGridPainter extends CustomPainter {
           Offset(x, 0),
           Offset(x, size.height),
           Paint()
-            ..color = AppColors.border.withAlpha(80)
+            ..color = const Color(0xFFECEAE7)
             ..strokeWidth = 0.5,
         );
       }
@@ -278,7 +285,7 @@ class TimelineGridPainter extends CustomPainter {
 
   void _drawRowSeparators(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = AppColors.border.withAlpha(100)
+      ..color = const Color(0xFFECEAE7)
       ..strokeWidth = 0.5;
 
     for (final y in rowOffsets) {
@@ -293,11 +300,23 @@ class TimelineGridPainter extends CustomPainter {
     if (!range.contains(today)) return;
     final x = range.offsetForDate(today) + kDayWidth / 2;
 
+    // Soft glow
     canvas.drawLine(
       Offset(x, 0),
       Offset(x, size.height),
       Paint()
-        ..color = AppColors.accent.withAlpha(180)
+        ..color = AppColors.accent.withAlpha(30)
+        ..strokeWidth = 6
+        ..strokeCap = StrokeCap.round
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3),
+    );
+
+    // Crisp centre line
+    canvas.drawLine(
+      Offset(x, 0),
+      Offset(x, size.height),
+      Paint()
+        ..color = AppColors.accent.withAlpha(200)
         ..strokeWidth = 1.5
         ..strokeCap = StrokeCap.round,
     );
