@@ -59,7 +59,7 @@ class _SupplierDetailScreenState extends State<SupplierDetailScreen> {
           backgroundColor: AppColors.background,
           body: Column(
             children: [
-              _SupplierHero(
+              _SupplierHeader(
                 supplier:           supplier,
                 provider:           widget.provider,
                 enrichmentProvider: widget.enrichmentProvider,
@@ -135,16 +135,21 @@ class _SupplierDetailScreenState extends State<SupplierDetailScreen> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// _SupplierHero — Premium supplier intelligence header
+// _SupplierHeader — compact context bar (no hero block)
+//
+// Desktop: two compact rows — breadcrumb+name | actions on row 1,
+//          chips+meta+quick-contacts on row 2. ~72px total.
+// Mobile:  compact stack — back+actions | name | chips | location | contacts.
+//          ~130px max.
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _SupplierHero extends StatelessWidget {
-  final Supplier supplier;
-  final SupplierProvider provider;
+class _SupplierHeader extends StatelessWidget {
+  final Supplier            supplier;
+  final SupplierProvider    provider;
   final EnrichmentProvider? enrichmentProvider;
-  final bool isMobile;
+  final bool                isMobile;
 
-  const _SupplierHero({
+  const _SupplierHeader({
     required this.supplier,
     required this.provider,
     required this.isMobile,
@@ -156,198 +161,128 @@ class _SupplierHero extends StatelessWidget {
     final hPad = isMobile
         ? AppSpacing.pagePaddingHMobile
         : AppSpacing.pagePaddingH;
-    final type = supplier.effectiveSupplierType;
-
     return Container(
       decoration: const BoxDecoration(
         color:  AppColors.surface,
         border: Border(bottom: BorderSide(color: AppColors.border)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ── Back breadcrumb ───────────────────────────────────────────────
-          Padding(
-            padding: EdgeInsets.fromLTRB(hPad, AppSpacing.base, hPad, 0),
-            child: GestureDetector(
+      padding: EdgeInsets.symmetric(
+          horizontal: hPad, vertical: AppSpacing.sm + 2),
+      child: isMobile
+          ? _MobileBar(
+              supplier:           supplier,
+              provider:           provider,
+              enrichmentProvider: enrichmentProvider,
+            )
+          : _DesktopBar(
+              supplier:           supplier,
+              provider:           provider,
+              enrichmentProvider: enrichmentProvider,
+            ),
+    );
+  }
+}
+
+// ── Desktop compact bar ───────────────────────────────────────────────────────
+
+class _DesktopBar extends StatelessWidget {
+  final Supplier            supplier;
+  final SupplierProvider    provider;
+  final EnrichmentProvider? enrichmentProvider;
+
+  const _DesktopBar({
+    required this.supplier,
+    required this.provider,
+    this.enrichmentProvider,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final type        = supplier.effectiveSupplierType;
+    final locationStr = [
+      if (supplier.city.isNotEmpty)    supplier.city,
+      if (supplier.country.isNotEmpty) supplier.country,
+    ].join(', ');
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize:       MainAxisSize.min,
+      children: [
+        // Row 1: back + name  ·  actions
+        Row(
+          children: [
+            GestureDetector(
               onTap: () => Navigator.of(context).pop(),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const Icon(Icons.arrow_back_rounded,
-                      size: 15, color: AppColors.textSecondary),
-                  const SizedBox(width: 5),
+                      size: 14, color: AppColors.textSecondary),
+                  const SizedBox(width: 4),
                   Text('Suppliers',
                       style: AppTextStyles.labelSmall
                           .copyWith(color: AppColors.textSecondary)),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 5),
-                    child: Text('/',
-                        style: AppTextStyles.labelSmall
-                            .copyWith(color: AppColors.textMuted)),
-                  ),
-                  Flexible(
-                    child: Text(
-                      supplier.name,
-                      style: AppTextStyles.labelSmall
-                          .copyWith(color: AppColors.textPrimary),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
                 ],
               ),
             ),
-          ),
-
-          const SizedBox(height: AppSpacing.md),
-
-          // ── Hero content ──────────────────────────────────────────────────
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: hPad),
-            child: isMobile
-                ? _MobileHeroContent(
-                    supplier:           supplier,
-                    type:               type,
-                    provider:           provider,
-                    enrichmentProvider: enrichmentProvider,
-                  )
-                : _DesktopHeroContent(
-                    supplier:           supplier,
-                    type:               type,
-                    provider:           provider,
-                    enrichmentProvider: enrichmentProvider,
-                  ),
-          ),
-
-          // ── Quick contact strip (desktop/tablet only) ─────────────────────
-          if (!isMobile &&
-              (supplier.contactPhone != null ||
-                  supplier.contactEmail != null ||
-                  supplier.website     != null))
-            _QuickContactStrip(supplier: supplier, hPad: hPad),
-
-          const SizedBox(height: AppSpacing.base),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Desktop hero content ──────────────────────────────────────────────────────
-
-class _DesktopHeroContent extends StatelessWidget {
-  final Supplier          supplier;
-  final SupplierType      type;
-  final SupplierProvider  provider;
-  final EnrichmentProvider? enrichmentProvider;
-
-  const _DesktopHeroContent({
-    required this.supplier,
-    required this.type,
-    required this.provider,
-    this.enrichmentProvider,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final locationParts = <String>[
-      if (supplier.city.isNotEmpty)    supplier.city,
-      if (supplier.country.isNotEmpty) supplier.country,
-    ];
-
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        // Large supplier icon
-        Container(
-          width: 56,
-          height: 56,
-          decoration: BoxDecoration(
-            color:        type.color.withAlpha(22),
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Icon(type.icon, size: 26, color: type.color),
-        ),
-        const SizedBox(width: AppSpacing.base),
-
-        // Name + classification + location + rating
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(supplier.name, style: AppTextStyles.displayMedium),
-              const SizedBox(height: 6),
-              Wrap(
-                spacing:    AppSpacing.xs,
-                runSpacing: AppSpacing.xs,
-                children: [
-                  CategoryBadge(type: type),
-                  if (supplier.supplierSubtype != null)
-                    SubtypeBadge(subtype: supplier.supplierSubtype!),
-                  if (supplier.preferred) const PreferredBadge(),
-                ],
-              ),
-              if (locationParts.isNotEmpty ||
-                  supplier.internalRating > 0) ...[
-                const SizedBox(height: 7),
-                Row(
-                  children: [
-                    if (locationParts.isNotEmpty) ...[
-                      const Icon(Icons.place_outlined,
-                          size: 13, color: AppColors.textMuted),
-                      const SizedBox(width: 4),
-                      Text(
-                        locationParts.join(', '),
-                        style: AppTextStyles.labelSmall
-                            .copyWith(color: AppColors.textSecondary),
-                      ),
-                    ],
-                    if (locationParts.isNotEmpty &&
-                        supplier.internalRating > 0)
-                      const SizedBox(width: 14),
-                    if (supplier.internalRating > 0)
-                      RatingDots(
-                          rating: supplier.internalRating, size: 12),
-                  ],
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              child: Text('/',
+                  style: AppTextStyles.labelSmall
+                      .copyWith(color: AppColors.textMuted)),
+            ),
+            Expanded(
+              child: Text(
+                supplier.name,
+                style: AppTextStyles.labelMedium.copyWith(
+                  color:      AppColors.textPrimary,
+                  fontWeight: FontWeight.w700,
+                  fontSize:   15,
                 ),
-              ],
-            ],
-          ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            _ActionRow(
+              supplier:           supplier,
+              provider:           provider,
+              enrichmentProvider: enrichmentProvider,
+            ),
+          ],
         ),
 
-        const SizedBox(width: AppSpacing.base),
+        const SizedBox(height: 7),
 
-        // Action buttons
-        Row(
-          mainAxisSize: MainAxisSize.min,
+        // Row 2: chips + location + rating + quick contacts
+        Wrap(
+          spacing:             6,
+          runSpacing:          4,
+          crossAxisAlignment:  WrapCrossAlignment.center,
           children: [
-            if (enrichmentProvider != null) ...[
-              _HeroButton(
-                icon:   Icons.auto_fix_high_rounded,
-                label:  'Enrich',
-                accent: true,
-                onTap:  () => showMergeEnrichmentSheet(
-                  context,
-                  supplier:           supplier,
-                  supplierProvider:   provider,
-                  enrichmentProvider: enrichmentProvider!,
-                ),
+            CategoryBadge(type: type, compact: true),
+            if (supplier.supplierSubtype != null)
+              SubtypeBadge(
+                  subtype: supplier.supplierSubtype!, compact: true),
+            if (supplier.preferred) const PreferredBadge(),
+            if (locationStr.isNotEmpty)
+              _MetaItem(
+                  icon: Icons.place_outlined, label: locationStr),
+            if (supplier.internalRating > 0)
+              RatingDots(rating: supplier.internalRating, size: 11),
+            if (supplier.contactPhone != null)
+              _QuickChip(
+                icon:  Icons.phone_outlined,
+                label: supplier.contactPhone!,
+                onTap: () => _copyAndToast(
+                    context, supplier.contactPhone!, 'Phone copied'),
               ),
-              const SizedBox(width: AppSpacing.sm),
-            ],
-            _HeroButton(
-              icon:  Icons.edit_outlined,
-              label: 'Edit',
-              onTap: () =>
-                  showSupplierEditor(context, provider: provider, existing: supplier),
-            ),
-            const SizedBox(width: AppSpacing.sm),
-            _HeroButton(
-              icon:        Icons.delete_outline_rounded,
-              label:       'Delete',
-              destructive: true,
-              onTap:       () => _confirmDelete(context, supplier, provider),
-            ),
+            if (supplier.website != null)
+              _QuickChip(
+                icon:  Icons.language_rounded,
+                label: supplier.website!,
+                onTap: () => _copyAndToast(
+                    context, supplier.website!, 'Website copied'),
+              ),
           ],
         ),
       ],
@@ -355,181 +290,204 @@ class _DesktopHeroContent extends StatelessWidget {
   }
 }
 
-// ── Mobile hero content ───────────────────────────────────────────────────────
+// ── Mobile compact bar ────────────────────────────────────────────────────────
 
-class _MobileHeroContent extends StatelessWidget {
-  final Supplier          supplier;
-  final SupplierType      type;
-  final SupplierProvider  provider;
+class _MobileBar extends StatelessWidget {
+  final Supplier            supplier;
+  final SupplierProvider    provider;
   final EnrichmentProvider? enrichmentProvider;
 
-  const _MobileHeroContent({
+  const _MobileBar({
     required this.supplier,
-    required this.type,
     required this.provider,
     this.enrichmentProvider,
   });
 
   @override
   Widget build(BuildContext context) {
-    final locationParts = <String>[
+    final type        = supplier.effectiveSupplierType;
+    final locationStr = [
       if (supplier.city.isNotEmpty)    supplier.city,
       if (supplier.country.isNotEmpty) supplier.country,
-    ];
+    ].join(', ');
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize:       MainAxisSize.min,
       children: [
+        // Back  ·  actions
         Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color:        type.color.withAlpha(22),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(type.icon, size: 22, color: type.color),
-            ),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            GestureDetector(
+              onTap: () => Navigator.of(context).pop(),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(supplier.name,
-                      style: AppTextStyles.displayMedium
-                          .copyWith(fontSize: 20)),
-                  const SizedBox(height: 5),
-                  Wrap(
-                    spacing:    AppSpacing.xs,
-                    runSpacing: AppSpacing.xs,
-                    children: [
-                      CategoryBadge(type: type, compact: true),
-                      if (supplier.supplierSubtype != null)
-                        SubtypeBadge(
-                            subtype: supplier.supplierSubtype!,
-                            compact: true),
-                      if (supplier.preferred) const PreferredBadge(),
-                    ],
-                  ),
-                  if (locationParts.isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        const Icon(Icons.place_outlined,
-                            size: 12, color: AppColors.textMuted),
-                        const SizedBox(width: 3),
-                        Flexible(
-                          child: Text(
-                            locationParts.join(', '),
-                            style: AppTextStyles.labelSmall.copyWith(
-                                color: AppColors.textSecondary),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                  const Icon(Icons.arrow_back_rounded,
+                      size: 14, color: AppColors.textSecondary),
+                  const SizedBox(width: 4),
+                  Text('Suppliers',
+                      style: AppTextStyles.labelSmall
+                          .copyWith(color: AppColors.textSecondary)),
                 ],
               ),
             ),
+            const Spacer(),
+            _ActionRow(
+              supplier:           supplier,
+              provider:           provider,
+              enrichmentProvider: enrichmentProvider,
+            ),
           ],
         ),
-        const SizedBox(height: AppSpacing.md),
+
+        const SizedBox(height: 7),
+
+        // Supplier name
+        Text(
+          supplier.name,
+          style: AppTextStyles.heading3
+              .copyWith(fontWeight: FontWeight.w700),
+        ),
+
+        const SizedBox(height: 5),
+
+        // Category chips + preferred
         Wrap(
-          spacing:    AppSpacing.xs,
-          runSpacing: AppSpacing.xs,
+          spacing:    6,
+          runSpacing: 4,
           children: [
-            if (enrichmentProvider != null)
-              _HeroButton(
-                icon:   Icons.auto_fix_high_rounded,
-                label:  'Enrich',
-                accent: true,
-                onTap:  () => showMergeEnrichmentSheet(
-                  context,
-                  supplier:           supplier,
-                  supplierProvider:   provider,
-                  enrichmentProvider: enrichmentProvider!,
-                ),
-              ),
-            _HeroButton(
-              icon:  Icons.edit_outlined,
-              label: 'Edit',
-              onTap: () =>
-                  showSupplierEditor(context, provider: provider, existing: supplier),
-            ),
-            _HeroButton(
-              icon:        Icons.delete_outline_rounded,
-              label:       'Delete',
-              destructive: true,
-              onTap:       () => _confirmDelete(context, supplier, provider),
-            ),
+            CategoryBadge(type: type, compact: true),
+            if (supplier.supplierSubtype != null)
+              SubtypeBadge(
+                  subtype: supplier.supplierSubtype!, compact: true),
+            if (supplier.preferred) const PreferredBadge(),
           ],
+        ),
+
+        // Location + rating
+        if (locationStr.isNotEmpty || supplier.internalRating > 0) ...[
+          const SizedBox(height: 5),
+          Row(
+            children: [
+              if (locationStr.isNotEmpty)
+                _MetaItem(
+                    icon: Icons.place_outlined, label: locationStr),
+              if (locationStr.isNotEmpty && supplier.internalRating > 0)
+                const SizedBox(width: 10),
+              if (supplier.internalRating > 0)
+                RatingDots(rating: supplier.internalRating, size: 11),
+            ],
+          ),
+        ],
+
+        // Quick contacts
+        if (supplier.contactPhone != null || supplier.website != null) ...[
+          const SizedBox(height: 6),
+          Wrap(
+            spacing:    6,
+            runSpacing: 4,
+            children: [
+              if (supplier.contactPhone != null)
+                _QuickChip(
+                  icon:  Icons.phone_outlined,
+                  label: supplier.contactPhone!,
+                  onTap: () => _copyAndToast(
+                      context, supplier.contactPhone!, 'Phone copied'),
+                ),
+              if (supplier.website != null)
+                _QuickChip(
+                  icon:  Icons.language_rounded,
+                  label: supplier.website!,
+                  onTap: () => _copyAndToast(
+                      context, supplier.website!, 'Website copied'),
+                ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+// ── Shared action row ─────────────────────────────────────────────────────────
+
+class _ActionRow extends StatelessWidget {
+  final Supplier            supplier;
+  final SupplierProvider    provider;
+  final EnrichmentProvider? enrichmentProvider;
+
+  const _ActionRow({
+    required this.supplier,
+    required this.provider,
+    this.enrichmentProvider,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (enrichmentProvider != null) ...[
+          _HeaderButton(
+            icon:   Icons.auto_fix_high_rounded,
+            label:  'Enrich',
+            accent: true,
+            onTap:  () => showMergeEnrichmentSheet(
+              context,
+              supplier:           supplier,
+              supplierProvider:   provider,
+              enrichmentProvider: enrichmentProvider!,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.xs),
+        ],
+        _HeaderButton(
+          icon:  Icons.edit_outlined,
+          label: 'Edit',
+          onTap: () => showSupplierEditor(
+              context, provider: provider, existing: supplier),
+        ),
+        const SizedBox(width: AppSpacing.xs),
+        _HeaderButton(
+          icon:        Icons.delete_outline_rounded,
+          label:       'Delete',
+          destructive: true,
+          onTap:       () => _confirmDelete(context, supplier, provider),
         ),
       ],
     );
   }
 }
 
-// ── Quick contact strip ───────────────────────────────────────────────────────
+// ── Meta text item (location, etc.) ──────────────────────────────────────────
 
-class _QuickContactStrip extends StatelessWidget {
-  final Supplier supplier;
-  final double   hPad;
-
-  const _QuickContactStrip({required this.supplier, required this.hPad});
+class _MetaItem extends StatelessWidget {
+  final IconData icon;
+  final String   label;
+  const _MetaItem({required this.icon, required this.label});
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.fromLTRB(hPad, AppSpacing.md, hPad, 0),
-      child: Wrap(
-        spacing:    AppSpacing.sm,
-        runSpacing: AppSpacing.xs,
-        children: [
-          if (supplier.contactPhone != null)
-            _QuickChip(
-              icon:  Icons.phone_outlined,
-              label: supplier.contactPhone!,
-              onTap: () => _copyAndToast(
-                  context, supplier.contactPhone!, 'Phone copied'),
-            ),
-          if (supplier.contactEmail != null)
-            _QuickChip(
-              icon:  Icons.mail_outline_rounded,
-              label: supplier.contactEmail!,
-              onTap: () => _copyAndToast(
-                  context, supplier.contactEmail!, 'Email copied'),
-            ),
-          if (supplier.website != null)
-            _QuickChip(
-              icon:  Icons.language_rounded,
-              label: supplier.website!,
-              onTap: () => _copyAndToast(
-                  context, supplier.website!, 'Website copied'),
-            ),
-        ],
-      ),
-    );
-  }
-
-  void _copyAndToast(BuildContext context, String value, String message) {
-    Clipboard.setData(ClipboardData(text: value));
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content:  Text(message),
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 2),
-        backgroundColor: const Color(0xFF1E2028),
-      ),
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 12, color: AppColors.textMuted),
+        const SizedBox(width: 3),
+        Text(label,
+            style: AppTextStyles.labelSmall
+                .copyWith(color: AppColors.textSecondary)),
+      ],
     );
   }
 }
 
+// ── Copyable contact chip ─────────────────────────────────────────────────────
+
 class _QuickChip extends StatelessWidget {
-  final IconData       icon;
-  final String         label;
-  final VoidCallback   onTap;
+  final IconData     icon;
+  final String       label;
+  final VoidCallback onTap;
 
   const _QuickChip({
     required this.icon,
@@ -542,7 +500,7 @@ class _QuickChip extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
         decoration: BoxDecoration(
           color:        AppColors.surfaceAlt,
           borderRadius: BorderRadius.circular(20),
@@ -551,8 +509,8 @@ class _QuickChip extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 12, color: AppColors.textSecondary),
-            const SizedBox(width: 5),
+            Icon(icon, size: 11, color: AppColors.textSecondary),
+            const SizedBox(width: 4),
             Text(
               label,
               style: AppTextStyles.labelSmall
@@ -566,16 +524,16 @@ class _QuickChip extends StatelessWidget {
   }
 }
 
-// ── Hero action button ────────────────────────────────────────────────────────
+// ── Header action button ──────────────────────────────────────────────────────
 
-class _HeroButton extends StatelessWidget {
+class _HeaderButton extends StatelessWidget {
   final IconData     icon;
   final String       label;
   final VoidCallback onTap;
   final bool         accent;
   final bool         destructive;
 
-  const _HeroButton({
+  const _HeaderButton({
     required this.icon,
     required this.label,
     required this.onTap,
@@ -604,7 +562,7 @@ class _HeroButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
         decoration: BoxDecoration(
           color:        bg,
           borderRadius: BorderRadius.circular(8),
@@ -613,15 +571,29 @@ class _HeroButton extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 14, color: fg),
+            Icon(icon, size: 13, color: fg),
             const SizedBox(width: 5),
             Text(label,
-                style: AppTextStyles.labelMedium.copyWith(color: fg)),
+                style: AppTextStyles.labelSmall.copyWith(color: fg)),
           ],
         ),
       ),
     );
   }
+}
+
+// ── Clipboard helper ──────────────────────────────────────────────────────────
+
+void _copyAndToast(BuildContext context, String value, String message) {
+  Clipboard.setData(ClipboardData(text: value));
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content:         Text(message),
+      behavior:        SnackBarBehavior.floating,
+      duration:        const Duration(seconds: 2),
+      backgroundColor: const Color(0xFF1E2028),
+    ),
+  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
