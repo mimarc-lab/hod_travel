@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
+import '../../../core/widgets/adaptive_control_row.dart';
 import '../../../core/supabase/app_db.dart';
 import '../../../core/utils/responsive.dart';
 import '../../../data/models/trip_component_model.dart';
@@ -231,13 +232,12 @@ class _ComponentsToolbar extends StatelessWidget {
       child: isMobile
           ? ListenableBuilder(
               listenable: provider,
-              builder: (context, _) => Row(
+              builder: (context, _) => AdaptiveControlRow(
                 children: [
                   _MobileStatusButton(
                     selected: provider.filterStatus,
                     onSelected: provider.setFilterStatus,
                   ),
-                  const Spacer(),
                   FilledButton.icon(
                     onPressed: onAdd,
                     icon: const Icon(Icons.add, size: 16),

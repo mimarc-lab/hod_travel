@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
+import '../../../core/widgets/adaptive_control_row.dart';
 import '../../../core/supabase/app_db.dart';
 import '../../../core/utils/responsive.dart';
 import '../../../data/models/trip_model.dart';
@@ -230,15 +231,15 @@ class _SearchAndFilters extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Status dropdown + search bar inline
-    return Row(
+    return AdaptiveControlRow(
+      gap: 10,
+      flexValues: const [1, 2],
       children: [
         _TripStatusDropdown(
           selected: filterStatus,
           onChanged: onFilterChanged,
         ),
-        const SizedBox(width: 10),
-        Expanded(child: _TripSearchBar(onChanged: onSearchChanged)),
+        _TripSearchBar(onChanged: onSearchChanged),
       ],
     );
   }

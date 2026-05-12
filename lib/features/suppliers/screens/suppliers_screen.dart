@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
+import '../../../core/widgets/adaptive_control_row.dart';
 import '../../../core/supabase/app_db.dart';
 import '../../../core/utils/responsive.dart';
 import '../../supplier_enrichment/providers/enrichment_provider.dart';
@@ -272,24 +273,20 @@ class _SuppliersHeader extends StatelessWidget {
         children: [
           // On mobile, secondary actions sit below the AppHeader
           if (isMobile) ...[
-            Row(
+            AdaptiveControlRow(
+              gap: 8,
               children: [
-                Expanded(
-                  child: _GhostButton(
-                    icon: Icons.travel_explore_rounded,
-                    label: 'Discover',
-                    onTap: onDiscoverTap,
-                    fullWidth: true,
-                  ),
+                _GhostButton(
+                  icon: Icons.travel_explore_rounded,
+                  label: 'Discover',
+                  onTap: onDiscoverTap,
+                  fullWidth: true,
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _GhostButton(
-                    icon: Icons.link_rounded,
-                    label: 'Import URL',
-                    onTap: onImportTap,
-                    fullWidth: true,
-                  ),
+                _GhostButton(
+                  icon: Icons.link_rounded,
+                  label: 'Import URL',
+                  onTap: onImportTap,
+                  fullWidth: true,
                 ),
               ],
             ),
