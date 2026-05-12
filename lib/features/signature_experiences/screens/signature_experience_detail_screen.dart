@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
+import '../../../core/utils/responsive.dart';
 import '../../../data/models/signature_experience.dart';
 import '../providers/signature_experience_provider.dart';
 import 'signature_experience_form_screen.dart';
@@ -86,71 +87,26 @@ class _SignatureExperienceDetailScreenState
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.surface,
-        elevation: 0,
-        surfaceTintColor: Colors.transparent,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, size: 20),
-          color: AppColors.textSecondary,
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: Text(e.title, style: AppTextStyles.heading1),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(height: 1, color: AppColors.border),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.edit_outlined, size: 20),
-            color: AppColors.textSecondary,
-            tooltip: 'Edit',
-            onPressed: _openEdit,
+      body: Column(
+        children: [
+          _ExperienceHeader(
+            experience: e,
+            onEdit: _openEdit,
+            onDelete: _confirmDelete,
           ),
-          PopupMenuButton<String>(
-            onSelected: (v) {
-              if (v == 'delete') _confirmDelete();
-            },
-            itemBuilder: (_) => [
-              const PopupMenuItem(
-                value: 'delete',
-                child: Row(children: [
-                  Icon(Icons.delete_outline_rounded, size: 15, color: Colors.red),
-                  SizedBox(width: 8),
-                  Text('Delete', style: TextStyle(color: Colors.red)),
-                ]),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.pagePaddingH,
+                vertical: AppSpacing.pagePaddingV,
               ),
-            ],
-            child: Container(
-              width: 32,
-              height: 32,
-              margin: const EdgeInsets.only(right: 8),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceAlt,
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: const Icon(Icons.more_horiz_rounded,
-                  size: 16, color: AppColors.textSecondary),
-            ),
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.pagePaddingH,
-          vertical: AppSpacing.pagePaddingV,
-        ),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 860),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // ── Hero header ──────────────────────────────────────────────
-                _HeroHeader(experience: e),
-                const SizedBox(height: AppSpacing.xxl),
-
-                // ── Client-facing description ────────────────────────────────
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 860),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // ── Client-facing description ──────────────────────────
                 if (e.shortDescriptionClient != null ||
                     e.longDescriptionInternal != null) ...[
                   _SectionHeader(
@@ -471,20 +427,60 @@ class _SignatureExperienceDetailScreenState
                   ),
                   const SizedBox(height: AppSpacing.massive),
                 ],
-              ],
+                    ],
+                  ),
+                ),
+              ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
 }
 
-// ── Hero header ───────────────────────────────────────────────────────────────
+// ── Compact context header ────────────────────────────────────────────────────
 
-class _HeroHeader extends StatelessWidget {
+class _ExperienceHeader extends StatelessWidget {
   final SignatureExperience experience;
-  const _HeroHeader({required this.experience});
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
+  const _ExperienceHeader({
+    required this.experience,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isMobile = Responsive.isMobile(context);
+    return Container(
+      decoration: const BoxDecoration(
+        color: AppColors.surface,
+        border: Border(bottom: BorderSide(color: AppColors.border)),
+      ),
+      padding: EdgeInsets.symmetric(
+        horizontal: AppSpacing.pagePaddingH,
+        vertical: AppSpacing.sm + 2,
+      ),
+      child: isMobile
+          ? _MobileBar(experience: experience, onEdit: onEdit, onDelete: onDelete)
+          : _DesktopBar(experience: experience, onEdit: onEdit, onDelete: onDelete),
+    );
+  }
+}
+
+class _DesktopBar extends StatelessWidget {
+  final SignatureExperience experience;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
+  const _DesktopBar({
+    required this.experience,
+    required this.onEdit,
+    required this.onDelete,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -492,59 +488,169 @@ class _HeroHeader extends StatelessWidget {
     final cat = e.category;
     final status = e.status;
 
-    return Row(
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Container(
-          width: 56,
-          height: 56,
-          decoration: BoxDecoration(
-            color: cat.color.withAlpha(26),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(cat.icon, size: 28, color: cat.color),
+        Row(
+          children: [
+            GestureDetector(
+              onTap: () => Navigator.of(context).pop(),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.arrow_back_rounded, size: 14, color: AppColors.textMuted),
+                  const SizedBox(width: 4),
+                  Text('Experiences',
+                      style: AppTextStyles.labelSmall.copyWith(color: AppColors.textMuted)),
+                ],
+              ),
+            ),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 5),
+              child: Text('/', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
+            ),
+            Expanded(
+              child: Text(
+                e.title,
+                style: AppTextStyles.labelMedium.copyWith(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 15,
+                  color: AppColors.textPrimary,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            _ActionRow(onEdit: onEdit, onDelete: onDelete),
+          ],
         ),
-        const SizedBox(width: AppSpacing.base),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+        const SizedBox(height: 6),
+        Wrap(
+          spacing: 6,
+          runSpacing: 4,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            _CategoryBadge(cat: cat),
+            _StatusBadge(status: status),
+            _MetaItem(icon: Icons.category_outlined, label: e.experienceType.label),
+            _MetaItem(icon: e.destinationFlexibility.icon, label: e.destinationFlexibility.label),
+            _MetaItem(icon: Icons.people_outline_rounded, label: e.groupSizeLabel),
+            if (e.durationLabel != null)
+              _MetaItem(icon: Icons.schedule_outlined, label: e.durationLabel!),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _MobileBar extends StatelessWidget {
+  final SignatureExperience experience;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
+  const _MobileBar({
+    required this.experience,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final e = experience;
+    final cat = e.category;
+    final status = e.status;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          children: [
+            GestureDetector(
+              onTap: () => Navigator.of(context).pop(),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(cat.label, style: AppTextStyles.labelMedium.copyWith(color: cat.color)),
-                  const SizedBox(width: AppSpacing.sm),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: status.backgroundColor,
-                      borderRadius: BorderRadius.circular(AppSpacing.chipRadius),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(status.icon, size: 11, color: status.color),
-                        const SizedBox(width: 4),
-                        Text(status.label,
-                            style: AppTextStyles.labelSmall.copyWith(color: status.color)),
-                      ],
-                    ),
-                  ),
+                  const Icon(Icons.arrow_back_rounded, size: 14, color: AppColors.textMuted),
+                  const SizedBox(width: 4),
+                  Text('Experiences',
+                      style: AppTextStyles.labelSmall.copyWith(color: AppColors.textMuted)),
                 ],
               ),
-              const SizedBox(height: 4),
-              Text(e.title, style: AppTextStyles.displayMedium),
-              const SizedBox(height: AppSpacing.sm),
-              Wrap(
-                spacing: AppSpacing.base,
-                children: [
-                  _HeroMeta(icon: Icons.category_outlined, label: e.experienceType.label),
-                  _HeroMeta(icon: e.destinationFlexibility.icon, label: e.destinationFlexibility.label),
-                  _HeroMeta(icon: Icons.people_outline_rounded, label: e.groupSizeLabel),
-                  if (e.durationLabel != null)
-                    _HeroMeta(icon: Icons.schedule_outlined, label: e.durationLabel!),
-                ],
-              ),
-            ],
+            ),
+            const Spacer(),
+            _ActionRow(onEdit: onEdit, onDelete: onDelete),
+          ],
+        ),
+        const SizedBox(height: 5),
+        Text(
+          e.title,
+          style: AppTextStyles.heading3.copyWith(fontWeight: FontWeight.w700),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+        const SizedBox(height: 5),
+        Wrap(
+          spacing: 6,
+          runSpacing: 4,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            _CategoryBadge(cat: cat),
+            _StatusBadge(status: status),
+            _MetaItem(icon: Icons.category_outlined, label: e.experienceType.label),
+            _MetaItem(icon: e.destinationFlexibility.icon, label: e.destinationFlexibility.label),
+            _MetaItem(icon: Icons.people_outline_rounded, label: e.groupSizeLabel),
+            if (e.durationLabel != null)
+              _MetaItem(icon: Icons.schedule_outlined, label: e.durationLabel!),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _ActionRow extends StatelessWidget {
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
+  const _ActionRow({required this.onEdit, required this.onDelete});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _HeaderButton(
+          icon: Icons.edit_outlined,
+          label: 'Edit',
+          onTap: onEdit,
+        ),
+        const SizedBox(width: 6),
+        PopupMenuButton<String>(
+          onSelected: (v) {
+            if (v == 'delete') onDelete();
+          },
+          itemBuilder: (_) => [
+            const PopupMenuItem(
+              value: 'delete',
+              child: Row(children: [
+                Icon(Icons.delete_outline_rounded, size: 15, color: Colors.red),
+                SizedBox(width: 8),
+                Text('Delete', style: TextStyle(color: Colors.red)),
+              ]),
+            ),
+          ],
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceAlt,
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: const Icon(Icons.more_horiz_rounded,
+                size: 14, color: AppColors.textSecondary),
           ),
         ),
       ],
@@ -552,20 +658,109 @@ class _HeroHeader extends StatelessWidget {
   }
 }
 
-class _HeroMeta extends StatelessWidget {
+class _CategoryBadge extends StatelessWidget {
+  final ExperienceCategory cat;
+  const _CategoryBadge({required this.cat});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: cat.color.withAlpha(26),
+        borderRadius: BorderRadius.circular(AppSpacing.chipRadius),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(cat.icon, size: 11, color: cat.color),
+          const SizedBox(width: 4),
+          Text(cat.label,
+              style: AppTextStyles.labelSmall.copyWith(color: cat.color)),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatusBadge extends StatelessWidget {
+  final ExperienceStatus status;
+  const _StatusBadge({required this.status});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: status.backgroundColor,
+        borderRadius: BorderRadius.circular(AppSpacing.chipRadius),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(status.icon, size: 11, color: status.color),
+          const SizedBox(width: 4),
+          Text(status.label,
+              style: AppTextStyles.labelSmall.copyWith(color: status.color)),
+        ],
+      ),
+    );
+  }
+}
+
+class _MetaItem extends StatelessWidget {
   final IconData icon;
   final String label;
-  const _HeroMeta({required this.icon, required this.label});
+  const _MetaItem({required this.icon, required this.label});
 
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 13, color: AppColors.textMuted),
-        const SizedBox(width: 4),
-        Text(label, style: AppTextStyles.bodySmall),
+        Icon(icon, size: 12, color: AppColors.textMuted),
+        const SizedBox(width: 3),
+        Text(label,
+            style: AppTextStyles.labelSmall
+                .copyWith(color: AppColors.textSecondary)),
       ],
+    );
+  }
+}
+
+class _HeaderButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const _HeaderButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceAlt,
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 13, color: AppColors.textSecondary),
+            const SizedBox(width: 4),
+            Text(label,
+                style: AppTextStyles.labelSmall
+                    .copyWith(color: AppColors.textSecondary)),
+          ],
+        ),
+      ),
     );
   }
 }
