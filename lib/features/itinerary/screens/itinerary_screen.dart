@@ -135,9 +135,15 @@ class _ComposerToolbar extends StatelessWidget {
       child: Row(
         children: [
           // ── Day selector ───────────────────────────────────────────────────
-          _DaySelectorDropdown(provider: provider),
+          // Mobile: expanded so it fills remaining space and buttons sit flush
+          // right. Desktop: natural width + Spacer pushes buttons to the right.
+          if (mobile)
+            Expanded(child: _DaySelectorDropdown(provider: provider))
+          else
+            _DaySelectorDropdown(provider: provider),
 
-          const Spacer(),
+          if (!mobile) const Spacer(),
+          const SizedBox(width: AppSpacing.sm),
 
           // ── AI suggest sequence ────────────────────────────────────────────
           if (mobile)
