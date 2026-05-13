@@ -4,6 +4,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/utils/responsive.dart';
+import '../../../core/widgets/adaptive_control_row.dart';
 import '../../../data/models/supplier_model.dart';
 import '../providers/supplier_provider.dart';
 
@@ -28,15 +29,21 @@ class SupplierFilterBar extends StatelessWidget {
             padding: EdgeInsets.fromLTRB(hPad, 10, hPad, 10),
             child: Row(
               children: [
-                _SupplierTypeDropdown(
-                  selected: provider.typeFilter,
-                  onChanged: provider.setTypeFilter,
-                ),
-                const SizedBox(width: 10),
-                _PreferredToggleChip(
-                  isOn: provider.preferredOnly,
-                  onTap: () =>
-                      provider.setPreferredOnly(!provider.preferredOnly),
+                Expanded(
+                  child: AdaptiveControlRow(
+                    gap: 10,
+                    children: [
+                      _SupplierTypeDropdown(
+                        selected: provider.typeFilter,
+                        onChanged: provider.setTypeFilter,
+                      ),
+                      _PreferredToggleChip(
+                        isOn: provider.preferredOnly,
+                        onTap: () =>
+                            provider.setPreferredOnly(!provider.preferredOnly),
+                      ),
+                    ],
+                  ),
                 ),
                 if (provider.hasActiveFilters) ...[
                   const SizedBox(width: AppSpacing.sm),
@@ -141,7 +148,7 @@ class _SupplierTypeDropdown extends StatelessWidget {
           ],
         ),
         child: Row(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
               width: 8,
@@ -244,7 +251,7 @@ class _PreferredToggleChip extends StatelessWidget {
           ],
         ),
         child: Row(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
               Icons.diamond_outlined,

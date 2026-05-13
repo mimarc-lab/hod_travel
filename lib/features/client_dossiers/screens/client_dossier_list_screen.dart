@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
+import '../../../core/widgets/adaptive_control_row.dart';
 import '../../../core/supabase/app_db.dart';
 import '../../../core/utils/responsive.dart';
 import '../../../data/models/client_dossier_model.dart';
@@ -178,12 +179,11 @@ class _Header extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppSpacing.base),
-          Row(
+          AdaptiveControlRow(
+            gap: AppSpacing.sm,
+            flexValues: const [2, 1],
             children: [
-              Expanded(
-                child: _SearchField(ctrl: searchCtrl, provider: provider),
-              ),
-              const SizedBox(width: AppSpacing.sm),
+              _SearchField(ctrl: searchCtrl, provider: provider),
               _TypeFilterMenu(provider: provider),
             ],
           ),
@@ -307,7 +307,7 @@ class _TypeFilterMenu extends StatelessWidget {
               ),
             ),
             child: Row(
-              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
                   Icons.filter_list_rounded,

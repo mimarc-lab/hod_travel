@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
+import '../../../core/widgets/adaptive_control_row.dart';
 import '../../../core/supabase/app_db.dart';
 import '../../../core/utils/responsive.dart';
 import '../../../data/models/task_model.dart';
@@ -194,54 +195,51 @@ class _SearchFilterBar extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 10),
-          // Filter chips — horizontal scroll, PopupMenuButton wrappers intact
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                // Status filter
-                PopupMenuButton<TaskStatus?>(
-                  tooltip: 'Filter by status',
-                  onSelected: provider.setFilterStatus,
-                  itemBuilder: (_) => [
-                    const PopupMenuItem<TaskStatus?>(
-                        value: null, child: Text('All statuses')),
-                    ...TaskStatus.values.map((s) => PopupMenuItem<TaskStatus?>(
-                          value: s,
-                          child: Text(s.label,
-                              style: AppTextStyles.bodySmall),
-                        )),
-                  ],
-                  child: _FilterChip(
-                    label: provider.filterStatus?.label ?? 'Status',
-                    active: provider.filterStatus != null,
-                  ),
+          // Row 1: Status + Priority
+          AdaptiveControlRow(
+            gap: 8,
+            children: [
+              PopupMenuButton<TaskStatus?>(
+                tooltip: 'Filter by status',
+                onSelected: provider.setFilterStatus,
+                itemBuilder: (_) => [
+                  const PopupMenuItem<TaskStatus?>(
+                      value: null, child: Text('All statuses')),
+                  ...TaskStatus.values.map((s) => PopupMenuItem<TaskStatus?>(
+                        value: s,
+                        child: Text(s.label, style: AppTextStyles.bodySmall),
+                      )),
+                ],
+                child: _FilterChip(
+                  label: provider.filterStatus?.label ?? 'Status',
+                  active: provider.filterStatus != null,
                 ),
-                const SizedBox(width: 8),
-
-                // Priority filter
-                PopupMenuButton<TaskPriority?>(
-                  tooltip: 'Filter by priority',
-                  onSelected: provider.setFilterPriority,
-                  itemBuilder: (_) => [
-                    const PopupMenuItem<TaskPriority?>(
-                        value: null, child: Text('All priorities')),
-                    ...TaskPriority.values.map((p) =>
-                        PopupMenuItem<TaskPriority?>(
-                          value: p,
-                          child: Text(p.label,
-                              style: AppTextStyles.bodySmall),
-                        )),
-                  ],
-                  child: _FilterChip(
-                    label: provider.filterPriority?.label ?? 'Priority',
-                    active: provider.filterPriority != null,
-                  ),
+              ),
+              PopupMenuButton<TaskPriority?>(
+                tooltip: 'Filter by priority',
+                onSelected: provider.setFilterPriority,
+                itemBuilder: (_) => [
+                  const PopupMenuItem<TaskPriority?>(
+                      value: null, child: Text('All priorities')),
+                  ...TaskPriority.values.map((p) =>
+                      PopupMenuItem<TaskPriority?>(
+                        value: p,
+                        child: Text(p.label, style: AppTextStyles.bodySmall),
+                      )),
+                ],
+                child: _FilterChip(
+                  label: provider.filterPriority?.label ?? 'Priority',
+                  active: provider.filterPriority != null,
                 ),
-                const SizedBox(width: 8),
-
-                // Trip filter
-                PopupMenuButton<String?>(
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          // Row 2: Trip + Due Date + optional Clear
+          Row(
+            children: [
+              Expanded(
+                child: PopupMenuButton<String?>(
                   tooltip: 'Filter by trip',
                   onSelected: provider.setFilterTripId,
                   itemBuilder: (_) => [
@@ -249,8 +247,7 @@ class _SearchFilterBar extends StatelessWidget {
                         value: null, child: Text('All trips')),
                     ...provider.allTrips.map((t) => PopupMenuItem<String?>(
                           value: t.id,
-                          child: Text(t.name,
-                              style: AppTextStyles.bodySmall),
+                          child: Text(t.name, style: AppTextStyles.bodySmall),
                         )),
                   ],
                   child: _FilterChip(
@@ -261,10 +258,10 @@ class _SearchFilterBar extends StatelessWidget {
                     active: provider.filterTripId != null,
                   ),
                 ),
-                const SizedBox(width: 8),
-
-                // Due date filter
-                PopupMenuButton<DueDateFilter?>(
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: PopupMenuButton<DueDateFilter?>(
                   tooltip: 'Filter by due date',
                   onSelected: provider.setFilterDueDate,
                   itemBuilder: (_) => [
@@ -273,8 +270,7 @@ class _SearchFilterBar extends StatelessWidget {
                     ...DueDateFilter.values.map((f) =>
                         PopupMenuItem<DueDateFilter?>(
                           value: f,
-                          child: Text(f.label,
-                              style: AppTextStyles.bodySmall),
+                          child: Text(f.label, style: AppTextStyles.bodySmall),
                         )),
                   ],
                   child: _FilterChip(
@@ -282,20 +278,19 @@ class _SearchFilterBar extends StatelessWidget {
                     active: provider.filterDueDate != null,
                   ),
                 ),
-
-                if (provider.hasActiveFilters) ...[
-                  const SizedBox(width: 12),
-                  GestureDetector(
-                    onTap: provider.clearFilters,
-                    child: Text(
-                      'Clear',
-                      style: AppTextStyles.labelMedium
-                          .copyWith(color: AppColors.accent),
-                    ),
+              ),
+              if (provider.hasActiveFilters) ...[
+                const SizedBox(width: 10),
+                GestureDetector(
+                  onTap: provider.clearFilters,
+                  child: Text(
+                    'Clear',
+                    style: AppTextStyles.labelMedium
+                        .copyWith(color: AppColors.accent),
                   ),
-                ],
+                ),
               ],
-            ),
+            ],
           ),
         ],
       ),
@@ -321,7 +316,7 @@ class _FilterChip extends StatelessWidget {
         ),
       ),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
             label,
