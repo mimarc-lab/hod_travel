@@ -4,6 +4,8 @@ import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/utils/responsive.dart';
 import '../../../data/models/signature_experience.dart';
+import '../../../shared/widgets/app_action.dart';
+import '../../../shared/widgets/responsive_action_group.dart';
 import '../providers/signature_experience_provider.dart';
 import 'signature_experience_form_screen.dart';
 
@@ -619,39 +621,19 @@ class _ActionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _HeaderButton(
-          icon: Icons.edit_outlined,
+    return ResponsiveActionGroup(
+      gap: AppSpacing.xs,
+      actions: [
+        AppAction(
           label: 'Edit',
+          icon:  Icons.edit_outlined,
           onTap: onEdit,
         ),
-        const SizedBox(width: 6),
-        PopupMenuButton<String>(
-          onSelected: (v) {
-            if (v == 'delete') onDelete();
-          },
-          itemBuilder: (_) => [
-            const PopupMenuItem(
-              value: 'delete',
-              child: Row(children: [
-                Icon(Icons.delete_outline_rounded, size: 15, color: Colors.red),
-                SizedBox(width: 8),
-                Text('Delete', style: TextStyle(color: Colors.red)),
-              ]),
-            ),
-          ],
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: AppColors.surfaceAlt,
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: const Icon(Icons.more_horiz_rounded,
-                size: 14, color: AppColors.textSecondary),
-          ),
+        AppAction(
+          label:    'Delete',
+          icon:     Icons.delete_outline_rounded,
+          priority: AppActionPriority.danger,
+          onTap:    onDelete,
         ),
       ],
     );
@@ -724,43 +706,6 @@ class _MetaItem extends StatelessWidget {
             style: AppTextStyles.labelSmall
                 .copyWith(color: AppColors.textSecondary)),
       ],
-    );
-  }
-}
-
-class _HeaderButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  const _HeaderButton({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: AppColors.surfaceAlt,
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 13, color: AppColors.textSecondary),
-            const SizedBox(width: 4),
-            Text(label,
-                style: AppTextStyles.labelSmall
-                    .copyWith(color: AppColors.textSecondary)),
-          ],
-        ),
-      ),
     );
   }
 }

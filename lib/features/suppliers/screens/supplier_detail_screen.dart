@@ -5,6 +5,8 @@ import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/utils/responsive.dart';
 import '../../../../data/models/supplier_model.dart';
+import '../../../../shared/widgets/app_action.dart';
+import '../../../../shared/widgets/responsive_action_group.dart';
 import '../../../../core/supabase/app_db.dart';
 import '../../supplier_enrichment/providers/enrichment_provider.dart';
 import '../../supplier_enrichment/screens/merge_enrichment_sheet.dart';
@@ -425,35 +427,32 @@ class _ActionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (enrichmentProvider != null) ...[
-          _HeaderButton(
-            icon:   Icons.auto_fix_high_rounded,
-            label:  'Enrich',
-            accent: true,
-            onTap:  () => showMergeEnrichmentSheet(
+    return ResponsiveActionGroup(
+      gap: AppSpacing.xs,
+      actions: [
+        if (enrichmentProvider != null)
+          AppAction(
+            label:    'Enrich',
+            icon:     Icons.auto_fix_high_rounded,
+            priority: AppActionPriority.ghost,
+            onTap:    () => showMergeEnrichmentSheet(
               context,
               supplier:           supplier,
               supplierProvider:   provider,
               enrichmentProvider: enrichmentProvider!,
             ),
           ),
-          const SizedBox(width: AppSpacing.xs),
-        ],
-        _HeaderButton(
-          icon:  Icons.edit_outlined,
+        AppAction(
           label: 'Edit',
+          icon:  Icons.edit_outlined,
           onTap: () => showSupplierEditor(
               context, provider: provider, existing: supplier),
         ),
-        const SizedBox(width: AppSpacing.xs),
-        _HeaderButton(
-          icon:        Icons.delete_outline_rounded,
-          label:       'Delete',
-          destructive: true,
-          onTap:       () => _confirmDelete(context, supplier, provider),
+        AppAction(
+          label:    'Delete',
+          icon:     Icons.delete_outline_rounded,
+          priority: AppActionPriority.danger,
+          onTap:    () => _confirmDelete(context, supplier, provider),
         ),
       ],
     );
@@ -517,64 +516,6 @@ class _QuickChip extends StatelessWidget {
                   .copyWith(color: AppColors.textSecondary),
               overflow: TextOverflow.ellipsis,
             ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ── Header action button ──────────────────────────────────────────────────────
-
-class _HeaderButton extends StatelessWidget {
-  final IconData     icon;
-  final String       label;
-  final VoidCallback onTap;
-  final bool         accent;
-  final bool         destructive;
-
-  const _HeaderButton({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-    this.accent      = false,
-    this.destructive = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final bg     = destructive
-        ? const Color(0xFFFFF0F0)
-        : accent
-            ? AppColors.accentFaint
-            : AppColors.surfaceAlt;
-    final border = destructive
-        ? const Color(0xFFFFCDD2)
-        : accent
-            ? AppColors.accentLight
-            : AppColors.border;
-    final fg     = destructive
-        ? const Color(0xFFB00020)
-        : accent
-            ? AppColors.accent
-            : AppColors.textSecondary;
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-        decoration: BoxDecoration(
-          color:        bg,
-          borderRadius: BorderRadius.circular(8),
-          border:       Border.all(color: border),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 13, color: fg),
-            const SizedBox(width: 5),
-            Text(label,
-                style: AppTextStyles.labelSmall.copyWith(color: fg)),
           ],
         ),
       ),
