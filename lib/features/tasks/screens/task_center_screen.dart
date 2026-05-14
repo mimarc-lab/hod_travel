@@ -279,14 +279,14 @@ class _SearchFilterBar extends StatelessWidget {
           ? Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Desktop Row 1: [Status ▾][Priority ▾][══ Search ══]
+                // Desktop Row 1: [══ Search ══][Status ▾][Priority ▾]
                 Row(
                   children: [
+                    Expanded(child: searchField),
+                    const SizedBox(width: 10),
                     statusChip,
                     const SizedBox(width: 8),
                     priorityChip,
-                    const SizedBox(width: 10),
-                    Expanded(child: searchField),
                   ],
                 ),
                 const SizedBox(height: 10),
