@@ -23,49 +23,57 @@ abstract class TripComponentRepository {
 TripComponent _fromRow(Map<String, dynamic> r) {
   final supplier = r['suppliers'] as Map<String, dynamic>?;
   return TripComponent(
-    id:            r['id'] as String,
-    tripId:        r['trip_id'] as String,
-    teamId:        r['team_id'] as String,
-    componentType: componentTypeFromDb(r['component_type'] as String? ?? 'other'),
-    status:        componentStatusFromDb(r['status'] as String? ?? 'proposed'),
-    title:         r['title'] as String,
-    supplierId:    r['supplier_id'] as String?,
-    supplierName:  supplier?['name'] as String?,
-    supplierContactOverrideName:  r['supplier_contact_override_name']  as String?,
-    supplierContactOverridePhone: r['supplier_contact_override_phone'] as String?,
-    supplierContactOverrideEmail: r['supplier_contact_override_email'] as String?,
-    startDate:  r['start_date'] != null ? DateTime.parse(r['start_date'] as String) : null,
-    endDate:    r['end_date']   != null ? DateTime.parse(r['end_date']   as String) : null,
-    startTime:  r['start_time'] as String?,
-    endTime:    r['end_time']   as String?,
-    city:         r['city']          as String?,
+    id: r['id'] as String,
+    tripId: r['trip_id'] as String,
+    teamId: r['team_id'] as String,
+    componentType: componentTypeFromDb(
+      r['component_type'] as String? ?? 'other',
+    ),
+    status: componentStatusFromDb(r['status'] as String? ?? 'proposed'),
+    title: r['title'] as String,
+    supplierId: r['supplier_id'] as String?,
+    supplierName: supplier?['name'] as String?,
+    supplierContactOverrideName: r['supplier_contact_override_name'] as String?,
+    supplierContactOverridePhone:
+        r['supplier_contact_override_phone'] as String?,
+    supplierContactOverrideEmail:
+        r['supplier_contact_override_email'] as String?,
+    startDate: r['start_date'] != null
+        ? DateTime.parse(r['start_date'] as String)
+        : null,
+    endDate: r['end_date'] != null
+        ? DateTime.parse(r['end_date'] as String)
+        : null,
+    startTime: r['start_time'] as String?,
+    endTime: r['end_time'] as String?,
+    city: r['city'] as String?,
     locationName: r['location_name'] as String?,
-    address:      r['address']       as String?,
+    address: r['address'] as String?,
     supplierBookingReference: r['supplier_booking_reference'] as String?,
-    confirmationNumber:       r['confirmation_number']        as String?,
-    primaryContactName:       r['primary_contact_name']       as String?,
-    primaryContactPhone:      r['primary_contact_phone']      as String?,
-    primaryContactEmail:      r['primary_contact_email']      as String?,
-    netCost:          _toDouble(r['net_cost']),
-    depositPaid:      _toDouble(r['deposit_paid']),
+    confirmationNumber: r['confirmation_number'] as String?,
+    primaryContactName: r['primary_contact_name'] as String?,
+    primaryContactPhone: r['primary_contact_phone'] as String?,
+    primaryContactEmail: r['primary_contact_email'] as String?,
+    netCost: _toDouble(r['net_cost']),
+    depositPaid: _toDouble(r['deposit_paid']),
     remainingBalance: _toDouble(r['remaining_balance']),
     paymentDueDate: r['payment_due_date'] != null
         ? DateTime.parse(r['payment_due_date'] as String)
         : null,
-    cancellationTerms:   r['cancellation_terms']    as String?,
-    confirmationFileUrl: r['confirmation_file_url']  as String?,
-    invoiceFileUrl:      r['invoice_file_url']        as String?,
-    voucherFileUrl:      r['voucher_file_url']         as String?,
+    cancellationTerms: r['cancellation_terms'] as String?,
+    confirmationFileUrl: r['confirmation_file_url'] as String?,
+    invoiceFileUrl: r['invoice_file_url'] as String?,
+    voucherFileUrl: r['voucher_file_url'] as String?,
     detailsJson: (r['details_json'] as Map<String, dynamic>?) ?? {},
-    notesInternal:   r['notes_internal'] as String?,
-    notesClient:     r['notes_client']   as String?,
-    notesFinance:    r['notes_finance']  as String?,
-    costItemId:      r['cost_item_id']       as String?,
-    itineraryItemId: r['itinerary_item_id']  as String?,
-    runSheetItemId:  r['run_sheet_item_id']  as String?,
-    createdBy:  r['created_by'] as String?,
-    createdAt:  DateTime.parse(r['created_at'] as String),
-    updatedAt:  DateTime.parse(r['updated_at'] as String),
+    notesInternal: r['notes_internal'] as String?,
+    notesClient: r['notes_client'] as String?,
+    notesFinance: r['notes_finance'] as String?,
+    costItemId: r['cost_item_id'] as String?,
+    itineraryItemId: r['itinerary_item_id'] as String?,
+    runSheetItemId: r['run_sheet_item_id'] as String?,
+    createdBy: r['created_by'] as String?,
+    createdAt: DateTime.parse(r['created_at'] as String),
+    updatedAt: DateTime.parse(r['updated_at'] as String),
   );
 }
 
@@ -76,39 +84,39 @@ double? _toDouble(dynamic v) {
 
 Map<String, dynamic> _toRow(TripComponent c, {String? teamId}) => {
   'team_id': ?teamId,
-  'trip_id':         c.tripId,
-  'component_type':  c.componentType.dbValue,
-  'status':          c.status.dbValue,
-  'title':           c.title,
-  'supplier_id':     c.supplierId,
-  'supplier_contact_override_name':  c.supplierContactOverrideName,
+  'trip_id': c.tripId,
+  'component_type': c.componentType.dbValue,
+  'status': c.status.dbValue,
+  'title': c.title,
+  'supplier_id': c.supplierId,
+  'supplier_contact_override_name': c.supplierContactOverrideName,
   'supplier_contact_override_phone': c.supplierContactOverridePhone,
   'supplier_contact_override_email': c.supplierContactOverrideEmail,
-  'start_date':      c.startDate?.toIso8601String().substring(0, 10),
-  'end_date':        c.endDate?.toIso8601String().substring(0, 10),
-  'start_time':      c.startTime,
-  'end_time':        c.endTime,
-  'city':            c.city,
-  'location_name':   c.locationName,
-  'address':         c.address,
+  'start_date': c.startDate?.toIso8601String().substring(0, 10),
+  'end_date': c.endDate?.toIso8601String().substring(0, 10),
+  'start_time': c.startTime,
+  'end_time': c.endTime,
+  'city': c.city,
+  'location_name': c.locationName,
+  'address': c.address,
   'supplier_booking_reference': c.supplierBookingReference,
-  'confirmation_number':        c.confirmationNumber,
-  'primary_contact_name':       c.primaryContactName,
-  'primary_contact_phone':      c.primaryContactPhone,
-  'primary_contact_email':      c.primaryContactEmail,
-  'net_cost':           c.netCost,
-  'deposit_paid':       c.depositPaid,
-  'remaining_balance':  c.remainingBalance,
-  'payment_due_date':   c.paymentDueDate?.toIso8601String().substring(0, 10),
+  'confirmation_number': c.confirmationNumber,
+  'primary_contact_name': c.primaryContactName,
+  'primary_contact_phone': c.primaryContactPhone,
+  'primary_contact_email': c.primaryContactEmail,
+  'net_cost': c.netCost,
+  'deposit_paid': c.depositPaid,
+  'remaining_balance': c.remainingBalance,
+  'payment_due_date': c.paymentDueDate?.toIso8601String().substring(0, 10),
   'cancellation_terms': c.cancellationTerms,
   'confirmation_file_url': c.confirmationFileUrl,
-  'invoice_file_url':      c.invoiceFileUrl,
-  'voucher_file_url':      c.voucherFileUrl,
-  'details_json':      c.detailsJson,
-  'notes_internal':    c.notesInternal,
-  'notes_client':      c.notesClient,
-  'notes_finance':     c.notesFinance,
-  'cost_item_id':      c.costItemId,
+  'invoice_file_url': c.invoiceFileUrl,
+  'voucher_file_url': c.voucherFileUrl,
+  'details_json': c.detailsJson,
+  'notes_internal': c.notesInternal,
+  'notes_client': c.notesClient,
+  'notes_finance': c.notesFinance,
+  'cost_item_id': c.costItemId,
   'itinerary_item_id': c.itineraryItemId,
   'run_sheet_item_id': c.runSheetItemId,
 };
@@ -131,7 +139,7 @@ class SupabaseTripComponentRepository implements TripComponentRepository {
         .eq('run_sheet_item_id', runSheetItemId)
         .limit(1);
     if ((rows as List).isEmpty) return null;
-    return _fromRow(rows.first as Map<String, dynamic>);
+    return _fromRow(rows.first);
   }
 
   @override
@@ -142,7 +150,7 @@ class SupabaseTripComponentRepository implements TripComponentRepository {
         .eq('itinerary_item_id', itineraryItemId)
         .limit(1);
     if ((rows as List).isEmpty) return null;
-    return _fromRow(rows.first as Map<String, dynamic>);
+    return _fromRow(rows.first);
   }
 
   @override
@@ -152,7 +160,9 @@ class SupabaseTripComponentRepository implements TripComponentRepository {
         .select(_kSelect)
         .eq('trip_id', tripId)
         .order('created_at');
-    return (rows as List).map((r) => _fromRow(r as Map<String, dynamic>)).toList();
+    return (rows as List)
+        .map((r) => _fromRow(r as Map<String, dynamic>))
+        .toList();
   }
 
   @override
@@ -198,7 +208,9 @@ class SupabaseTripComponentRepository implements TripComponentRepository {
     emit();
 
     final channel = _client
-        .channel('trip_components:trip:$tripId:${DateTime.now().microsecondsSinceEpoch}')
+        .channel(
+          'trip_components:trip:$tripId:${DateTime.now().microsecondsSinceEpoch}',
+        )
         .onPostgresChanges(
           event: PostgresChangeEvent.all,
           schema: 'public',

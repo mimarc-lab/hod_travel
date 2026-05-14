@@ -515,6 +515,14 @@ class _EmptyState extends StatelessWidget {
             style: AppTextStyles.bodySmall.copyWith(color: AppColors.textMuted),
           ),
           if (hasSupplier) ...[
+            const SizedBox(height: 4),
+            Text(
+              'Images must first be uploaded in the supplier\'s profile.',
+              style: AppTextStyles.labelSmall.copyWith(color: AppColors.textMuted),
+              textAlign: TextAlign.center,
+            ),
+          ],
+          if (hasSupplier) ...[
             const SizedBox(height: AppSpacing.sm),
             OutlinedButton.icon(
               onPressed: saving ? null : onAdd,

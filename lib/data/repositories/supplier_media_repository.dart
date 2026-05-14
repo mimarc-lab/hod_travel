@@ -75,7 +75,7 @@ SupplierMedia _fromRow(Map<String, dynamic> r) => SupplierMedia(
     );
 
 Map<String, dynamic> _toRow(SupplierMedia m, {String? teamId}) => {
-      if (teamId != null) 'team_id': teamId,
+      'team_id': ?teamId,
       'supplier_id':   m.supplierId,
       'media_type':    m.mediaType.dbValue,
       'file_url':      m.fileUrl,

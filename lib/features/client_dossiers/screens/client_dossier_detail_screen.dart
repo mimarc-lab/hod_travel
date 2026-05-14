@@ -698,16 +698,19 @@ class _MetaPills extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final items = <_MetaItem>[];
-    if (dossier.typicalTripType != null)
+    if (dossier.typicalTripType != null) {
       items.add(_MetaItem(
           icon: Icons.luggage_outlined,
           label: dossier.typicalTripType!.label));
-    if (dossier.homeBase != null)
+    }
+    if (dossier.homeBase != null) {
       items.add(_MetaItem(
           icon: Icons.location_on_outlined, label: dossier.homeBase!));
-    if (dossier.nationality != null)
+    }
+    if (dossier.nationality != null) {
       items.add(_MetaItem(
           icon: Icons.flag_outlined, label: dossier.nationality!));
+    }
     items.add(_MetaItem(
         icon: Icons.update_outlined,
         label: 'Updated ${DateFormat('d MMM yyyy').format(dossier.updatedAt)}'));
@@ -1025,66 +1028,80 @@ class _PreferenceSnapshotCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final rows = <Widget>[];
 
-    if (dossier.accommodationType != null)
+    if (dossier.accommodationType != null) {
       rows.add(DossierInfoRow(
           label: 'Accommodation',
           value: dossier.accommodationType!.label));
+    }
 
-    if (dossier.beddingPreferences != null)
+    if (dossier.beddingPreferences != null) {
       rows.add(DossierInfoRow(
           label: 'Bedding', value: dossier.beddingPreferences!));
+    }
 
-    if (dossier.wellnessImportance != null)
+    if (dossier.wellnessImportance != null) {
       rows.add(DossierInfoRow(
           label: 'Wellness / spa',
           value: dossier.wellnessImportance!.label));
+    }
 
-    if (dossier.amenityPreferences.isNotEmpty)
+    if (dossier.amenityPreferences.isNotEmpty) {
       rows.add(_ChipRow(
           label: 'Amenities', chips: dossier.amenityPreferences));
+    }
 
-    if (dossier.diningStyle != null)
+    if (dossier.diningStyle != null) {
       rows.add(DossierInfoRow(
           label: 'Dining style', value: dossier.diningStyle!.label));
+    }
 
-    if (dossier.cuisinePreferences.isNotEmpty)
+    if (dossier.cuisinePreferences.isNotEmpty) {
       rows.add(
           _ChipRow(label: 'Cuisines', chips: dossier.cuisinePreferences));
+    }
 
-    if (dossier.dietaryRestrictions.isNotEmpty)
+    if (dossier.dietaryRestrictions.isNotEmpty) {
       rows.add(_ChipRow(
           label: 'Dietary',
           chips: dossier.dietaryRestrictions,
           alert: true));
+    }
 
-    if (dossier.allergies.isNotEmpty)
+    if (dossier.allergies.isNotEmpty) {
       rows.add(
           _ChipRow(label: 'Allergies', chips: dossier.allergies, alert: true));
+    }
 
-    if (dossier.diningDislikes.isNotEmpty)
+    if (dossier.diningDislikes.isNotEmpty) {
       rows.add(DossierInfoRow(
           label: 'Dislikes',
           value: dossier.diningDislikes.join(', ')));
+    }
 
     // Experience interest bars
     final interestRows = <Widget>[];
-    if (dossier.culturalInterest > 0)
+    if (dossier.culturalInterest > 0) {
       interestRows.add(InterestBar(
           label: 'Cultural / heritage',
           level: dossier.culturalInterest));
-    if (dossier.adventureInterest > 0)
+    }
+    if (dossier.adventureInterest > 0) {
       interestRows.add(InterestBar(
           label: 'Adventure / active',
           level: dossier.adventureInterest));
-    if (dossier.relaxationInterest > 0)
+    }
+    if (dossier.relaxationInterest > 0) {
       interestRows.add(InterestBar(
           label: 'Relaxation', level: dossier.relaxationInterest));
-    if (dossier.intellectualInterest > 0)
+    }
+    if (dossier.intellectualInterest > 0) {
       interestRows.add(InterestBar(
           label: 'Intellectual', level: dossier.intellectualInterest));
-    if (dossier.shoppingInterest > 0)
+    }
+    if (dossier.shoppingInterest > 0) {
       interestRows.add(InterestBar(
           label: 'Shopping', level: dossier.shoppingInterest));
+    }
 
     if (rows.isEmpty && interestRows.isEmpty) return const SizedBox.shrink();
 
@@ -1268,8 +1285,9 @@ class _TravelersSection extends StatelessWidget {
                             dossierId: dossier.id,
                             existing: t,
                           );
-                          if (result != null)
+                          if (result != null) {
                             await provider.updateTraveler(result);
+                          }
                         },
                         onDelete: () =>
                             provider.deleteTraveler(t.id, dossier.id),
@@ -1444,7 +1462,7 @@ class _QuestionnaireStatusCard extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     hasCompleted && latest?.completedAt != null
-                        ? 'Last submitted ${DateFormat('d MMM yyyy').format(latest!.completedAt!)}'
+                        ? 'Last submitted ${DateFormat('d MMM yyyy').format(latest!.completedAt)}'
                         : 'Tap to start the preference questionnaire',
                     style: GoogleFonts.inter(
                       fontSize: 11,

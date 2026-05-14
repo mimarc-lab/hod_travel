@@ -68,10 +68,12 @@ class MilestoneEngine {
     final expOk       = components.any((c) =>
         c.componentType == ComponentType.experience && _isCompApproved(c));
 
-    if (!hasAccom)       pending.add('Add at least one accommodation component');
-    else if (!accomOk)   pending.add('Approve accommodation component(s)');
-    if (!hasExp)         pending.add('Add at least one experience component');
-    else if (!expOk)     pending.add('Approve experience component(s)');
+    if (!hasAccom) {
+      pending.add('Add at least one accommodation component');
+    } else if (!accomOk)   pending.add('Approve accommodation component(s)');
+    if (!hasExp) {
+      pending.add('Add at least one experience component');
+    } else if (!expOk)     pending.add('Approve experience component(s)');
 
     return MilestoneStatus(
       id:              MilestoneId.sourcingComplete,
@@ -110,20 +112,21 @@ class MilestoneEngine {
   static MilestoneStatus _finalPresentationApproved(List<Task> tasks) {
     final pending = <String>[];
 
-    bool _isPresTask(Task t) =>
+    bool isPresTask(Task t) =>
         t.name.toLowerCase().contains('proposal') ||
         t.name.toLowerCase().contains('presentation') ||
         t.name.toLowerCase().contains('client approval');
 
-    final presTask = tasks.any(_isPresTask);
+    final presTask = tasks.any(isPresTask);
     final approved = tasks.any((t) =>
-        _isPresTask(t) &&
+        isPresTask(t) &&
         (t.status == TaskStatus.sentToClient ||
          t.status == TaskStatus.approved ||
          t.status == TaskStatus.confirmed));
 
-    if (!presTask)    pending.add('Create a proposal / presentation task');
-    else if (!approved) pending.add('Get client approval on the final presentation');
+    if (!presTask) {
+      pending.add('Create a proposal / presentation task');
+    } else if (!approved) pending.add('Get client approval on the final presentation');
 
     return MilestoneStatus(
       id:              MilestoneId.finalPresentationApproved,

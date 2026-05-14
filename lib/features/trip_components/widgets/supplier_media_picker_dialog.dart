@@ -168,6 +168,13 @@ class _PickerSheetState extends State<_PickerSheet> {
             Text(
               'No media in this supplier\'s library yet.',
               style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textMuted),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Open the supplier\'s profile and upload images\nto make them available here.',
+              style: AppTextStyles.bodySmall.copyWith(color: AppColors.textMuted),
+              textAlign: TextAlign.center,
             ),
           ],
         ),

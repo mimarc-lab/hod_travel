@@ -130,7 +130,7 @@ class SupabaseRunSheetShareRepository implements RunSheetShareRepository {
       'token':     _generateToken(),
       'view_mode': viewMode.dbValue,
       if (teamId?.isNotEmpty    == true) 'team_id':    teamId,
-      if (label                 != null) 'label':      label,
+      'label':      ?label,
       if (expiresAt             != null) 'expires_at': expiresAt.toIso8601String(),
       if (createdBy?.isNotEmpty == true) 'created_by': createdBy,
     };
