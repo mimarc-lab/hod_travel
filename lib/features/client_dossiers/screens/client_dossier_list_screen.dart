@@ -258,12 +258,11 @@ class _SearchField extends StatelessWidget {
                 )
               : const SizedBox.shrink(),
         ),
-        isDense: true,
         filled: true,
         fillColor: AppColors.surfaceAlt,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.base,
-          vertical: AppSpacing.sm,
+          vertical: 14,
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
@@ -297,7 +296,8 @@ class _TypeFilterMenu extends StatelessWidget {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           color: AppColors.surface,
           child: Container(
-            height: 36,
+            height: 48,
+            alignment: Alignment.center,
             padding: const EdgeInsets.symmetric(horizontal: 12),
             decoration: BoxDecoration(
               color: active ? AppColors.accentFaint : AppColors.surfaceAlt,
