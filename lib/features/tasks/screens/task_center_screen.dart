@@ -283,12 +283,12 @@ class _SearchFilterBar extends StatelessWidget {
           ? Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Desktop Row 1: [══ Search ══][══ Status ══]
+                // Desktop Row 1: [══════ Search (flex 2) ══════][══ Status (flex 1) ══]
                 Row(
                   children: [
-                    Expanded(child: searchField),
+                    Expanded(flex: 2, child: searchField),
                     const SizedBox(width: 10),
-                    Expanded(child: statusChip),
+                    Expanded(flex: 1, child: statusChip),
                   ],
                 ),
                 const SizedBox(height: 10),
