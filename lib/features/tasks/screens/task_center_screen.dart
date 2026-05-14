@@ -192,12 +192,20 @@ class _SearchFilterBar extends StatelessWidget {
     final statusChip = PopupMenuButton<TaskStatus?>(
       tooltip: 'Filter by status',
       onSelected: provider.setFilterStatus,
+      offset: const Offset(0, 52),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 8,
+      color: AppColors.surface,
+      shadowColor: const Color(0x18000000),
+      constraints: const BoxConstraints(minWidth: 200),
       itemBuilder: (_) => [
-        const PopupMenuItem<TaskStatus?>(
-            value: null, child: Text('All statuses')),
+        PopupMenuItem<TaskStatus?>(
+            value: null,
+            child: _DropdownOption(label: 'All statuses', isSelected: provider.filterStatus == null)),
+        const PopupMenuDivider(height: 1),
         ...TaskStatus.values.map((s) => PopupMenuItem<TaskStatus?>(
               value: s,
-              child: Text(s.label, style: AppTextStyles.bodySmall),
+              child: _DropdownOption(label: s.label, isSelected: provider.filterStatus == s),
             )),
       ],
       child: _FilterChip(
@@ -210,12 +218,20 @@ class _SearchFilterBar extends StatelessWidget {
     final priorityChip = PopupMenuButton<TaskPriority?>(
       tooltip: 'Filter by priority',
       onSelected: provider.setFilterPriority,
+      offset: const Offset(0, 52),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 8,
+      color: AppColors.surface,
+      shadowColor: const Color(0x18000000),
+      constraints: const BoxConstraints(minWidth: 180),
       itemBuilder: (_) => [
-        const PopupMenuItem<TaskPriority?>(
-            value: null, child: Text('All priorities')),
+        PopupMenuItem<TaskPriority?>(
+            value: null,
+            child: _DropdownOption(label: 'All priorities', isSelected: provider.filterPriority == null)),
+        const PopupMenuDivider(height: 1),
         ...TaskPriority.values.map((p) => PopupMenuItem<TaskPriority?>(
               value: p,
-              child: Text(p.label, style: AppTextStyles.bodySmall),
+              child: _DropdownOption(label: p.label, isSelected: provider.filterPriority == p),
             )),
       ],
       child: _FilterChip(
@@ -228,11 +244,20 @@ class _SearchFilterBar extends StatelessWidget {
     final tripChip = PopupMenuButton<String?>(
       tooltip: 'Filter by trip',
       onSelected: provider.setFilterTripId,
+      offset: const Offset(0, 52),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 8,
+      color: AppColors.surface,
+      shadowColor: const Color(0x18000000),
+      constraints: const BoxConstraints(minWidth: 220),
       itemBuilder: (_) => [
-        const PopupMenuItem<String?>(value: null, child: Text('All trips')),
+        PopupMenuItem<String?>(
+            value: null,
+            child: _DropdownOption(label: 'All trips', isSelected: provider.filterTripId == null)),
+        const PopupMenuDivider(height: 1),
         ...provider.allTrips.map((t) => PopupMenuItem<String?>(
               value: t.id,
-              child: Text(t.name, style: AppTextStyles.bodySmall),
+              child: _DropdownOption(label: t.name, isSelected: provider.filterTripId == t.id),
             )),
       ],
       child: _FilterChip(
@@ -247,12 +272,20 @@ class _SearchFilterBar extends StatelessWidget {
     final dueDateChip = PopupMenuButton<DueDateFilter?>(
       tooltip: 'Filter by due date',
       onSelected: provider.setFilterDueDate,
+      offset: const Offset(0, 52),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 8,
+      color: AppColors.surface,
+      shadowColor: const Color(0x18000000),
+      constraints: const BoxConstraints(minWidth: 180),
       itemBuilder: (_) => [
-        const PopupMenuItem<DueDateFilter?>(
-            value: null, child: Text('Any due date')),
+        PopupMenuItem<DueDateFilter?>(
+            value: null,
+            child: _DropdownOption(label: 'Any due date', isSelected: provider.filterDueDate == null)),
+        const PopupMenuDivider(height: 1),
         ...DueDateFilter.values.map((f) => PopupMenuItem<DueDateFilter?>(
               value: f,
-              child: Text(f.label, style: AppTextStyles.bodySmall),
+              child: _DropdownOption(label: f.label, isSelected: provider.filterDueDate == f),
             )),
       ],
       child: _FilterChip(
@@ -395,6 +428,37 @@ class _FilterChip extends StatelessWidget {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tab bar with overdue badge (unchanged)
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ── Dropdown option row (shared by all filter PopupMenus) ────────────────────
+
+class _DropdownOption extends StatelessWidget {
+  final String label;
+  final bool isSelected;
+  const _DropdownOption({required this.label, required this.isSelected});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 13,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+              color: isSelected ? AppColors.accent : AppColors.textSecondary,
+              height: 1.3,
+            ),
+          ),
+        ),
+        if (isSelected)
+          const Icon(Icons.check_rounded, size: 14, color: AppColors.accent),
+      ],
+    );
+  }
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _TaskTabBar extends StatelessWidget {

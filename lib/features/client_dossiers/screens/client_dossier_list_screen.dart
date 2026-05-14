@@ -293,8 +293,12 @@ class _TypeFilterMenu extends StatelessWidget {
         final active = provider.typeFilter != null;
         return PopupMenuButton<TripType?>(
           onSelected: provider.setTypeFilter,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          offset: const Offset(0, 52),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          elevation: 8,
           color: AppColors.surface,
+          shadowColor: const Color(0x18000000),
+          constraints: const BoxConstraints(minWidth: 180),
           child: Container(
             height: 48,
             alignment: Alignment.centerLeft,
@@ -307,27 +311,47 @@ class _TypeFilterMenu extends StatelessWidget {
               ),
             ),
             child: Row(
-              mainAxisSize: MainAxisSize.min,
+              mainAxisSize: MainAxisSize.max,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Icon(
-                  Icons.filter_list_rounded,
-                  size: 14,
-                  color: active ? AppColors.accent : AppColors.textSecondary,
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.filter_list_rounded,
+                      size: 14,
+                      color: active ? AppColors.accent : AppColors.textSecondary,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      provider.typeFilter?.label ?? 'Type',
+                      style: AppTextStyles.labelSmall.copyWith(
+                        fontSize: 13,
+                        color: active ? AppColors.accent : AppColors.textSecondary,
+                        fontWeight: active ? FontWeight.w600 : FontWeight.w400,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 5),
-                Text(
-                  provider.typeFilter?.label ?? 'Type',
-                  style: AppTextStyles.labelSmall.copyWith(
-                    color: active ? AppColors.accent : AppColors.textSecondary,
-                  ),
+                Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  size: 16,
+                  color: active ? AppColors.accent : AppColors.textMuted,
                 ),
               ],
             ),
           ),
           itemBuilder: (_) => [
-            const PopupMenuItem(value: null, child: Text('All types')),
+            PopupMenuItem(
+                value: null,
+                child: _DropdownOption(label: 'All types', isSelected: !active)),
+            const PopupMenuDivider(height: 1),
             ...TripType.values.map(
-              (t) => PopupMenuItem(value: t, child: Text(t.label)),
+              (t) => PopupMenuItem(
+                value: t,
+                child: _DropdownOption(
+                    label: t.label, isSelected: provider.typeFilter == t),
+              ),
             ),
           ],
         );
@@ -610,6 +634,34 @@ class _TypeChip extends StatelessWidget {
 }
 
 // ── Empty state ───────────────────────────────────────────────────────────────
+
+class _DropdownOption extends StatelessWidget {
+  final String label;
+  final bool isSelected;
+  const _DropdownOption({required this.label, required this.isSelected});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 13,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+              color: isSelected ? AppColors.accent : AppColors.textSecondary,
+              height: 1.3,
+            ),
+          ),
+        ),
+        if (isSelected)
+          const Icon(Icons.check_rounded, size: 14, color: AppColors.accent),
+      ],
+    );
+  }
+}
 
 class _EmptyState extends StatelessWidget {
   final bool hasFilters;
