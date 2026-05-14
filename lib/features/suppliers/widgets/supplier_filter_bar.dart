@@ -166,7 +166,7 @@ class _SupplierTypeDropdown extends StatelessWidget {
       ],
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 120),
-        height: 40,
+        height: 48,
         padding: const EdgeInsets.symmetric(horizontal: 14),
         decoration: BoxDecoration(
           color: bgColor,
@@ -264,7 +264,7 @@ class _PreferredToggleChip extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 140),
-        height: 40,
+        height: 48,
         padding: const EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(
           color: isOn ? AppColors.accent.withAlpha(20) : AppColors.surface,
