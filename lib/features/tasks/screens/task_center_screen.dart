@@ -150,150 +150,190 @@ class _SearchFilterBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDesktop = !Responsive.isMobile(context);
+
+    final searchField = TextField(
+      controller: searchCtrl,
+      style: AppTextStyles.bodyMedium,
+      decoration: InputDecoration(
+        hintText: 'Search tasks or trips…',
+        hintStyle: AppTextStyles.bodySmall,
+        prefixIcon: const Icon(Icons.search_rounded,
+            size: 18, color: AppColors.textMuted),
+        suffixIcon: provider.search.isNotEmpty
+            ? GestureDetector(
+                onTap: () {
+                  searchCtrl.clear();
+                  provider.setSearch('');
+                },
+                child: const Icon(Icons.close_rounded,
+                    size: 16, color: AppColors.textMuted),
+              )
+            : null,
+        filled: true,
+        fillColor: AppColors.surface,
+        contentPadding:
+            const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: AppColors.border),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: AppColors.border),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: AppColors.accent, width: 1.5),
+        ),
+      ),
+    );
+
+    final statusChip = PopupMenuButton<TaskStatus?>(
+      tooltip: 'Filter by status',
+      onSelected: provider.setFilterStatus,
+      itemBuilder: (_) => [
+        const PopupMenuItem<TaskStatus?>(
+            value: null, child: Text('All statuses')),
+        ...TaskStatus.values.map((s) => PopupMenuItem<TaskStatus?>(
+              value: s,
+              child: Text(s.label, style: AppTextStyles.bodySmall),
+            )),
+      ],
+      child: _FilterChip(
+        label: provider.filterStatus?.label ?? 'Status',
+        active: provider.filterStatus != null,
+      ),
+    );
+
+    final priorityChip = PopupMenuButton<TaskPriority?>(
+      tooltip: 'Filter by priority',
+      onSelected: provider.setFilterPriority,
+      itemBuilder: (_) => [
+        const PopupMenuItem<TaskPriority?>(
+            value: null, child: Text('All priorities')),
+        ...TaskPriority.values.map((p) => PopupMenuItem<TaskPriority?>(
+              value: p,
+              child: Text(p.label, style: AppTextStyles.bodySmall),
+            )),
+      ],
+      child: _FilterChip(
+        label: provider.filterPriority?.label ?? 'Priority',
+        active: provider.filterPriority != null,
+      ),
+    );
+
+    final tripChip = PopupMenuButton<String?>(
+      tooltip: 'Filter by trip',
+      onSelected: provider.setFilterTripId,
+      itemBuilder: (_) => [
+        const PopupMenuItem<String?>(value: null, child: Text('All trips')),
+        ...provider.allTrips.map((t) => PopupMenuItem<String?>(
+              value: t.id,
+              child: Text(t.name, style: AppTextStyles.bodySmall),
+            )),
+      ],
+      child: _FilterChip(
+        label: provider.filterTripId != null
+            ? (provider.tripsById[provider.filterTripId]?.name ?? 'Trip')
+            : 'Trip',
+        active: provider.filterTripId != null,
+      ),
+    );
+
+    final dueDateChip = PopupMenuButton<DueDateFilter?>(
+      tooltip: 'Filter by due date',
+      onSelected: provider.setFilterDueDate,
+      itemBuilder: (_) => [
+        const PopupMenuItem<DueDateFilter?>(
+            value: null, child: Text('Any due date')),
+        ...DueDateFilter.values.map((f) => PopupMenuItem<DueDateFilter?>(
+              value: f,
+              child: Text(f.label, style: AppTextStyles.bodySmall),
+            )),
+      ],
+      child: _FilterChip(
+        label: provider.filterDueDate?.label ?? 'Due Date',
+        active: provider.filterDueDate != null,
+      ),
+    );
+
+    final clearBtn = provider.hasActiveFilters
+        ? GestureDetector(
+            onTap: provider.clearFilters,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              child: Text(
+                'Clear',
+                style: AppTextStyles.labelMedium
+                    .copyWith(color: AppColors.accent),
+              ),
+            ),
+          )
+        : null;
+
     return Container(
       color: AppColors.surface,
       padding: EdgeInsets.fromLTRB(hPad, 14, hPad, 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Search bar — 48px, radius 14, white fill
-          TextField(
-            controller: searchCtrl,
-            style: AppTextStyles.bodyMedium,
-            decoration: InputDecoration(
-              hintText: 'Search tasks or trips…',
-              hintStyle: AppTextStyles.bodySmall,
-              prefixIcon: const Icon(Icons.search_rounded,
-                  size: 18, color: AppColors.textMuted),
-              suffixIcon: provider.search.isNotEmpty
-                  ? GestureDetector(
-                      onTap: () {
-                        searchCtrl.clear();
-                        provider.setSearch('');
-                      },
-                      child: const Icon(Icons.close_rounded,
-                          size: 16, color: AppColors.textMuted),
-                    )
-                  : null,
-              filled: true,
-              fillColor: AppColors.surface,
-              contentPadding: const EdgeInsets.symmetric(
-                  vertical: 14, horizontal: 12),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-                borderSide: const BorderSide(color: AppColors.border),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-                borderSide: const BorderSide(color: AppColors.border),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-                borderSide:
-                    const BorderSide(color: AppColors.accent, width: 1.5),
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
-          // Row 1: Status + Priority
-          AdaptiveControlRow(
-            gap: 8,
-            children: [
-              PopupMenuButton<TaskStatus?>(
-                tooltip: 'Filter by status',
-                onSelected: provider.setFilterStatus,
-                itemBuilder: (_) => [
-                  const PopupMenuItem<TaskStatus?>(
-                      value: null, child: Text('All statuses')),
-                  ...TaskStatus.values.map((s) => PopupMenuItem<TaskStatus?>(
-                        value: s,
-                        child: Text(s.label, style: AppTextStyles.bodySmall),
-                      )),
-                ],
-                child: _FilterChip(
-                  label: provider.filterStatus?.label ?? 'Status',
-                  active: provider.filterStatus != null,
-                ),
-              ),
-              PopupMenuButton<TaskPriority?>(
-                tooltip: 'Filter by priority',
-                onSelected: provider.setFilterPriority,
-                itemBuilder: (_) => [
-                  const PopupMenuItem<TaskPriority?>(
-                      value: null, child: Text('All priorities')),
-                  ...TaskPriority.values.map((p) =>
-                      PopupMenuItem<TaskPriority?>(
-                        value: p,
-                        child: Text(p.label, style: AppTextStyles.bodySmall),
-                      )),
-                ],
-                child: _FilterChip(
-                  label: provider.filterPriority?.label ?? 'Priority',
-                  active: provider.filterPriority != null,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          // Row 2: Trip + Due Date + optional Clear
-          Row(
-            children: [
-              Expanded(
-                child: PopupMenuButton<String?>(
-                  tooltip: 'Filter by trip',
-                  onSelected: provider.setFilterTripId,
-                  itemBuilder: (_) => [
-                    const PopupMenuItem<String?>(
-                        value: null, child: Text('All trips')),
-                    ...provider.allTrips.map((t) => PopupMenuItem<String?>(
-                          value: t.id,
-                          child: Text(t.name, style: AppTextStyles.bodySmall),
-                        )),
+      child: isDesktop
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Desktop Row 1: [══ Search ══][Status ▾][Priority ▾]
+                Row(
+                  children: [
+                    Expanded(child: searchField),
+                    const SizedBox(width: 10),
+                    statusChip,
+                    const SizedBox(width: 8),
+                    priorityChip,
                   ],
-                  child: _FilterChip(
-                    label: provider.filterTripId != null
-                        ? (provider.tripsById[provider.filterTripId]?.name ??
-                            'Trip')
-                        : 'Trip',
-                    active: provider.filterTripId != null,
-                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: PopupMenuButton<DueDateFilter?>(
-                  tooltip: 'Filter by due date',
-                  onSelected: provider.setFilterDueDate,
-                  itemBuilder: (_) => [
-                    const PopupMenuItem<DueDateFilter?>(
-                        value: null, child: Text('Any due date')),
-                    ...DueDateFilter.values.map((f) =>
-                        PopupMenuItem<DueDateFilter?>(
-                          value: f,
-                          child: Text(f.label, style: AppTextStyles.bodySmall),
-                        )),
+                const SizedBox(height: 10),
+                // Desktop Row 2: [Trip ▾][Due Date ▾][Clear?]
+                Row(
+                  children: [
+                    tripChip,
+                    const SizedBox(width: 8),
+                    dueDateChip,
+                    ?clearBtn,
                   ],
-                  child: _FilterChip(
-                    label: provider.filterDueDate?.label ?? 'Due Date',
-                    active: provider.filterDueDate != null,
-                  ),
-                ),
-              ),
-              if (provider.hasActiveFilters) ...[
-                const SizedBox(width: 10),
-                GestureDetector(
-                  onTap: provider.clearFilters,
-                  child: Text(
-                    'Clear',
-                    style: AppTextStyles.labelMedium
-                        .copyWith(color: AppColors.accent),
-                  ),
                 ),
               ],
-            ],
-          ),
-        ],
-      ),
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Mobile: search full width
+                searchField,
+                const SizedBox(height: 10),
+                // Mobile Row 1: Status + Priority
+                AdaptiveControlRow(
+                  gap: 8,
+                  children: [statusChip, priorityChip],
+                ),
+                const SizedBox(height: 8),
+                // Mobile Row 2: Trip + Due Date + Clear
+                Row(
+                  children: [
+                    Expanded(child: tripChip),
+                    const SizedBox(width: 8),
+                    Expanded(child: dueDateChip),
+                    if (provider.hasActiveFilters) ...[
+                      const SizedBox(width: 10),
+                      GestureDetector(
+                        onTap: provider.clearFilters,
+                        child: Text(
+                          'Clear',
+                          style: AppTextStyles.labelMedium
+                              .copyWith(color: AppColors.accent),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
+            ),
     );
   }
 }
