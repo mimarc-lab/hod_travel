@@ -279,15 +279,18 @@ class _SearchFilterBar extends StatelessWidget {
           ? Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Desktop Row 1: [══ Search ══][Status ▾][Priority ▾]
-                Row(
-                  children: [
-                    Expanded(child: searchField),
-                    const SizedBox(width: 10),
-                    statusChip,
-                    const SizedBox(width: 8),
-                    priorityChip,
-                  ],
+                // Desktop Row 1: [══ Search ══][Status ▾][Priority ▾] — all same height
+                IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(child: searchField),
+                      const SizedBox(width: 10),
+                      statusChip,
+                      const SizedBox(width: 8),
+                      priorityChip,
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 10),
                 // Desktop Row 2: [══ Trip ══][══ Due Date ══][Clear?]
@@ -398,6 +401,7 @@ class _FilterChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 140),
+      alignment: Alignment.center,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(
         color: active ? AppColors.accentFaint : AppColors.surface,
