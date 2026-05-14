@@ -173,7 +173,7 @@ class _SearchFilterBar extends StatelessWidget {
         filled: true,
         fillColor: AppColors.surface,
         contentPadding:
-            const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+            const EdgeInsets.symmetric(vertical: 11, horizontal: 12),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(color: AppColors.border),
@@ -279,18 +279,15 @@ class _SearchFilterBar extends StatelessWidget {
           ? Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Desktop Row 1: [══ Search ══][Status ▾][Priority ▾] — all same height
-                IntrinsicHeight(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Expanded(child: searchField),
-                      const SizedBox(width: 10),
-                      statusChip,
-                      const SizedBox(width: 8),
-                      priorityChip,
-                    ],
-                  ),
+                // Desktop Row 1: [══ Search ══][Status ▾][Priority ▾]
+                Row(
+                  children: [
+                    Expanded(child: searchField),
+                    const SizedBox(width: 10),
+                    statusChip,
+                    const SizedBox(width: 8),
+                    priorityChip,
+                  ],
                 ),
                 const SizedBox(height: 10),
                 // Desktop Row 2: [══ Trip ══][══ Due Date ══][Clear?]
@@ -401,8 +398,9 @@ class _FilterChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 140),
+      height: 48,
       alignment: Alignment.center,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+      padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
         color: active ? AppColors.accentFaint : AppColors.surface,
         borderRadius: BorderRadius.circular(20),
