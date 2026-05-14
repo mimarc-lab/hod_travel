@@ -279,67 +279,64 @@ class _SearchFilterBar extends StatelessWidget {
           ? Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Desktop Row 1: [══ Search ══][Status ▾][Priority ▾]
+                // Desktop Row 1: [══ Search ══][Status ▾]
                 Row(
                   children: [
                     Expanded(child: searchField),
                     const SizedBox(width: 10),
                     statusChip,
-                    const SizedBox(width: 8),
-                    priorityChip,
                   ],
                 ),
                 const SizedBox(height: 10),
-                // Desktop Row 2: [══ Trip ══][══ Due Date ══][Clear?]
+                // Desktop Row 2: [Priority ▾][══ Trip ══][══ Due Date ══][Clear?]
                 Row(
                   children: [
+                    priorityChip,
+                    const SizedBox(width: 8),
                     Expanded(
-                      child: AdaptiveControlRow(
-                        gap: 8,
-                        children: [
-                          PopupMenuButton<String?>(
-                            tooltip: 'Filter by trip',
-                            onSelected: provider.setFilterTripId,
-                            itemBuilder: (_) => [
-                              const PopupMenuItem<String?>(
-                                  value: null, child: Text('All trips')),
-                              ...provider.allTrips.map((t) =>
-                                  PopupMenuItem<String?>(
-                                    value: t.id,
-                                    child: Text(t.name,
-                                        style: AppTextStyles.bodySmall),
-                                  )),
-                            ],
-                            child: _FilterChip(
-                              label: provider.filterTripId != null
-                                  ? (provider.tripsById[provider.filterTripId]
-                                          ?.name ??
-                                      'Trip')
-                                  : 'Trip',
-                              active: provider.filterTripId != null,
-                              fullWidth: true,
-                            ),
-                          ),
-                          PopupMenuButton<DueDateFilter?>(
-                            tooltip: 'Filter by due date',
-                            onSelected: provider.setFilterDueDate,
-                            itemBuilder: (_) => [
-                              const PopupMenuItem<DueDateFilter?>(
-                                  value: null, child: Text('Any due date')),
-                              ...DueDateFilter.values.map((f) =>
-                                  PopupMenuItem<DueDateFilter?>(
-                                    value: f,
-                                    child: Text(f.label,
-                                        style: AppTextStyles.bodySmall),
-                                  )),
-                            ],
-                            child: _FilterChip(
-                              label: provider.filterDueDate?.label ?? 'Due Date',
-                              active: provider.filterDueDate != null,
-                              fullWidth: true,
-                            ),
-                          ),
+                      child: PopupMenuButton<String?>(
+                        tooltip: 'Filter by trip',
+                        onSelected: provider.setFilterTripId,
+                        itemBuilder: (_) => [
+                          const PopupMenuItem<String?>(
+                              value: null, child: Text('All trips')),
+                          ...provider.allTrips.map((t) => PopupMenuItem<String?>(
+                                value: t.id,
+                                child: Text(t.name,
+                                    style: AppTextStyles.bodySmall),
+                              )),
                         ],
+                        child: _FilterChip(
+                          label: provider.filterTripId != null
+                              ? (provider.tripsById[provider.filterTripId]
+                                      ?.name ??
+                                  'Trip')
+                              : 'Trip',
+                          active: provider.filterTripId != null,
+                          fullWidth: true,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: PopupMenuButton<DueDateFilter?>(
+                        tooltip: 'Filter by due date',
+                        onSelected: provider.setFilterDueDate,
+                        itemBuilder: (_) => [
+                          const PopupMenuItem<DueDateFilter?>(
+                              value: null, child: Text('Any due date')),
+                          ...DueDateFilter.values.map((f) =>
+                              PopupMenuItem<DueDateFilter?>(
+                                value: f,
+                                child: Text(f.label,
+                                    style: AppTextStyles.bodySmall),
+                              )),
+                        ],
+                        child: _FilterChip(
+                          label: provider.filterDueDate?.label ?? 'Due Date',
+                          active: provider.filterDueDate != null,
+                          fullWidth: true,
+                        ),
                       ),
                     ),
                     ?clearBtn,
