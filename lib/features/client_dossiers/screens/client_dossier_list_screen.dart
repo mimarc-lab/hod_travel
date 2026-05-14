@@ -297,7 +297,7 @@ class _TypeFilterMenu extends StatelessWidget {
           color: AppColors.surface,
           child: Container(
             height: 48,
-            alignment: Alignment.center,
+            alignment: Alignment.centerLeft,
             padding: const EdgeInsets.symmetric(horizontal: 12),
             decoration: BoxDecoration(
               color: active ? AppColors.accentFaint : AppColors.surfaceAlt,

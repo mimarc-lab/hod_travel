@@ -399,7 +399,7 @@ class _FilterChip extends StatelessWidget {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 140),
       height: 48,
-      alignment: Alignment.center,
+      alignment: Alignment.centerLeft,
       padding: const EdgeInsets.symmetric(horizontal: 14),
       decoration: BoxDecoration(
         color: active ? AppColors.accentFaint : AppColors.surface,
