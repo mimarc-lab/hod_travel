@@ -173,7 +173,7 @@ class _SearchFilterBar extends StatelessWidget {
         filled: true,
         fillColor: AppColors.surface,
         contentPadding:
-            const EdgeInsets.symmetric(vertical: 11, horizontal: 12),
+            const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(color: AppColors.border),
@@ -279,14 +279,14 @@ class _SearchFilterBar extends StatelessWidget {
           ? Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Desktop Row 1: [══ Search ══][Status ▾][Priority ▾]
+                // Desktop Row 1: [Status ▾][Priority ▾][══ Search ══]
                 Row(
                   children: [
-                    Expanded(child: searchField),
-                    const SizedBox(width: 10),
                     statusChip,
                     const SizedBox(width: 8),
                     priorityChip,
+                    const SizedBox(width: 10),
+                    Expanded(child: searchField),
                   ],
                 ),
                 const SizedBox(height: 10),
@@ -398,12 +398,12 @@ class _FilterChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 140),
-      height: 48,
+      height: 40,
       alignment: Alignment.center,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 14),
       decoration: BoxDecoration(
         color: active ? AppColors.accentFaint : AppColors.surface,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: active ? AppColors.accent : AppColors.border,
         ),
@@ -417,16 +417,16 @@ class _FilterChip extends StatelessWidget {
           Text(
             label,
             style: GoogleFonts.inter(
-              fontSize: 12,
-              fontWeight: active ? FontWeight.w600 : FontWeight.w500,
+              fontSize: 13,
+              fontWeight: active ? FontWeight.w600 : FontWeight.w400,
               color: active ? AppColors.accentDark : AppColors.textSecondary,
               height: 1.3,
             ),
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: 6),
           Icon(
-            Icons.expand_more_rounded,
-            size: 13,
+            Icons.keyboard_arrow_down_rounded,
+            size: 16,
             color: active ? AppColors.accent : AppColors.textMuted,
           ),
         ],
