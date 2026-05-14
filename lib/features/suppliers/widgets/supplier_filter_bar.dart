@@ -8,10 +8,22 @@ import '../../../core/widgets/adaptive_control_row.dart';
 import '../../../data/models/supplier_model.dart';
 import '../providers/supplier_provider.dart';
 
-/// Compact filter row: type dropdown + preferred toggle + clear.
+/// Compact filter row: type dropdown + preferred toggle (+ search on desktop).
+///
+/// Pass [searchField] on desktop to merge the search box into the same row,
+/// giving: [Type ▾][Preferred][══ search ══][Clear?].
+/// On mobile leave [searchField] null; the search box lives in the header.
 class SupplierFilterBar extends StatelessWidget {
   final SupplierProvider provider;
-  const SupplierFilterBar({super.key, required this.provider});
+
+  /// When non-null the search field is embedded in the filter row (desktop).
+  final Widget? searchField;
+
+  const SupplierFilterBar({
+    super.key,
+    required this.provider,
+    this.searchField,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -20,6 +32,59 @@ class SupplierFilterBar extends StatelessWidget {
         ? AppSpacing.pagePaddingHMobile
         : AppSpacing.pagePaddingH;
 
+    final typeChip = _SupplierTypeDropdown(
+      selected:  provider.typeFilter,
+      onChanged: provider.setTypeFilter,
+    );
+    final preferredChip = _PreferredToggleChip(
+      isOn:  provider.preferredOnly,
+      onTap: () => provider.setPreferredOnly(!provider.preferredOnly),
+    );
+    final clearBtn = provider.hasActiveFilters
+        ? Padding(
+            padding: const EdgeInsets.only(left: AppSpacing.sm),
+            child: GestureDetector(
+              onTap: provider.clearFilters,
+              child: Text(
+                'Clear',
+                style: AppTextStyles.labelSmall.copyWith(
+                  color: AppColors.accent,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          )
+        : null;
+
+    Widget row;
+
+    if (!isMobile && searchField != null) {
+      // ── Desktop: [Type][Preferred][10][Expanded(search)][Clear?] ─────────────
+      row = Row(
+        children: [
+          typeChip,
+          const SizedBox(width: 10),
+          preferredChip,
+          const SizedBox(width: 10),
+          Expanded(child: searchField!),
+          ?clearBtn,
+        ],
+      );
+    } else {
+      // ── Mobile / no search: [Expanded([Type][Preferred])][Clear?] ────────────
+      row = Row(
+        children: [
+          Expanded(
+            child: AdaptiveControlRow(
+              gap: 10,
+              children: [typeChip, preferredChip],
+            ),
+          ),
+          ?clearBtn,
+        ],
+      );
+    }
+
     return Container(
       color: AppColors.background,
       child: Column(
@@ -27,39 +92,7 @@ class SupplierFilterBar extends StatelessWidget {
         children: [
           Padding(
             padding: EdgeInsets.fromLTRB(hPad, 10, hPad, 10),
-            child: Row(
-              children: [
-                Expanded(
-                  child: AdaptiveControlRow(
-                    gap: 10,
-                    children: [
-                      _SupplierTypeDropdown(
-                        selected: provider.typeFilter,
-                        onChanged: provider.setTypeFilter,
-                      ),
-                      _PreferredToggleChip(
-                        isOn: provider.preferredOnly,
-                        onTap: () =>
-                            provider.setPreferredOnly(!provider.preferredOnly),
-                      ),
-                    ],
-                  ),
-                ),
-                if (provider.hasActiveFilters) ...[
-                  const SizedBox(width: AppSpacing.sm),
-                  GestureDetector(
-                    onTap: provider.clearFilters,
-                    child: Text(
-                      'Clear',
-                      style: AppTextStyles.labelSmall.copyWith(
-                        color: AppColors.accent,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            ),
+            child: row,
           ),
           const Divider(height: 1, color: AppColors.divider),
         ],

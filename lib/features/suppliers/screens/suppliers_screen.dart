@@ -133,25 +133,33 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
       ),
       body: Column(
         children: [
-          _SuppliersHeader(
-            provider: _provider,
-            searchCtrl: _searchCtrl,
-            isMobile: isMobile,
-            onImportTap: () => showUrlEnrichmentSheet(
-              context,
-              provider: _enrichmentProvider,
-              supplierProvider: _provider,
+          // On desktop the search box moves into the filter bar row —
+          // show the header (which contains search + mobile action buttons)
+          // only on mobile.
+          if (isMobile)
+            _SuppliersHeader(
+              provider: _provider,
+              searchCtrl: _searchCtrl,
+              isMobile: isMobile,
+              onImportTap: () => showUrlEnrichmentSheet(
+                context,
+                provider: _enrichmentProvider,
+                supplierProvider: _provider,
+              ),
+              onDiscoverTap: () => showSupplierSearchSheet(
+                context,
+                provider: _enrichmentProvider,
+                supplierProvider: _provider,
+              ),
             ),
-            onDiscoverTap: () => showSupplierSearchSheet(
-              context,
-              provider: _enrichmentProvider,
-              supplierProvider: _provider,
-            ),
-          ),
           ListenableBuilder(
             listenable: _provider,
-            builder: (context, _) =>
-                SupplierFilterBar(provider: _provider),
+            builder: (context, _) => SupplierFilterBar(
+              provider: _provider,
+              searchField: isMobile
+                  ? null
+                  : _SearchField(ctrl: _searchCtrl, provider: _provider),
+            ),
           ),
           Expanded(
             child: ListenableBuilder(
