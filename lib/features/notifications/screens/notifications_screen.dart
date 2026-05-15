@@ -7,6 +7,7 @@ import '../../../data/models/notification_model.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../providers/notification_provider.dart';
 import '../widgets/notification_tile.dart';
+import '../../../shared/widgets/app_header.dart';
 
 class NotificationsScreen extends StatefulWidget {
   final NotificationProvider provider;
@@ -22,8 +23,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = Responsive.isMobile(context);
     return Scaffold(
       backgroundColor: AppColors.background,
+      appBar: AppHeader(
+        title: 'Notifications',
+        showMenuButton: isMobile,
+        onMenuTap: () => Scaffold.of(context).openDrawer(),
+      ),
       body: Column(
         children: [
           _NotificationsHeader(
@@ -119,18 +126,12 @@ class _NotificationsHeader extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Notifications', style: AppTextStyles.displayMedium),
-                    ListenableBuilder(
-                      listenable: provider,
-                      builder: (context, _) => Text(
-                        '${provider.unreadCount} unread',
-                        style: AppTextStyles.bodySmall,
-                      ),
-                    ),
-                  ],
+                child: ListenableBuilder(
+                  listenable: provider,
+                  builder: (context, _) => Text(
+                    '${provider.unreadCount} unread',
+                    style: AppTextStyles.bodySmall,
+                  ),
                 ),
               ),
               ListenableBuilder(

@@ -15,13 +15,15 @@ import '../../../data/models/effective_permission.dart';
 import '../../../data/models/team_member_permission.dart';
 import '../../../shared/widgets/role_badge.dart';
 import '../../../shared/widgets/user_avatar.dart';
+import '../../../shared/widgets/app_header.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final hPad = Responsive.isMobile(context)
+    final isMobile = Responsive.isMobile(context);
+    final hPad = isMobile
         ? AppSpacing.pagePaddingHMobile
         : AppSpacing.pagePaddingH;
 
@@ -29,11 +31,13 @@ class SettingsScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: AppColors.background,
+      appBar: AppHeader(
+        title: 'Settings',
+        showMenuButton: isMobile,
+        onMenuTap: () => Scaffold.of(context).openDrawer(),
+      ),
       body: CustomScrollView(
         slivers: [
-          SliverToBoxAdapter(
-            child: _SettingsHeader(hPad: hPad),
-          ),
           SliverPadding(
             padding: EdgeInsets.symmetric(
                 horizontal: hPad, vertical: AppSpacing.xl),
@@ -102,27 +106,6 @@ class SettingsScreen extends StatelessWidget {
 }
 
 // ── Header ────────────────────────────────────────────────────────────────────
-
-class _SettingsHeader extends StatelessWidget {
-  final double hPad;
-  const _SettingsHeader({required this.hPad});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: AppColors.surface,
-      padding: EdgeInsets.symmetric(horizontal: hPad, vertical: AppSpacing.base),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Settings', style: AppTextStyles.displayMedium),
-          Text('Team, roles, and app configuration',
-              style: AppTextStyles.bodySmall),
-        ],
-      ),
-    );
-  }
-}
 
 // ── Section card ──────────────────────────────────────────────────────────────
 

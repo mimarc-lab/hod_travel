@@ -11,6 +11,7 @@ import '../../../features/security/dossier_access_guard.dart';
 import '../providers/client_dossier_provider.dart';
 import 'client_dossier_detail_screen.dart';
 import 'client_dossier_form_screen.dart';
+import '../../../shared/widgets/app_header.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ClientDossierListScreen
@@ -65,16 +66,22 @@ class _ClientDossierListScreenState extends State<ClientDossierListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = Responsive.isMobile(context);
     return DossierAccessGuard(
       permissionKey: DossierPermissionKey.viewDossier,
       child: Scaffold(
         backgroundColor: AppColors.background,
+        appBar: AppHeader(
+          title: 'Client Dossiers',
+          showMenuButton: isMobile,
+          onMenuTap: () => Scaffold.of(context).openDrawer(),
+          actions: [_NewButton(onTap: _createNew)],
+        ),
         body: Column(
         children: [
           _Header(
             provider: _provider,
             searchCtrl: _searchCtrl,
-            onNewTap: _createNew,
           ),
           Expanded(
             child: ListenableBuilder(
@@ -135,12 +142,10 @@ class _ClientDossierListScreenState extends State<ClientDossierListScreen> {
 class _Header extends StatelessWidget {
   final ClientDossierProvider provider;
   final TextEditingController searchCtrl;
-  final VoidCallback onNewTap;
 
   const _Header({
     required this.provider,
     required this.searchCtrl,
-    required this.onNewTap,
   });
 
   @override
@@ -151,42 +156,13 @@ class _Header extends StatelessWidget {
 
     return Container(
       color: AppColors.surface,
-      padding: EdgeInsets.symmetric(
-        horizontal: hPad,
-        vertical: AppSpacing.base,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      padding: EdgeInsets.symmetric(horizontal: hPad, vertical: AppSpacing.base),
+      child: AdaptiveControlRow(
+        gap: AppSpacing.sm,
+        flexValues: const [2, 1],
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Client Dossiers', style: AppTextStyles.displayMedium),
-                    ListenableBuilder(
-                      listenable: provider,
-                      builder: (_, _) => Text(
-                        '${provider.totalCount} client profiles',
-                        style: AppTextStyles.bodySmall,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              _NewButton(onTap: onNewTap),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.base),
-          AdaptiveControlRow(
-            gap: AppSpacing.sm,
-            flexValues: const [2, 1],
-            children: [
-              _SearchField(ctrl: searchCtrl, provider: provider),
-              _TypeFilterMenu(provider: provider),
-            ],
-          ),
+          _SearchField(ctrl: searchCtrl, provider: provider),
+          _TypeFilterMenu(provider: provider),
         ],
       ),
     );
