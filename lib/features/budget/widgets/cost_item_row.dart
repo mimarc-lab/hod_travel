@@ -205,6 +205,10 @@ class _CardContent extends StatelessWidget {
 
         // Supplier + city meta line
         _MetaLine(item: item),
+        if (item.notes != null && item.notes!.isNotEmpty) ...[
+          const SizedBox(height: 3),
+          _NotesLine(notes: item.notes!),
+        ],
         const SizedBox(height: 9),
 
         // Hairline divider
@@ -262,6 +266,57 @@ class _MetaLine extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+// ── Notes line ────────────────────────────────────────────────────────────────
+
+class _NotesLine extends StatelessWidget {
+  final String notes;
+  const _NotesLine({required this.notes});
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: notes,
+      preferBelow: false,
+      constraints: const BoxConstraints(maxWidth: 280),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1C1C1C),
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0x30000000),
+            blurRadius: 12,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      textStyle: GoogleFonts.inter(
+        fontSize: 12,
+        color: Colors.white,
+        height: 1.5,
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.notes_rounded, size: 11, color: AppColors.textMuted),
+          const SizedBox(width: 4),
+          Expanded(
+            child: Text(
+              notes,
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                color: AppColors.textMuted,
+                height: 1.3,
+              ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
