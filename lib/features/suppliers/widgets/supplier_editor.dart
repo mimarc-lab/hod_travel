@@ -191,7 +191,7 @@ class _SupplierEditorFormState extends State<_SupplierEditorForm> {
     }
   }
 
-  void _save() {
+  Future<void> _save() async {
     final name = _nameCtrl.text.trim();
     if (name.isEmpty) return;
 
@@ -204,7 +204,7 @@ class _SupplierEditorFormState extends State<_SupplierEditorForm> {
     final derivedCat = _derivedCategory();
 
     if (_isEditing) {
-      widget.provider.updateSupplier(widget.existing!.copyWith(
+      await widget.provider.updateSupplier(widget.existing!.copyWith(
         name: name,
         category: derivedCat,
         supplierType: _supplierType,
@@ -229,7 +229,7 @@ class _SupplierEditorFormState extends State<_SupplierEditorForm> {
         tags: _parseTags(_tagsCtrl.text),
       ));
     } else {
-      widget.provider.addSupplier(Supplier(
+      await widget.provider.addSupplier(Supplier(
         id: '',
         name: name,
         category: derivedCat,
@@ -248,7 +248,7 @@ class _SupplierEditorFormState extends State<_SupplierEditorForm> {
         tags: _parseTags(_tagsCtrl.text),
       ));
     }
-    Navigator.of(context).pop();
+    if (mounted) Navigator.of(context).pop();
   }
 
   @override
