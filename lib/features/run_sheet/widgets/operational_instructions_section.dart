@@ -572,8 +572,8 @@ class _ReadView extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         for (int i = 0; i < sections.length; i++) ...[
-          if (i > 0) const SizedBox(height: 10),
-          _PlainInstructionBlock(
+          if (i > 0) const SizedBox(height: 4),
+          _CollapsibleInstructionBlock(
             label: sections[i].$1,
             text:  sections[i].$2,
           ),
@@ -587,28 +587,64 @@ class _ReadView extends StatelessWidget {
   }
 }
 
-class _PlainInstructionBlock extends StatelessWidget {
+class _CollapsibleInstructionBlock extends StatefulWidget {
   final String label;
   final String text;
-  const _PlainInstructionBlock({required this.label, required this.text});
+  const _CollapsibleInstructionBlock({required this.label, required this.text});
+
+  @override
+  State<_CollapsibleInstructionBlock> createState() =>
+      _CollapsibleInstructionBlockState();
+}
+
+class _CollapsibleInstructionBlockState
+    extends State<_CollapsibleInstructionBlock> {
+  bool _expanded = false;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label.toUpperCase(),
-          style: AppTextStyles.overline.copyWith(
-            color:         AppColors.textMuted,
-            letterSpacing: 0.8,
+        GestureDetector(
+          onTap: () => setState(() => _expanded = !_expanded),
+          behavior: HitTestBehavior.opaque,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Row(
+              children: [
+                AnimatedRotation(
+                  turns: _expanded ? 0.25 : 0,
+                  duration: const Duration(milliseconds: 180),
+                  child: const Icon(Icons.chevron_right_rounded,
+                      size: 14, color: AppColors.textMuted),
+                ),
+                const SizedBox(width: 5),
+                Text(
+                  widget.label.toUpperCase(),
+                  style: AppTextStyles.overline.copyWith(
+                    color: _expanded ? AppColors.textSecondary : AppColors.textMuted,
+                    letterSpacing: 0.8,
+                    fontWeight: _expanded ? FontWeight.w600 : FontWeight.w400,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
-        const SizedBox(height: 3),
-        Text(
-          text,
-          style: AppTextStyles.bodySmall
-              .copyWith(color: AppColors.textSecondary, height: 1.5),
+        AnimatedCrossFade(
+          firstChild: const SizedBox.shrink(),
+          secondChild: Padding(
+            padding: const EdgeInsets.only(left: 19, bottom: 4),
+            child: Text(
+              widget.text,
+              style: AppTextStyles.bodySmall
+                  .copyWith(color: AppColors.textSecondary, height: 1.5),
+            ),
+          ),
+          crossFadeState:
+              _expanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+          duration: const Duration(milliseconds: 180),
         ),
       ],
     );
