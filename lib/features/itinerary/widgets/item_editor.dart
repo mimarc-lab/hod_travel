@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
@@ -936,6 +937,18 @@ class _ItemSupplierSearchSheetState extends State<_ItemSupplierSearchSheet> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Storage auth helpers (private Supabase bucket)
+// ─────────────────────────────────────────────────────────────────────────────
+
+String _authUrl(String url) =>
+    url.replaceFirst('/object/public/', '/object/authenticated/');
+
+Map<String, String> _storageHeaders() {
+  final token = Supabase.instance.client.auth.currentSession?.accessToken;
+  return token != null ? {'Authorization': 'Bearer $token'} : {};
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Gallery section
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -991,7 +1004,8 @@ class _GallerySection extends StatelessWidget {
                     ClipRRect(
                       borderRadius: BorderRadius.circular(8),
                       child: Image.network(
-                        m.thumbnailUrl ?? m.fileUrl,
+                        _authUrl(m.thumbnailUrl ?? m.fileUrl),
+                        headers: _storageHeaders(),
                         width: 90, height: 90,
                         fit: BoxFit.cover,
                         errorBuilder: (ctx, err, stack) => Container(
