@@ -102,11 +102,10 @@ abstract class ClientMediaPresenter {
           final allForSupplier = mediaBySupplier[item.supplierId!];
           if (allForSupplier == null || allForSupplier.isEmpty) continue;
 
-          // If the item has specific gallery_ids selected, show only those;
+          // If the item has specific gallery images selected, show only those;
           // otherwise fall back to all active images for the supplier.
-          final galleryList = item.detailsJson['gallery_ids'];
-          final selectedIds = galleryList is List && galleryList.isNotEmpty
-              ? List<String>.from(galleryList.whereType<String>())
+          final selectedIds = item.galleryMediaIds.isNotEmpty
+              ? item.galleryMediaIds
               : null;
 
           final media = selectedIds != null

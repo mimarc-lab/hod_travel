@@ -83,6 +83,8 @@ class ItineraryItem {
   final double? latitude;
   final double? longitude;
   final Map<String, dynamic> detailsJson;
+  final bool showSupplierName;
+  final List<String> galleryMediaIds;
 
   const ItineraryItem({
     required this.id,
@@ -104,6 +106,8 @@ class ItineraryItem {
     this.latitude,
     this.longitude,
     this.detailsJson = const {},
+    this.showSupplierName = true,
+    this.galleryMediaIds = const [],
   });
 
   /// Returns the effective display type.
@@ -206,27 +210,31 @@ class ItineraryItem {
     double? longitude,
     bool clearLongitude = false,
     Map<String, dynamic>? detailsJson,
+    bool? showSupplierName,
+    List<String>? galleryMediaIds,
   }) {
     return ItineraryItem(
-      id:           id,
-      tripDayId:    tripDayId ?? this.tripDayId,
-      teamId:       teamId,
-      type:         type          ?? this.type,
-      title:        title         ?? this.title,
-      description:  clearDescription  ? null : (description  ?? this.description),
-      startTime:    clearStartTime    ? null : (startTime    ?? this.startTime),
-      endTime:      clearEndTime      ? null : (endTime      ?? this.endTime),
-      timeBlock:    timeBlock     ?? this.timeBlock,
-      location:     clearLocation     ? null : (location     ?? this.location),
-      supplierId:   clearSupplierId   ? null : (supplierId   ?? this.supplierId),
-      supplierName: clearSupplierName ? null : (supplierName ?? this.supplierName),
-      status:       status        ?? this.status,
-      approvalStatus: approvalStatus ?? this.approvalStatus,
-      linkedTaskId: linkedTaskId,
-      notes:        clearNotes        ? null : (notes        ?? this.notes),
-      latitude:     clearLatitude     ? null : (latitude     ?? this.latitude),
-      longitude:    clearLongitude    ? null : (longitude    ?? this.longitude),
-      detailsJson:  detailsJson  ?? this.detailsJson,
+      id:              id,
+      tripDayId:       tripDayId ?? this.tripDayId,
+      teamId:          teamId,
+      type:            type          ?? this.type,
+      title:           title         ?? this.title,
+      description:     clearDescription  ? null : (description  ?? this.description),
+      startTime:       clearStartTime    ? null : (startTime    ?? this.startTime),
+      endTime:         clearEndTime      ? null : (endTime      ?? this.endTime),
+      timeBlock:       timeBlock     ?? this.timeBlock,
+      location:        clearLocation     ? null : (location     ?? this.location),
+      supplierId:      clearSupplierId   ? null : (supplierId   ?? this.supplierId),
+      supplierName:    clearSupplierName ? null : (supplierName ?? this.supplierName),
+      status:          status        ?? this.status,
+      approvalStatus:  approvalStatus ?? this.approvalStatus,
+      linkedTaskId:    linkedTaskId,
+      notes:           clearNotes        ? null : (notes        ?? this.notes),
+      latitude:        clearLatitude     ? null : (latitude     ?? this.latitude),
+      longitude:       clearLongitude    ? null : (longitude    ?? this.longitude),
+      detailsJson:     detailsJson  ?? this.detailsJson,
+      showSupplierName: showSupplierName ?? this.showSupplierName,
+      galleryMediaIds:  galleryMediaIds  ?? this.galleryMediaIds,
     );
   }
 }

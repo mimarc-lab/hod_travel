@@ -209,12 +209,8 @@ class _ItemEditorFormState extends State<_ItemEditorForm> {
     _supplierId   = e?.supplierId;
     _supplierName = e?.supplierName;
 
-    final galleryList = e?.detailsJson['gallery_ids'];
-    _selectedMediaIds = galleryList is List
-        ? List<String>.from(galleryList.whereType<String>())
-        : [];
-
-    _showSupplierName = e?.detailsJson['show_supplier_name'] as bool? ?? true;
+    _selectedMediaIds = List<String>.from(e?.galleryMediaIds ?? []);
+    _showSupplierName = e?.showSupplierName ?? true;
 
     _loadSuppliers();
     if (_supplierId != null) {
@@ -254,36 +250,32 @@ class _ItemEditorFormState extends State<_ItemEditorForm> {
     try {
       final lat = _parseCoord(_latCtrl.text);
       final lng = _parseCoord(_lngCtrl.text);
-      final gallery = <String, dynamic>{
-        if (_selectedMediaIds.isNotEmpty) 'gallery_ids': _selectedMediaIds,
-        'show_supplier_name': _showSupplierName,
-      };
-
       if (_isEditing) {
         final updated = widget.existing!.copyWith(
-          type:        _type,
-          title:       title,
-          description: _descriptionCtrl.text.trim(),
+          type:             _type,
+          title:            title,
+          description:      _descriptionCtrl.text.trim(),
           clearDescription: _descriptionCtrl.text.trim().isEmpty,
-          startTime:   _startTime,
-          clearStartTime: _startTime == null,
-          endTime:     _endTime,
-          clearEndTime: _endTime == null,
-          timeBlock:   _timeBlock,
-          location:    _locationCtrl.text.trim(),
-          clearLocation: _locationCtrl.text.trim().isEmpty,
-          supplierId:  _supplierId,
-          clearSupplierId: _supplierId == null,
-          supplierName: _supplierName,
+          startTime:        _startTime,
+          clearStartTime:   _startTime == null,
+          endTime:          _endTime,
+          clearEndTime:     _endTime == null,
+          timeBlock:        _timeBlock,
+          location:         _locationCtrl.text.trim(),
+          clearLocation:    _locationCtrl.text.trim().isEmpty,
+          supplierId:       _supplierId,
+          clearSupplierId:  _supplierId == null,
+          supplierName:     _supplierName,
           clearSupplierName: _supplierName == null,
-          status:      _status,
-          notes:       _notesCtrl.text.trim(),
-          clearNotes:  _notesCtrl.text.trim().isEmpty,
-          latitude:    lat,
-          clearLatitude: lat == null,
-          longitude:   lng,
-          clearLongitude: lng == null,
-          detailsJson: gallery,
+          status:           _status,
+          notes:            _notesCtrl.text.trim(),
+          clearNotes:       _notesCtrl.text.trim().isEmpty,
+          latitude:         lat,
+          clearLatitude:    lat == null,
+          longitude:        lng,
+          clearLongitude:   lng == null,
+          showSupplierName: _showSupplierName,
+          galleryMediaIds:  _selectedMediaIds,
         );
         await widget.provider.updateItem(updated);
       } else {
@@ -292,22 +284,23 @@ class _ItemEditorFormState extends State<_ItemEditorForm> {
         final notes    = _notesCtrl.text.trim();
 
         final item = ItineraryItem(
-          id:          widget.provider.generateItemId(),
-          tripDayId:   widget.dayId,
-          type:        _type,
-          title:       title,
-          description: desc.isEmpty ? null : desc,
-          startTime:   _startTime,
-          endTime:     _endTime,
-          timeBlock:   _timeBlock,
-          location:    location.isEmpty ? null : location,
-          supplierId:  _supplierId,
-          supplierName: _supplierName,
-          status:      _status,
-          notes:       notes.isEmpty ? null : notes,
-          latitude:    lat,
-          longitude:   lng,
-          detailsJson: gallery,
+          id:               widget.provider.generateItemId(),
+          tripDayId:        widget.dayId,
+          type:             _type,
+          title:            title,
+          description:      desc.isEmpty ? null : desc,
+          startTime:        _startTime,
+          endTime:          _endTime,
+          timeBlock:        _timeBlock,
+          location:         location.isEmpty ? null : location,
+          supplierId:       _supplierId,
+          supplierName:     _supplierName,
+          status:           _status,
+          notes:            notes.isEmpty ? null : notes,
+          latitude:         lat,
+          longitude:        lng,
+          showSupplierName: _showSupplierName,
+          galleryMediaIds:  _selectedMediaIds,
         );
         await widget.provider.addItem(item);
       }

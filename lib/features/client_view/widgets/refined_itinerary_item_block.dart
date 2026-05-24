@@ -83,7 +83,7 @@ class _StandardBlock extends StatelessWidget {
     final timeStr    = ItineraryCopyFormatter.formatTimeRange(item.startTime, item.endTime);
     final typeLabel  = ItineraryCopyFormatter.typeLabel(item.type.dbValue);
     final desc       = ItineraryCopyFormatter.formatDescription(item.description);
-    final showSupplier = item.detailsJson['show_supplier_name'] as bool? ?? true;
+    final showSupplier = item.showSupplierName;
     final placeMeta  = ItineraryCopyFormatter.formatPlaceMeta(
       location:     item.location,
       supplierName: showSupplier ? item.supplierName : null,

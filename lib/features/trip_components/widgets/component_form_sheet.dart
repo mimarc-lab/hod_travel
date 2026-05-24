@@ -479,7 +479,7 @@ class _ComponentFormSheetState extends State<_ComponentFormSheet> {
     final itinItemId = saved?.itineraryItemId;
     if (itinItemId != null) {
       AppRepositories.instance?.itinerary
-          .patchDetailsJson(itinItemId, {'show_supplier_name': _showSupplierName});
+          .updateShowSupplierName(itinItemId, _showSupplierName);
     }
 
     if (mounted) {

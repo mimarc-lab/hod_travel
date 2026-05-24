@@ -33,10 +33,9 @@ abstract class ItineraryRepository {
   Future<void> deleteDay(String id);
   Future<void> updateSortOrders(List<ItineraryItem> items);
 
-  /// Attempts a targeted update of the `details_json` column for [id].
-  /// Silently swallows errors — the column may not be writable via PostgREST
-  /// if it is generated or excluded from the schema cache.
-  Future<void> patchDetailsJson(String id, Map<String, dynamic> patch);
+  /// Targeted update of just the `show_supplier_name` column — used by the
+  /// component form to sync the setting to the linked itinerary item.
+  Future<void> updateShowSupplierName(String id, bool show);
 
   /// Realtime stream — emits a full snapshot whenever trip_days or
   /// itinerary_items change for [tripId]. Uses [teamId] to scope the
@@ -97,10 +96,13 @@ ItineraryItem _itemFromRow(Map<String, dynamic> r) {
     status:       ItemStatusLabel.fromDb(r['status'] as String? ?? 'draft'),
     approvalStatus: approvalStatusFromDb(r['approval_status'] as String? ?? 'draft'),
     linkedTaskId: r['linked_task_id'] as String?,
-    notes:        r['notes'] as String?,
-    latitude:     (r['latitude']  as num?)?.toDouble(),
-    longitude:    (r['longitude'] as num?)?.toDouble(),
-    detailsJson:  (r['details_json'] as Map<String, dynamic>?) ?? const {},
+    notes:            r['notes'] as String?,
+    latitude:         (r['latitude']  as num?)?.toDouble(),
+    longitude:        (r['longitude'] as num?)?.toDouble(),
+    detailsJson:      (r['details_json'] as Map<String, dynamic>?) ?? const {},
+    showSupplierName: r['show_supplier_name'] as bool? ?? true,
+    galleryMediaIds:  (r['gallery_media_ids'] as List?)
+                        ?.map((e) => e.toString()).toList() ?? const [],
   );
 }
 
@@ -122,10 +124,12 @@ Map<String, dynamic> _itemToRow(ItineraryItem i, {String? teamId}) {
     'supplier_id': i.supplierId,
     'status': i.status.dbValue,
     'approval_status': i.approvalStatus.dbValue,
-    'linked_task_id': i.linkedTaskId,
-    'notes': i.notes,
-    'latitude':  i.latitude,
-    'longitude': i.longitude,
+    'linked_task_id':    i.linkedTaskId,
+    'notes':             i.notes,
+    'latitude':          i.latitude,
+    'longitude':         i.longitude,
+    'show_supplier_name': i.showSupplierName,
+    'gallery_media_ids':  i.galleryMediaIds,
     // Use epoch-seconds so each insert gets a unique sort_order even if the
     // column has a UNIQUE constraint on (trip_day_id, sort_order).
     'sort_order': DateTime.now().millisecondsSinceEpoch ~/ 1000,
@@ -218,11 +222,7 @@ class SupabaseItineraryRepository implements ItineraryRepository {
         })
         .select(_kItemSelect)
         .single();
-    final created = _itemFromRow(row);
-    if (item.detailsJson.isNotEmpty) {
-      await patchDetailsJson(created.id, item.detailsJson);
-    }
-    return created;
+    return _itemFromRow(row);
   }
 
   @override
@@ -233,23 +233,15 @@ class SupabaseItineraryRepository implements ItineraryRepository {
         .eq('id', item.id)
         .select(_kItemSelect)
         .single();
-    if (item.detailsJson.isNotEmpty) {
-      await patchDetailsJson(item.id, item.detailsJson);
-    }
     return _itemFromRow(row);
   }
 
   @override
-  Future<void> patchDetailsJson(String id, Map<String, dynamic> patch) async {
-    if (patch.isEmpty) return;
-    try {
-      await _client
-          .from('itinerary_items')
-          .update({'details_json': patch})
-          .eq('id', id);
-    } catch (_) {
-      // details_json may not be directly writable (generated column / stale schema cache)
-    }
+  Future<void> updateShowSupplierName(String id, bool show) async {
+    await _client
+        .from('itinerary_items')
+        .update({'show_supplier_name': show})
+        .eq('id', id);
   }
 
   @override
