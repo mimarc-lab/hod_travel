@@ -195,6 +195,7 @@ class _ComponentFormSheetState extends State<_ComponentFormSheet> {
   final Map<String, TextEditingController> _detailTextCtrls = {};
   final Map<String, dynamic> _detailValues = {}; // booleans + dropdowns
 
+  bool _showSupplierName = true;
   bool _saving = false;
 
   // ── AI title suggestions ───────────────────────────────────────────────────
@@ -215,6 +216,7 @@ class _ComponentFormSheetState extends State<_ComponentFormSheet> {
     _titleCtrl                = TextEditingController(text: e?.title ?? '');
     _supplierId               = e?.supplierId;
     _supplierName             = e?.supplierName;
+    _showSupplierName         = e?.detailsJson['show_supplier_name'] as bool? ?? true;
 
     _startDate = e?.startDate;
     _endDate   = e?.endDate;
@@ -348,6 +350,7 @@ class _ComponentFormSheetState extends State<_ComponentFormSheet> {
     _detailValues.forEach((key, val) {
       if (val != null && val != false) result[key] = val;
     });
+    result['show_supplier_name'] = _showSupplierName;
     return result;
   }
 
@@ -471,6 +474,13 @@ class _ComponentFormSheetState extends State<_ComponentFormSheet> {
     final reordered = await widget.provider
         .recalculateItineraryFromComponents(widget.trip.id);
     if (reordered) widget.itineraryProvider?.reload();
+
+    // Propagate show_supplier_name to the linked itinerary item.
+    final itinItemId = saved?.itineraryItemId;
+    if (itinItemId != null) {
+      AppRepositories.instance?.itinerary
+          .patchDetailsJson(itinItemId, {'show_supplier_name': _showSupplierName});
+    }
 
     if (mounted) {
       final messenger = ScaffoldMessenger.of(context);
@@ -826,6 +836,19 @@ class _ComponentFormSheetState extends State<_ComponentFormSheet> {
               },
             ),
           ),
+
+          // Supplier name visibility toggle
+          if (_supplierId != null) ...[
+            _fieldGap(),
+            _labeledField(
+              label: 'Client View',
+              child: _VisibilityToggleRow(
+                label:     'Show supplier name in client view',
+                value:     _showSupplierName,
+                onChanged: (v) => setState(() => _showSupplierName = v),
+              ),
+            ),
+          ],
           _sectionDivider(),
 
           // ── Dates & Times ────────────────────────────────────────────────────
@@ -1278,6 +1301,57 @@ class _ComponentFormSheetState extends State<_ComponentFormSheet> {
           child,
         ],
       );
+}
+
+// ── Visibility toggle row ─────────────────────────────────────────────────────
+
+class _VisibilityToggleRow extends StatelessWidget {
+  final String label;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  const _VisibilityToggleRow({
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 6),
+      decoration: BoxDecoration(
+        color:        AppColors.surfaceAlt,
+        borderRadius: BorderRadius.circular(8),
+        border:       Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            value ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+            size: 14,
+            color: value ? AppColors.accent : AppColors.textMuted,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              label,
+              style: AppTextStyles.bodySmall.copyWith(
+                color: value ? AppColors.textSecondary : AppColors.textMuted,
+              ),
+            ),
+          ),
+          Switch(
+            value:            value,
+            onChanged:        onChanged,
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            activeThumbColor: AppColors.accent,
+            activeTrackColor: AppColors.accentLight,
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 // ── Status selector ───────────────────────────────────────────────────────────

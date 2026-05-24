@@ -33,6 +33,11 @@ abstract class ItineraryRepository {
   Future<void> deleteDay(String id);
   Future<void> updateSortOrders(List<ItineraryItem> items);
 
+  /// Attempts a targeted update of the `details_json` column for [id].
+  /// Silently swallows errors — the column may not be writable via PostgREST
+  /// if it is generated or excluded from the schema cache.
+  Future<void> patchDetailsJson(String id, Map<String, dynamic> patch);
+
   /// Realtime stream — emits a full snapshot whenever trip_days or
   /// itinerary_items change for [tripId]. Uses [teamId] to scope the
   /// itinerary_items channel (trip_days are filtered by trip_id directly).
@@ -213,7 +218,11 @@ class SupabaseItineraryRepository implements ItineraryRepository {
         })
         .select(_kItemSelect)
         .single();
-    return _itemFromRow(row);
+    final created = _itemFromRow(row);
+    if (item.detailsJson.isNotEmpty) {
+      await patchDetailsJson(created.id, item.detailsJson);
+    }
+    return created;
   }
 
   @override
@@ -224,7 +233,23 @@ class SupabaseItineraryRepository implements ItineraryRepository {
         .eq('id', item.id)
         .select(_kItemSelect)
         .single();
+    if (item.detailsJson.isNotEmpty) {
+      await patchDetailsJson(item.id, item.detailsJson);
+    }
     return _itemFromRow(row);
+  }
+
+  @override
+  Future<void> patchDetailsJson(String id, Map<String, dynamic> patch) async {
+    if (patch.isEmpty) return;
+    try {
+      await _client
+          .from('itinerary_items')
+          .update({'details_json': patch})
+          .eq('id', id);
+    } catch (_) {
+      // details_json may not be directly writable (generated column / stale schema cache)
+    }
   }
 
   @override

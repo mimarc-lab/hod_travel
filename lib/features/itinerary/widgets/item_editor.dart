@@ -122,6 +122,9 @@ class _ItemEditorFormState extends State<_ItemEditorForm> {
   bool _mediaLoading = false;
   List<String> _selectedMediaIds = [];
 
+  // Client view visibility
+  bool _showSupplierName = true;
+
   bool get _isEditing => widget.existing != null;
   bool _saving = false;
   bool _titleError = false;
@@ -211,6 +214,8 @@ class _ItemEditorFormState extends State<_ItemEditorForm> {
         ? List<String>.from(galleryList.whereType<String>())
         : [];
 
+    _showSupplierName = e?.detailsJson['show_supplier_name'] as bool? ?? true;
+
     _loadSuppliers();
     if (_supplierId != null) {
       WidgetsBinding.instance
@@ -249,9 +254,10 @@ class _ItemEditorFormState extends State<_ItemEditorForm> {
     try {
       final lat = _parseCoord(_latCtrl.text);
       final lng = _parseCoord(_lngCtrl.text);
-      final gallery = _selectedMediaIds.isEmpty
-          ? <String, dynamic>{}
-          : <String, dynamic>{'gallery_ids': _selectedMediaIds};
+      final gallery = <String, dynamic>{
+        if (_selectedMediaIds.isNotEmpty) 'gallery_ids': _selectedMediaIds,
+        'show_supplier_name': _showSupplierName,
+      };
 
       if (_isEditing) {
         final updated = widget.existing!.copyWith(
@@ -543,6 +549,16 @@ class _ItemEditorFormState extends State<_ItemEditorForm> {
                           onAddNew:     _onAddNewSupplier,
                         ),
                 ),
+
+                // ── Supplier name visibility ────────────────────────────────
+                if (_supplierId != null) ...[
+                  const SizedBox(height: AppSpacing.sm),
+                  _VisibilityToggleRow(
+                    label: 'Show supplier name in client view',
+                    value: _showSupplierName,
+                    onChanged: (v) => setState(() => _showSupplierName = v),
+                  ),
+                ],
 
                 // ── Gallery ─────────────────────────────────────────────────
                 if (_supplierId != null) ...[
@@ -1051,6 +1067,55 @@ class _GallerySection extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 // Editor sub-widgets
 // ─────────────────────────────────────────────────────────────────────────────
+
+class _VisibilityToggleRow extends StatelessWidget {
+  final String label;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  const _VisibilityToggleRow({
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 6),
+      decoration: BoxDecoration(
+        color:        AppColors.surfaceAlt,
+        borderRadius: BorderRadius.circular(8),
+        border:       Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            value ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+            size: 14,
+            color: value ? AppColors.accent : AppColors.textMuted,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              label,
+              style: AppTextStyles.bodySmall.copyWith(
+                color: value ? AppColors.textSecondary : AppColors.textMuted,
+              ),
+            ),
+          ),
+          Switch(
+            value:    value,
+            onChanged: onChanged,
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            activeThumbColor: AppColors.accent,
+            activeTrackColor: AppColors.accentLight,
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 class _EditorHeader extends StatelessWidget {
   final bool isEditing;

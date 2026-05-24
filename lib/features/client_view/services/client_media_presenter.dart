@@ -99,8 +99,21 @@ abstract class ClientMediaPresenter {
         );
 
         for (final item in itemsNeedingMedia) {
-          final media = mediaBySupplier[item.supplierId!];
-          if (media == null || media.isEmpty) continue;
+          final allForSupplier = mediaBySupplier[item.supplierId!];
+          if (allForSupplier == null || allForSupplier.isEmpty) continue;
+
+          // If the item has specific gallery_ids selected, show only those;
+          // otherwise fall back to all active images for the supplier.
+          final galleryList = item.detailsJson['gallery_ids'];
+          final selectedIds = galleryList is List && galleryList.isNotEmpty
+              ? List<String>.from(galleryList.whereType<String>())
+              : null;
+
+          final media = selectedIds != null
+              ? allForSupplier.where((m) => selectedIds.contains(m.id)).toList()
+              : allForSupplier;
+
+          if (media.isEmpty) continue;
           result[item.id] = media
               .map(_mapSupplierMedia)
               .toList()
