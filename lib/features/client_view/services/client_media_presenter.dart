@@ -1,21 +1,29 @@
 import '../../../data/models/client_media_item.dart';
 import '../../../data/models/itinerary_models.dart';
+import '../../../data/models/supplier_media.dart';
 import '../../../data/repositories/component_media_repository.dart';
+import '../../../data/repositories/supplier_media_repository.dart';
 import '../../../data/repositories/trip_component_repository.dart';
 import 'client_safe_media_mapper.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ClientMediaPresenter
 //
-// Fetches and organises component media for the client-facing itinerary.
+// Fetches and organises media for the client-facing itinerary.
 //
-// Data flow:
+// Primary source (TripComponent → ComponentMedia chain):
 //   TripComponentRepository.fetchForTrip(tripId)
 //     → builds componentId → itineraryItemId map
 //   ComponentMediaRepository.fetchClientVisibleForComponents(componentIds)
 //     → batch fetch, all client-visible media
 //   ClientSafeMediaMapper.map()
 //     → strips all internal fields, rewrites storage URLs
+//
+// Fallback source (direct supplier media):
+//   For any itinerary item that has a supplierId but no component media,
+//   fetch the supplier's active images and show them in the client view.
+//   Requires optional [supplierMediaRepo] + [allItems] parameters.
+//
 //   Returns Map<itineraryItemId, List<ClientMediaItem>>
 //     sorted: hero first → display_order → created_at
 // ─────────────────────────────────────────────────────────────────────────────
@@ -28,6 +36,8 @@ abstract class ClientMediaPresenter {
     required String                    tripId,
     required TripComponentRepository   componentRepo,
     required ComponentMediaRepository  mediaRepo,
+    SupplierMediaRepository?           supplierMediaRepo,
+    List<ItineraryItem>?               allItems,
   }) async {
     // Step 1 — fetch all trip components to get the itineraryItemId mapping
     final components = await componentRepo.fetchForTrip(tripId);
@@ -38,21 +48,23 @@ abstract class ClientMediaPresenter {
         itemIdByComponentId[c.id] = c.itineraryItemId!;
       }
     }
-    if (itemIdByComponentId.isEmpty) return {};
 
-    // Step 2 — batch fetch client-visible media for all those components
-    final allMedia = await mediaRepo.fetchClientVisibleForComponents(
-      itemIdByComponentId.keys.toList(),
-    );
-
-    // Step 3 — group by itinerary_item_id, apply client-safe mapper
     final result = <String, List<ClientMediaItem>>{};
-    for (final cm in allMedia) {
-      final itemId = itemIdByComponentId[cm.componentId];
-      if (itemId == null) continue;
-      final clientItem = ClientSafeMediaMapper.map(cm);
-      if (clientItem == null) continue;
-      result.putIfAbsent(itemId, () => []).add(clientItem);
+
+    if (itemIdByComponentId.isNotEmpty) {
+      // Step 2 — batch fetch client-visible media for all those components
+      final allMedia = await mediaRepo.fetchClientVisibleForComponents(
+        itemIdByComponentId.keys.toList(),
+      );
+
+      // Step 3 — group by itinerary_item_id, apply client-safe mapper
+      for (final cm in allMedia) {
+        final itemId = itemIdByComponentId[cm.componentId];
+        if (itemId == null) continue;
+        final clientItem = ClientSafeMediaMapper.map(cm);
+        if (clientItem == null) continue;
+        result.putIfAbsent(itemId, () => []).add(clientItem);
+      }
     }
 
     // Step 4 — sort each group: hero first, then display_order
@@ -66,7 +78,60 @@ abstract class ClientMediaPresenter {
       });
     }
 
+    // Step 5 — supplier media fallback: items with supplierId but no component media
+    if (supplierMediaRepo != null && allItems != null) {
+      final itemsNeedingMedia = allItems
+          .where((i) => i.supplierId != null && !result.containsKey(i.id))
+          .toList();
+
+      if (itemsNeedingMedia.isNotEmpty) {
+        // Dedupe supplier IDs, fetch in parallel
+        final supplierIds = {for (final i in itemsNeedingMedia) i.supplierId!};
+        final mediaBySupplier = <String, List<SupplierMedia>>{};
+        await Future.wait(
+          supplierIds.map((sid) async {
+            try {
+              final raw = await supplierMediaRepo.fetchForSupplier(sid);
+              mediaBySupplier[sid] =
+                  raw.where((m) => m.isActive && m.isImage).toList();
+            } catch (_) {}
+          }),
+        );
+
+        for (final item in itemsNeedingMedia) {
+          final media = mediaBySupplier[item.supplierId!];
+          if (media == null || media.isEmpty) continue;
+          result[item.id] = media
+              .map(_mapSupplierMedia)
+              .toList()
+            ..sort((a, b) {
+              if (a.isHero && !b.isHero) return -1;
+              if (!a.isHero && b.isHero) return 1;
+              final aOrd = a.displayOrder ?? 999;
+              final bOrd = b.displayOrder ?? 999;
+              return aOrd.compareTo(bOrd);
+            });
+        }
+      }
+    }
+
     return result;
+  }
+
+  static ClientMediaItem _mapSupplierMedia(SupplierMedia m) {
+    String authUrl(String url) =>
+        url.replaceFirst('/object/public/', '/object/authenticated/');
+    return ClientMediaItem(
+      mediaType:    m.mediaType.dbValue,
+      displayUrl:   authUrl(m.fileUrl),
+      thumbnailUrl: authUrl(m.previewUrl),
+      videoUrl:     m.videoUrl,
+      caption:      m.caption?.trim().isNotEmpty == true
+                        ? m.caption!.trim()
+                        : (m.title.trim().isNotEmpty ? m.title.trim() : null),
+      isHero:       m.isHero,
+      displayOrder: m.displayOrder,
+    );
   }
 
   /// Selects the single best trip-level hero image.

@@ -100,10 +100,13 @@ class _ClientItineraryScreenState extends State<ClientItineraryScreen> {
     final repos = AppRepositories.instance;
     if (repos?.componentMedia == null || repos?.components == null) return;
     try {
+      final allItems = itemsByDayId.values.expand((l) => l).toList();
       final mediaByItemId = await ClientMediaPresenter.loadForTrip(
-        tripId:        widget.trip.id,
-        componentRepo: repos!.components,
-        mediaRepo:     repos.componentMedia,
+        tripId:            widget.trip.id,
+        componentRepo:     repos!.components,
+        mediaRepo:         repos.componentMedia,
+        supplierMediaRepo: repos.supplierMedia,
+        allItems:          allItems,
       );
       if (mounted) {
         setState(() => _mediaByItemId = mediaByItemId);
