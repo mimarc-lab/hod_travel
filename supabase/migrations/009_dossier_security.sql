@@ -259,6 +259,7 @@ DECLARE
   v_entity_id TEXT;
   v_team_id   TEXT;
   v_meta      JSONB := '{}'::jsonb;
+  v_action    TEXT;
 BEGIN
   IF TG_OP = 'DELETE' THEN
     v_entity_id := OLD.id::TEXT;
@@ -267,6 +268,13 @@ BEGIN
     v_entity_id := NEW.id::TEXT;
     v_team_id   := NEW.team_id::TEXT;
   END IF;
+
+  v_action := CASE TG_OP
+    WHEN 'INSERT' THEN 'create'
+    WHEN 'UPDATE' THEN 'update'
+    WHEN 'DELETE' THEN 'delete'
+    ELSE 'update'
+  END;
 
   IF TG_OP = 'UPDATE' THEN
     SELECT jsonb_build_object('changed_fields', jsonb_agg(DISTINCT key ORDER BY key))
@@ -283,14 +291,7 @@ BEGIN
   INSERT INTO public.audit_logs
     (user_id, team_id, action_type, entity_type, entity_id, metadata_json)
   VALUES
-    (
-      auth.uid(),
-      v_team_id,
-      LOWER(TG_OP),
-      TG_TABLE_NAME,
-      v_entity_id,
-      v_meta
-    );
+    (auth.uid(), v_team_id, v_action, TG_TABLE_NAME, v_entity_id, v_meta);
 
   RETURN COALESCE(NEW, OLD);
 END;
