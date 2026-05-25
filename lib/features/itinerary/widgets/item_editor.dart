@@ -992,66 +992,63 @@ class _GallerySection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Select images to include in this itinerary item',
-          style: AppTextStyles.bodySmall.copyWith(color: AppColors.textMuted),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Tap images to include in this itinerary item',
+                style: AppTextStyles.bodySmall.copyWith(color: AppColors.textMuted),
+              ),
+            ),
+            if (selectedIds.isNotEmpty)
+              Text(
+                '${selectedIds.length} selected',
+                style: AppTextStyles.labelSmall
+                    .copyWith(color: AppColors.accent, fontWeight: FontWeight.w600),
+              ),
+          ],
         ),
         const SizedBox(height: 8),
-        SizedBox(
-          height: 90,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount:       media.length,
-            separatorBuilder: (context, i) => const SizedBox(width: 8),
-            itemBuilder: (_, i) {
-              final m          = media[i];
-              final isSelected = selectedIds.contains(m.id);
-              return GestureDetector(
-                onTap: () => onToggle(m.id),
-                child: Stack(
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.network(
-                        _authUrl(m.thumbnailUrl ?? m.fileUrl),
-                        headers: _storageHeaders(),
+        Wrap(
+          spacing:    8,
+          runSpacing: 8,
+          children: media.map((m) {
+            final isSelected = selectedIds.contains(m.id);
+            return GestureDetector(
+              onTap: () => onToggle(m.id),
+              child: Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(
+                      _authUrl(m.thumbnailUrl ?? m.fileUrl),
+                      headers: _storageHeaders(),
+                      width: 90, height: 90,
+                      fit: BoxFit.cover,
+                      errorBuilder: (ctx, err, stack) => Container(
                         width: 90, height: 90,
-                        fit: BoxFit.cover,
-                        errorBuilder: (ctx, err, stack) => Container(
-                          width: 90, height: 90,
-                          color: AppColors.surfaceAlt,
-                          child: const Icon(Icons.broken_image_outlined,
-                              color: AppColors.textMuted, size: 22),
-                        ),
+                        color: AppColors.surfaceAlt,
+                        child: const Icon(Icons.broken_image_outlined,
+                            color: AppColors.textMuted, size: 22),
                       ),
                     ),
-                    if (isSelected)
-                      Container(
-                        width: 90, height: 90,
-                        decoration: BoxDecoration(
-                          color: AppColors.accent.withAlpha(55),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                              color: AppColors.accent, width: 2.5),
-                        ),
-                        child: const Icon(Icons.check_circle_rounded,
-                            color: Colors.white, size: 22),
+                  ),
+                  if (isSelected)
+                    Container(
+                      width: 90, height: 90,
+                      decoration: BoxDecoration(
+                        color: AppColors.accent.withAlpha(55),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: AppColors.accent, width: 2.5),
                       ),
-                  ],
-                ),
-              );
-            },
-          ),
+                      child: const Icon(Icons.check_circle_rounded,
+                          color: Colors.white, size: 22),
+                    ),
+                ],
+              ),
+            );
+          }).toList(),
         ),
-        if (selectedIds.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.only(top: 6),
-            child: Text(
-              '${selectedIds.length} image${selectedIds.length == 1 ? '' : 's'} selected',
-              style: AppTextStyles.labelSmall
-                  .copyWith(color: AppColors.accent, fontWeight: FontWeight.w600),
-            ),
-          ),
       ],
     );
   }
