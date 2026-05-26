@@ -326,21 +326,47 @@ class ItineraryProvider extends ChangeNotifier {
     if (_repo == null) return;
     final idx = _days.indexWhere((d) => d.id == dayId);
     if (idx == -1) return;
-    final removedDay = _days[idx];
-    final removedItems = _itemsByDayId[dayId];
+    final removedDay    = _days[idx];
+    final removedItems  = _itemsByDayId[dayId];
+
+    // Optimistically remove and renumber so UI updates instantly.
     _days = [..._days]..removeAt(idx);
     _itemsByDayId.remove(dayId);
-    _selectedDayIndex = _selectedDayIndex.clamp(0, (_days.length - 1).clamp(0, double.maxFinite.toInt()));
+    _renumberDays();
+    _selectedDayIndex = _selectedDayIndex.clamp(
+        0, (_days.length - 1).clamp(0, double.maxFinite.toInt()));
     notifyListeners();
+
     try {
       await _repo.deleteDay(dayId);
+      // Persist the new day_number values for every remaining day.
+      await _persistDayNumbers();
     } catch (e) {
-      // Rollback
+      // Rollback local state
       _days = [..._days]..insert(idx, removedDay);
+      _renumberDays();
       if (removedItems != null) _itemsByDayId[dayId] = removedItems;
       _error = e.toString();
       notifyListeners();
     }
+  }
+
+  /// Reassigns day_number 1, 2, 3 … in their current sort order.
+  void _renumberDays() {
+    _days.sort((a, b) => a.dayNumber.compareTo(b.dayNumber));
+    _days = [
+      for (int i = 0; i < _days.length; i++)
+        _days[i].copyWith(dayNumber: i + 1),
+    ];
+  }
+
+  /// Upserts every day in parallel to persist renumbered day_number values.
+  Future<void> _persistDayNumbers() async {
+    if (_days.isEmpty) return;
+    final teamId = _effectiveTeamId;
+    await Future.wait([
+      for (final day in _days) _repo!.upsertDay(day, teamId),
+    ]);
   }
 
   Future<void> deleteItem(String dayId, String itemId) async {
