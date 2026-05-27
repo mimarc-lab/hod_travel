@@ -241,14 +241,25 @@ class _ItemCell extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                item.itemName,
-                style: AdaptiveTypography.primaryCell.copyWith(
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: -0.1,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Flexible(
+                    child: Text(
+                      item.itemName,
+                      style: AdaptiveTypography.primaryCell.copyWith(
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: -0.1,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (item.notes != null && item.notes!.isNotEmpty) ...[
+                    const SizedBox(width: 6),
+                    _NotesIcon(notes: item.notes!),
+                  ],
+                ],
               ),
               const SizedBox(height: 2),
               _SubLine(item: item),
@@ -261,6 +272,44 @@ class _ItemCell extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+// ── Notes icon (hover tooltip) ────────────────────────────────────────────────
+
+class _NotesIcon extends StatelessWidget {
+  final String notes;
+  const _NotesIcon({required this.notes});
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: notes,
+      preferBelow: true,
+      constraints: const BoxConstraints(maxWidth: 280),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1C1C1C),
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0x30000000),
+            blurRadius: 12,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      textStyle: GoogleFonts.inter(
+        fontSize: 12,
+        color: Colors.white,
+        height: 1.5,
+      ),
+      child: const Icon(
+        Icons.sticky_note_2_outlined,
+        size: 14,
+        color: AppColors.textMuted,
+      ),
     );
   }
 }
