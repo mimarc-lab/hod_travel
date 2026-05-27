@@ -171,22 +171,33 @@ class _CardContent extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Item name + approval chip + payment status
+        // Item name + notes icon + approval chip + payment status
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
-              child: Text(
-                item.itemName,
-                style: GoogleFonts.inter(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFF111111),
-                  height: 1.3,
-                  letterSpacing: -0.2,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Flexible(
+                    child: Text(
+                      item.itemName,
+                      style: GoogleFonts.inter(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF111111),
+                        height: 1.3,
+                        letterSpacing: -0.2,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (item.notes != null && item.notes!.isNotEmpty) ...[
+                    const SizedBox(width: 6),
+                    _NotesIcon(notes: item.notes!),
+                  ],
+                ],
               ),
             ),
             const SizedBox(width: 8),
@@ -205,10 +216,6 @@ class _CardContent extends StatelessWidget {
 
         // Supplier + city meta line
         _MetaLine(item: item),
-        if (item.notes != null && item.notes!.isNotEmpty) ...[
-          const SizedBox(height: 3),
-          _NotesLine(notes: item.notes!),
-        ],
         const SizedBox(height: 9),
 
         // Hairline divider
@@ -270,17 +277,17 @@ class _MetaLine extends StatelessWidget {
   }
 }
 
-// ── Notes line ────────────────────────────────────────────────────────────────
+// ── Notes icon (hover tooltip) ────────────────────────────────────────────────
 
-class _NotesLine extends StatelessWidget {
+class _NotesIcon extends StatelessWidget {
   final String notes;
-  const _NotesLine({required this.notes});
+  const _NotesIcon({required this.notes});
 
   @override
   Widget build(BuildContext context) {
     return Tooltip(
       message: notes,
-      preferBelow: false,
+      preferBelow: true,
       constraints: const BoxConstraints(maxWidth: 280),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
@@ -299,23 +306,10 @@ class _NotesLine extends StatelessWidget {
         color: Colors.white,
         height: 1.5,
       ),
-      child: Row(
-        children: [
-          const Icon(Icons.notes_rounded, size: 11, color: AppColors.textMuted),
-          const SizedBox(width: 4),
-          Expanded(
-            child: Text(
-              notes,
-              style: GoogleFonts.inter(
-                fontSize: 12,
-                color: AppColors.textMuted,
-                height: 1.3,
-              ),
-              overflow: TextOverflow.ellipsis,
-              maxLines: 1,
-            ),
-          ),
-        ],
+      child: const Icon(
+        Icons.sticky_note_2_outlined,
+        size: 14,
+        color: AppColors.textMuted,
       ),
     );
   }
