@@ -57,14 +57,14 @@ abstract class ClientViewTheme {
   static final TextStyle tripMeta = GoogleFonts.inter(
     fontSize:   13.5,
     fontWeight: FontWeight.w400,
-    color:      secondary,
+    color:      const Color(0xFF374151),
     height:     1.4,
   );
 
   static final TextStyle managerLabel = GoogleFonts.inter(
     fontSize:    10,
     fontWeight:  FontWeight.w500,
-    color:       muted,
+    color:       const Color(0xFF4B5563),
     letterSpacing: 1.8,
   );
 
@@ -77,7 +77,7 @@ abstract class ClientViewTheme {
   static final TextStyle managerSub = GoogleFonts.inter(
     fontSize:   12,
     fontWeight: FontWeight.w400,
-    color:      muted,
+    color:      const Color(0xFF374151),
   );
 
   // ── Day chapter ───────────────────────────────────────────────────────────────
@@ -100,14 +100,14 @@ abstract class ClientViewTheme {
   static final TextStyle dayDate = GoogleFonts.inter(
     fontSize:    10.5,
     fontWeight:  FontWeight.w400,
-    color:       secondary,
+    color:       const Color(0xFF374151),
     letterSpacing: 0.8,
   );
 
   static final TextStyle dayIntro = GoogleFonts.inter(
     fontSize:   13,
     fontWeight: FontWeight.w300,
-    color:      const Color(0xFF4B5563),
+    color:      const Color(0xFF1F2937),
     fontStyle:  FontStyle.italic,
     height:     1.55,
   );
@@ -117,14 +117,14 @@ abstract class ClientViewTheme {
   static final TextStyle itemTime = GoogleFonts.inter(
     fontSize:    10.5,
     fontWeight:  FontWeight.w400,
-    color:       secondary,
+    color:       const Color(0xFF374151),
     letterSpacing: 0.3,
   );
 
   static final TextStyle itemTypeLabel = GoogleFonts.inter(
     fontSize:    10,
     fontWeight:  FontWeight.w500,
-    color:       secondary,
+    color:       const Color(0xFF374151),
     letterSpacing: 1.5,
   );
 
@@ -138,14 +138,14 @@ abstract class ClientViewTheme {
   static final TextStyle itemDescription = GoogleFonts.inter(
     fontSize:   13.5,
     fontWeight: FontWeight.w300,
-    color:      const Color(0xFF374151),
+    color:      const Color(0xFF1F2937),
     height:     1.65,
   );
 
   static final TextStyle itemMeta = GoogleFonts.inter(
     fontSize:    10.5,
     fontWeight:  FontWeight.w400,
-    color:       secondary,
+    color:       const Color(0xFF374151),
     letterSpacing: 0.2,
   );
 
@@ -169,7 +169,7 @@ abstract class ClientViewTheme {
   static final TextStyle accomDesc = GoogleFonts.inter(
     fontSize:   13,
     fontWeight: FontWeight.w300,
-    color:      const Color(0xFF4B5563),
+    color:      const Color(0xFF1F2937),
     fontStyle:  FontStyle.italic,
     height:     1.6,
   );
@@ -177,7 +177,7 @@ abstract class ClientViewTheme {
   static final TextStyle accomFeatures = GoogleFonts.inter(
     fontSize:   11,
     fontWeight: FontWeight.w400,
-    color:      secondary,
+    color:      const Color(0xFF374151),
     height:     1.5,
   );
 }
