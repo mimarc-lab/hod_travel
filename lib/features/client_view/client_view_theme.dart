@@ -100,14 +100,14 @@ abstract class ClientViewTheme {
   static final TextStyle dayDate = GoogleFonts.inter(
     fontSize:    10.5,
     fontWeight:  FontWeight.w400,
-    color:       muted,
+    color:       secondary,
     letterSpacing: 0.8,
   );
 
   static final TextStyle dayIntro = GoogleFonts.inter(
     fontSize:   13,
     fontWeight: FontWeight.w300,
-    color:      secondary,
+    color:      const Color(0xFF4B5563),
     fontStyle:  FontStyle.italic,
     height:     1.55,
   );
@@ -117,14 +117,14 @@ abstract class ClientViewTheme {
   static final TextStyle itemTime = GoogleFonts.inter(
     fontSize:    10.5,
     fontWeight:  FontWeight.w400,
-    color:       muted,
+    color:       secondary,
     letterSpacing: 0.3,
   );
 
   static final TextStyle itemTypeLabel = GoogleFonts.inter(
     fontSize:    10,
     fontWeight:  FontWeight.w500,
-    color:       muted,
+    color:       secondary,
     letterSpacing: 1.5,
   );
 
@@ -138,14 +138,14 @@ abstract class ClientViewTheme {
   static final TextStyle itemDescription = GoogleFonts.inter(
     fontSize:   13.5,
     fontWeight: FontWeight.w300,
-    color:      secondary,
+    color:      const Color(0xFF374151),
     height:     1.65,
   );
 
   static final TextStyle itemMeta = GoogleFonts.inter(
     fontSize:    10.5,
     fontWeight:  FontWeight.w400,
-    color:       muted,
+    color:       secondary,
     letterSpacing: 0.2,
   );
 
@@ -169,7 +169,7 @@ abstract class ClientViewTheme {
   static final TextStyle accomDesc = GoogleFonts.inter(
     fontSize:   13,
     fontWeight: FontWeight.w300,
-    color:      secondary,
+    color:      const Color(0xFF4B5563),
     fontStyle:  FontStyle.italic,
     height:     1.6,
   );
@@ -177,7 +177,7 @@ abstract class ClientViewTheme {
   static final TextStyle accomFeatures = GoogleFonts.inter(
     fontSize:   11,
     fontWeight: FontWeight.w400,
-    color:      muted,
+    color:      secondary,
     height:     1.5,
   );
 }
