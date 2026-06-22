@@ -127,11 +127,20 @@ class SupplierProvider extends ChangeNotifier {
 
   Future<void> addSupplier(Supplier supplier) async {
     if (_repo == null || _teamId.isEmpty) return;
-    // Optimistic add — realtime will replace with server-confirmed entry
+    // Optimistic add with empty id; replaced with DB-confirmed entry below.
     _suppliers.add(supplier);
     notifyListeners();
     try {
-      await _repo.create(supplier, _teamId);
+      final saved = await _repo.create(supplier, _teamId);
+      // Replace the temp entry with the real DB id so the detail screen can
+      // show the media section (which guards on supplier.id.isNotEmpty).
+      final idx = _suppliers.indexWhere((s) => s.id == supplier.id);
+      if (idx != -1) {
+        _suppliers[idx] = saved;
+      } else if (!_suppliers.any((s) => s.id == saved.id)) {
+        _suppliers.add(saved);
+      }
+      notifyListeners();
     } catch (_) {
       _suppliers.removeWhere((s) => s.id == supplier.id);
       _error = 'Could not save supplier.';
