@@ -196,8 +196,11 @@ class ItineraryProvider extends ChangeNotifier {
       // or fires before the INSERT is visible to the next SELECT.
       if (!_days.any((d) => d.id == saved.id)) {
         _days = [..._days, saved];
-        notifyListeners();
       }
+      // Always navigate to the newly created day so it's immediately visible.
+      _selectedDayIndex = _days.indexWhere((d) => d.id == saved.id);
+      if (_selectedDayIndex == -1) _selectedDayIndex = _days.length - 1;
+      notifyListeners();
     } catch (e, st) {
       debugPrint('[ItineraryProvider.addDay] error: $e\n$st');
       _error = e.toString();
@@ -360,13 +363,15 @@ class ItineraryProvider extends ChangeNotifier {
     ];
   }
 
-  /// Upserts every day in parallel to persist renumbered day_number values.
+  /// Upserts every day sequentially (ascending) to persist renumbered day_number
+  /// values. Sequential order is required: the UNIQUE (trip_id, day_number)
+  /// constraint would be violated if two rows swap numbers concurrently.
   Future<void> _persistDayNumbers() async {
     if (_days.isEmpty) return;
     final teamId = _effectiveTeamId;
-    await Future.wait([
-      for (final day in _days) _repo!.upsertDay(day, teamId),
-    ]);
+    for (final day in _days) {
+      await _repo!.upsertDay(day, teamId);
+    }
   }
 
   Future<void> deleteItem(String dayId, String itemId) async {
