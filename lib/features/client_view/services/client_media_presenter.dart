@@ -99,18 +99,15 @@ abstract class ClientMediaPresenter {
         );
 
         for (final item in itemsNeedingMedia) {
+          // Only show images the user explicitly selected. No selection = no images.
+          if (item.galleryMediaIds.isEmpty) continue;
+
           final allForSupplier = mediaBySupplier[item.supplierId!];
           if (allForSupplier == null || allForSupplier.isEmpty) continue;
 
-          // If the item has specific gallery images selected, show only those;
-          // otherwise fall back to all active images for the supplier.
-          final selectedIds = item.galleryMediaIds.isNotEmpty
-              ? item.galleryMediaIds
-              : null;
-
-          final media = selectedIds != null
-              ? allForSupplier.where((m) => selectedIds.contains(m.id)).toList()
-              : allForSupplier;
+          final media = allForSupplier
+              .where((m) => item.galleryMediaIds.contains(m.id))
+              .toList();
 
           if (media.isEmpty) continue;
           result[item.id] = media
