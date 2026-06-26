@@ -10,8 +10,6 @@ import '../../../data/models/component_media.dart';
 //   • Only maps items where is_visible = true and supplier_media.is_active = true
 //   • Never exposes: storagePath, uploadedBy, teamId, supplierId, internal tags,
 //     internal description, or any operational field
-//   • Rewrites storage URLs from /object/public/ → /object/authenticated/
-//     so Image.network can load private-bucket files with Bearer token
 // ─────────────────────────────────────────────────────────────────────────────
 
 abstract class ClientSafeMediaMapper {
@@ -32,15 +30,12 @@ abstract class ClientSafeMediaMapper {
 
     return ClientMediaItem(
       mediaType:    media.mediaType.dbValue,
-      displayUrl:   _authUrl(media.fileUrl),
-      thumbnailUrl: _authUrl(media.previewUrl),
+      displayUrl:   media.fileUrl,
+      thumbnailUrl: media.previewUrl,
       videoUrl:     media.videoUrl,
       caption:      caption,
       isHero:       cm.isHero,
       displayOrder: cm.displayOrder,
     );
   }
-
-  static String _authUrl(String url) =>
-      url.replaceFirst('/object/public/', '/object/authenticated/');
 }

@@ -128,12 +128,10 @@ abstract class ClientMediaPresenter {
   }
 
   static ClientMediaItem _mapSupplierMedia(SupplierMedia m) {
-    String authUrl(String url) =>
-        url.replaceFirst('/object/public/', '/object/authenticated/');
     return ClientMediaItem(
       mediaType:    m.mediaType.dbValue,
-      displayUrl:   authUrl(m.fileUrl),
-      thumbnailUrl: authUrl(m.previewUrl),
+      displayUrl:   m.fileUrl,
+      thumbnailUrl: m.previewUrl,
       videoUrl:     m.videoUrl,
       caption:      m.caption?.trim().isNotEmpty == true
                         ? m.caption!.trim()
