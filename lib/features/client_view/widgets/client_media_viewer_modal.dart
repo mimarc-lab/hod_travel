@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../data/models/client_media_item.dart';
 import '../client_view_theme.dart';
@@ -139,14 +138,6 @@ class _ViewerState extends State<_Viewer> {
 
 // ── Single page ───────────────────────────────────────────────────────────────
 
-Map<String, String> _storageHeaders() {
-  const anonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
-  final token = Supabase.instance.client.auth.currentSession?.accessToken
-      ?? (anonKey.isNotEmpty ? anonKey : null);
-  if (token == null) return {};
-  return {'Authorization': 'Bearer $token'};
-}
-
 class _MediaPage extends StatelessWidget {
   final ClientMediaItem item;
   const _MediaPage({required this.item});
@@ -161,7 +152,6 @@ class _MediaPage extends StatelessWidget {
           InteractiveViewer(
             child: Image.network(
               item.displayUrl,
-              headers:      _storageHeaders(),
               fit:          BoxFit.contain,
               errorBuilder: (_, _, _) => const Center(
                 child: Icon(Icons.broken_image_outlined,

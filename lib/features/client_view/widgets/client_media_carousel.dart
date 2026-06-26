@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../data/models/client_media_item.dart';
 import '../client_view_theme.dart';
 import 'client_media_viewer_modal.dart';
@@ -100,14 +99,6 @@ class _ClientMediaCarouselState extends State<ClientMediaCarousel> {
 
 // ── Slide tile ────────────────────────────────────────────────────────────────
 
-Map<String, String> _storageHeaders() {
-  const anonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
-  final token = Supabase.instance.client.auth.currentSession?.accessToken
-      ?? (anonKey.isNotEmpty ? anonKey : null);
-  if (token == null) return {};
-  return {'Authorization': 'Bearer $token'};
-}
-
 class _Slide extends StatelessWidget {
   final ClientMediaItem       item;
   final List<ClientMediaItem> allItems;
@@ -128,7 +119,6 @@ class _Slide extends StatelessWidget {
             children: [
               Image.network(
                 item.thumbnailUrl,
-                headers:      _storageHeaders(),
                 fit:          BoxFit.cover,
                 errorBuilder: (_, _, _) => const ColoredBox(color: Color(0xFFECEBE8)),
               ),

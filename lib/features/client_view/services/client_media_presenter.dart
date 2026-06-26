@@ -131,7 +131,7 @@ abstract class ClientMediaPresenter {
     return ClientMediaItem(
       mediaType:    m.mediaType.dbValue,
       displayUrl:   m.fileUrl,
-      thumbnailUrl: m.previewUrl,
+      thumbnailUrl: m.previewUrl.isNotEmpty ? m.previewUrl : m.fileUrl,
       videoUrl:     m.videoUrl,
       caption:      m.caption?.trim().isNotEmpty == true
                         ? m.caption!.trim()

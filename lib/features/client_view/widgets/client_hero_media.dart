@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../data/models/client_media_item.dart';
 import 'client_media_viewer_modal.dart';
 
@@ -25,7 +24,6 @@ class ClientHeroMedia extends StatelessWidget {
   Widget build(BuildContext context) {
     final wide    = MediaQuery.sizeOf(context).width >= 900;
     final height  = MediaQuery.sizeOf(context).height * (wide ? 0.45 : 0.38);
-    final headers = _storageHeaders();
     final heroIdx = allItems.indexOf(hero);
 
     return GestureDetector(
@@ -42,7 +40,6 @@ class ClientHeroMedia extends StatelessWidget {
             // Image
             Image.network(
               hero.displayUrl,
-              headers:      headers,
               fit:          BoxFit.cover,
               errorBuilder: (_, _, _) => const ColoredBox(color: Color(0xFF1A1A1A)),
             ),
@@ -82,12 +79,4 @@ class ClientHeroMedia extends StatelessWidget {
       ),
     );
   }
-}
-
-Map<String, String> _storageHeaders() {
-  const anonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
-  final token = Supabase.instance.client.auth.currentSession?.accessToken
-      ?? (anonKey.isNotEmpty ? anonKey : null);
-  if (token == null) return {};
-  return {'Authorization': 'Bearer $token'};
 }

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../data/models/client_media_item.dart';
 import '../client_view_theme.dart';
 import 'client_media_viewer_modal.dart';
@@ -267,14 +266,6 @@ class _OverflowCell extends StatelessWidget {
 
 // ── Image.network wrapper ─────────────────────────────────────────────────────
 
-Map<String, String> _storageHeaders() {
-  const anonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
-  final token = Supabase.instance.client.auth.currentSession?.accessToken
-      ?? (anonKey.isNotEmpty ? anonKey : null);
-  if (token == null) return {};
-  return {'Authorization': 'Bearer $token'};
-}
-
 class _NetImage extends StatelessWidget {
   final ClientMediaItem item;
   final bool            fullRes;
@@ -283,7 +274,6 @@ class _NetImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Image.network(
         fullRes ? item.displayUrl : item.thumbnailUrl,
-        headers:       _storageHeaders(),
         fit:           BoxFit.cover,
         filterQuality: FilterQuality.medium,
         errorBuilder:  (_, _, _) => const ColoredBox(color: Color(0xFFECEBE8)),

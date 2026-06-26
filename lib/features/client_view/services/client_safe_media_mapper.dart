@@ -31,7 +31,7 @@ abstract class ClientSafeMediaMapper {
     return ClientMediaItem(
       mediaType:    media.mediaType.dbValue,
       displayUrl:   media.fileUrl,
-      thumbnailUrl: media.previewUrl,
+      thumbnailUrl: media.previewUrl.isNotEmpty ? media.previewUrl : media.fileUrl,
       videoUrl:     media.videoUrl,
       caption:      caption,
       isHero:       cm.isHero,
