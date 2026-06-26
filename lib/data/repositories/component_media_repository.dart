@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../models/client_media_item.dart';
 import '../models/component_media.dart';
 import '../models/supplier_media.dart';
 import '../../core/errors/app_exception.dart';
@@ -37,6 +38,12 @@ abstract class ComponentMediaRepository {
   /// Used by ClientMediaPresenter to load the full trip's media efficiently.
   Future<List<ComponentMedia>> fetchClientVisibleForComponents(
       List<String> componentIds);
+
+  /// Calls the get_client_media_for_trip RPC (SECURITY DEFINER) to fetch
+  /// client-safe media keyed by itinerary_item_id. Works for anon and
+  /// authenticated users without needing direct table access.
+  Future<Map<String, List<ClientMediaItem>>> fetchClientMediaForTrip(
+      String tripId);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -201,5 +208,37 @@ class SupabaseComponentMediaRepository implements ComponentMediaRepository {
             .map((r) => _fromRow(r as Map<String, dynamic>))
             .where((cm) => cm.media?.isActive ?? false)
             .toList();
+      });
+
+  @override
+  Future<Map<String, List<ClientMediaItem>>> fetchClientMediaForTrip(
+      String tripId) =>
+      guardDb(() async {
+        final rows = await _client.rpc(
+          'get_client_media_for_trip',
+          params: {'p_trip_id': tripId},
+        ) as List;
+
+        final result = <String, List<ClientMediaItem>>{};
+        for (final row in rows) {
+          final r      = row as Map<String, dynamic>;
+          final itemId = r['itinerary_item_id'] as String?;
+          if (itemId == null) continue;
+          final fileUrl  = r['file_url']  as String? ?? '';
+          if (fileUrl.isEmpty) continue;
+          final thumbUrl = (r['thumbnail_url'] as String?)?.isNotEmpty == true
+              ? r['thumbnail_url'] as String
+              : fileUrl;
+          result.putIfAbsent(itemId, () => []).add(ClientMediaItem(
+            mediaType:    r['media_type']    as String? ?? 'image',
+            displayUrl:   fileUrl,
+            thumbnailUrl: thumbUrl,
+            videoUrl:     r['video_url']     as String?,
+            caption:      r['caption']       as String?,
+            isHero:       r['is_hero']       as bool?   ?? false,
+            displayOrder: r['display_order'] as int?,
+          ));
+        }
+        return result;
       });
 }

@@ -98,13 +98,12 @@ class _ClientItineraryScreenState extends State<ClientItineraryScreen> {
 
   Future<void> _loadMedia(Map<String, List<ItineraryItem>> itemsByDayId) async {
     final repos = AppRepositories.instance;
-    if (repos?.componentMedia == null || repos?.components == null) return;
+    if (repos?.componentMedia == null) return;
     try {
       final allItems = itemsByDayId.values.expand((l) => l).toList();
       final mediaByItemId = await ClientMediaPresenter.loadForTrip(
         tripId:            widget.trip.id,
-        componentRepo:     repos!.components,
-        mediaRepo:         repos.componentMedia,
+        mediaRepo:         repos!.componentMedia,
         supplierMediaRepo: repos.supplierMedia,
         allItems:          allItems,
       );

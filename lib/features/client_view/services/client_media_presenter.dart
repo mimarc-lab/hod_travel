@@ -3,8 +3,6 @@ import '../../../data/models/itinerary_models.dart';
 import '../../../data/models/supplier_media.dart';
 import '../../../data/repositories/component_media_repository.dart';
 import '../../../data/repositories/supplier_media_repository.dart';
-import '../../../data/repositories/trip_component_repository.dart';
-import 'client_safe_media_mapper.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ClientMediaPresenter
@@ -34,49 +32,13 @@ abstract class ClientMediaPresenter {
   /// remains readable even if media loading fails.
   static Future<Map<String, List<ClientMediaItem>>> loadForTrip({
     required String                    tripId,
-    required TripComponentRepository   componentRepo,
     required ComponentMediaRepository  mediaRepo,
     SupplierMediaRepository?           supplierMediaRepo,
     List<ItineraryItem>?               allItems,
   }) async {
-    // Step 1 — fetch all trip components to get the itineraryItemId mapping
-    final components = await componentRepo.fetchForTrip(tripId);
-
-    final itemIdByComponentId = <String, String>{};
-    for (final c in components) {
-      if (c.itineraryItemId != null) {
-        itemIdByComponentId[c.id] = c.itineraryItemId!;
-      }
-    }
-
-    final result = <String, List<ClientMediaItem>>{};
-
-    if (itemIdByComponentId.isNotEmpty) {
-      // Step 2 — batch fetch client-visible media for all those components
-      final allMedia = await mediaRepo.fetchClientVisibleForComponents(
-        itemIdByComponentId.keys.toList(),
-      );
-
-      // Step 3 — group by itinerary_item_id, apply client-safe mapper
-      for (final cm in allMedia) {
-        final itemId = itemIdByComponentId[cm.componentId];
-        if (itemId == null) continue;
-        final clientItem = ClientSafeMediaMapper.map(cm);
-        if (clientItem == null) continue;
-        result.putIfAbsent(itemId, () => []).add(clientItem);
-      }
-    }
-
-    // Step 4 — sort each group: hero first, then display_order
-    for (final list in result.values) {
-      list.sort((a, b) {
-        if (a.isHero && !b.isHero) return -1;
-        if (!a.isHero && b.isHero) return 1;
-        final aOrd = a.displayOrder ?? 999;
-        final bOrd = b.displayOrder ?? 999;
-        return aOrd.compareTo(bOrd);
-      });
-    }
+    // Steps 1-4 — fetch component media via RPC (SECURITY DEFINER so it works
+    // for both authenticated users and anon share-link viewers).
+    final result = await mediaRepo.fetchClientMediaForTrip(tripId);
 
     // Step 5 — supplier media fallback: items with supplierId but no component media
     if (supplierMediaRepo != null && allItems != null) {
