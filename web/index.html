@@ -31,6 +31,17 @@
 
   <title>The House of DreamMaker</title>
   <link rel="manifest" href="manifest.json">
+
+  <script>
+    // Suppress the Chrome "Add to Home Screen" install banner on client-facing
+    // share links — clients just want to view the itinerary, not install an app.
+    window.addEventListener('beforeinstallprompt', function (e) {
+      if (window.location.pathname.indexOf('/share/') !== -1 ||
+          window.location.pathname.indexOf('/public/') !== -1) {
+        e.preventDefault();
+      }
+    });
+  </script>
 </head>
 <body>
   <!--
